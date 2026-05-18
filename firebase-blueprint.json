@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "assessment": {
+      "title": "Risk Assessment",
+      "description": "Risk triage records for early pregnancy loss",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "pregnancyWeek": { "type": "number" },
+        "riskLevel": { "type": "string", "enum": ["Low", "Moderate", "High"] },
+        "riskScore": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "riskLevel", "riskScore"]
+    },
+    "recoveryLog": {
+      "title": "Recovery Log",
+      "description": "Daily wellness and emotional check-in",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "mood": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "note": { "type": "string" }
+      },
+      "required": ["userId", "mood", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/assessments/{assessmentId}": {
+      "schema": "assessment",
+      "description": "Individual risk assessments"
+    },
+    "/recovery_logs/{logId}": {
+      "schema": "recoveryLog",
+      "description": "User recovery progress logs"
+    }
+  }
+}
