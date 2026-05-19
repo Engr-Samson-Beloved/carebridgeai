@@ -50,7 +50,7 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
   ];
 
   return (
-    <div className="flex flex-col gap-10 pb-32 px-6">
+    <div className="flex flex-col gap-10 pb-40 px-4 sm:px-6">
       {/* Greeting & Header */}
       <section>
         <motion.div
@@ -266,7 +266,7 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
       </section>
 
       {/* Safety Carousel */}
-      <section className="bg-slate-900 mx-[-24px] px-8 py-10 text-white rounded-t-[3rem]">
+      <section className="bg-slate-900 mx-[-16px] sm:mx-[-24px] px-6 sm:px-8 py-10 text-white rounded-t-[2.5rem] sm:rounded-t-[3rem]">
         <div className="flex justify-between items-center mb-6">
           <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Maternal Safety Tips</h4>
           <div className="flex gap-1">

@@ -126,7 +126,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
   const OptionCard = ({ label, value, isActive, onClick, icon: Icon }: any) => (
     <button
       onClick={onClick}
-      className={`w-full p-5 rounded-[1.5rem] border-2 transition-all flex items-center justify-between group ${
+      className={`w-full p-4 sm:p-5 rounded-[1.5rem] border-2 transition-all flex items-center justify-between group ${
         isActive 
           ? 'border-[#0F4C81] bg-[#0F4C81]/5 text-[#0F4C81]' 
           : 'border-slate-100 bg-white text-slate-600 hover:border-slate-200'
@@ -145,7 +145,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
   );
 
   return (
-    <div className="px-8 flex flex-col h-full pb-32 pt-6">
+    <div className="px-4 sm:px-8 flex flex-col h-full pb-40 pt-6">
       <div className="flex items-center justify-between mb-8">
         <button 
           onClick={step === 5 ? () => setStep(1) : (step === 1 ? onBack : () => setStep(step - 1))}

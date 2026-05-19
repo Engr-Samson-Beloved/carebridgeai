@@ -65,7 +65,7 @@ export function Referrals({ language }: ReferralsProps) {
   ];
 
   return (
-    <div className="px-8 pb-32 pt-6">
+    <div className="px-4 sm:px-8 pb-40 pt-6">
       <div className="mb-8">
         <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">{t.referrals}</h2>
         <p className="text-slate-500 font-medium">CareBridge AI coordinates your clinical path based on urgency and accessibility.</p>
@@ -119,7 +119,7 @@ export function Referrals({ language }: ReferralsProps) {
             transition={{ delay: i * 0.1 }}
           >
             <Card className="overflow-hidden border-slate-200 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all cursor-pointer group bg-white border">
-              <div className="p-8">
+              <div className="p-5 sm:p-8">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
@@ -146,7 +146,7 @@ export function Referrals({ language }: ReferralsProps) {
                   "{clinic.matchReason}"
                 </div>
 
-                <div className="grid grid-cols-3 gap-6 mb-8 px-2">
+                <div className="grid grid-cols-3 gap-2 sm:gap-6 mb-8 px-1 sm:px-2">
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Distance</span>
                     <span className="text-sm font-bold text-slate-700 flex items-center gap-1.5">

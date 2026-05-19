@@ -67,14 +67,14 @@ interface DashboardProps {
 
 export function Dashboard({ language, prefs }: DashboardProps) {
   return (
-    <div className="px-8 pb-32">
+    <div className="px-4 sm:px-8 pb-40">
       <div className="mb-10">
         <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Public Health Intelligence</h2>
         <p className="text-slate-500 font-medium">Monitoring maternal care impact and risk distribution across African sectors.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 mb-6">
-        <Card className="p-8 border-none bg-[#0F4C81] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+      <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-6">
+        <Card className="p-5 sm:p-8 border-none bg-[#0F4C81] text-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl relative overflow-hidden">
            <div className="relative z-10">
             <div className="flex justify-between items-start mb-10">
                 <Users size={24} className="text-blue-100/40" />
@@ -87,7 +87,7 @@ export function Dashboard({ language, prefs }: DashboardProps) {
               <Users size={120} />
            </div>
         </Card>
-        <Card className="p-8 border-none bg-[#2EC4B6] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+        <Card className="p-5 sm:p-8 border-none bg-[#2EC4B6] text-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl relative overflow-hidden">
            <div className="relative z-10">
             <div className="flex justify-between items-start mb-10">
                 <Activity size={24} className="text-teal-100/40" />
@@ -102,19 +102,19 @@ export function Dashboard({ language, prefs }: DashboardProps) {
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 mb-10">
-        <Card className="p-6 border-slate-100 rounded-3xl bg-emerald-50/50">
+      <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-10">
+        <Card className="p-4 sm:p-6 border-slate-100 rounded-2xl sm:rounded-3xl bg-emerald-50/50">
           <div className="text-2xl font-black text-emerald-600 mb-1">94%</div>
           <div className="text-[9px] font-black uppercase text-emerald-500 tracking-widest">WhatsApp Retention</div>
         </Card>
-        <Card className="p-6 border-slate-100 rounded-3xl bg-rose-50/50">
+        <Card className="p-4 sm:p-6 border-slate-100 rounded-2xl sm:rounded-3xl bg-rose-50/50">
           <div className="text-2xl font-black text-rose-600 mb-1">12s</div>
           <div className="text-[9px] font-black uppercase text-rose-500 tracking-widest">Avg SOS Response</div>
         </Card>
       </div>
 
       <div className="space-y-10">
-        <Card className="p-10 border-slate-200 rounded-[3rem] shadow-sm bg-white">
+        <Card className="p-5 sm:p-10 border-slate-200 rounded-[2.25rem] sm:rounded-[3rem] shadow-sm bg-white">
            <div className="flex justify-between items-center mb-10">
               <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Regional Language Usage</h3>
               <Badge variant="outline" className="rounded-full bg-slate-50 text-[10px] uppercase font-black tracking-widest px-4 border-slate-100">Across 5 Sectors</Badge>
@@ -140,7 +140,7 @@ export function Dashboard({ language, prefs }: DashboardProps) {
                 </PieChart>
               </ResponsiveContainer>
            </div>
-           <div className="flex flex-wrap justify-between gap-4 mt-12 bg-slate-50 p-6 rounded-[2.5rem]">
+           <div className="flex flex-wrap justify-between gap-4 mt-12 bg-slate-50 p-4 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem]">
               {LANGUAGE_DATA.map(item => (
                 <div key={item.name} className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
@@ -153,7 +153,7 @@ export function Dashboard({ language, prefs }: DashboardProps) {
            </div>
         </Card>
 
-        <Card className="p-10 border-slate-200 rounded-[3rem] shadow-sm bg-white">
+        <Card className="p-5 sm:p-10 border-slate-200 rounded-[2.25rem] sm:rounded-[3rem] shadow-sm bg-white">
            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Intervention Rate</h3>
            <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -173,7 +173,7 @@ export function Dashboard({ language, prefs }: DashboardProps) {
            </div>
         </Card>
 
-        <div className="p-10 bg-[#FF6B6B] rounded-[3rem] text-white shadow-2xl shadow-red-900/20 relative overflow-hidden group">
+        <div className="p-5 sm:p-10 bg-[#FF6B6B] rounded-[2.25rem] sm:rounded-[3rem] text-white shadow-2xl shadow-red-900/20 relative overflow-hidden group">
            <div className="relative z-10">
               <div className="flex items-center gap-5 mb-6">
                  <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl text-white shadow-lg border border-white/10">

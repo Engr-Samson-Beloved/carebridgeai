@@ -54,7 +54,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
   };
 
   return (
-    <div className="px-6 pb-32">
+    <div className="px-4 sm:px-6 pb-40">
       <div className="mb-8">
         <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">{t.recovery}</h2>
         <p className="text-slate-500">A dedicated heart-space for your healing journey.</p>
@@ -66,7 +66,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
            animate={{ opacity: 1, y: 0 }}
            className="space-y-8"
         >
-          <Card className="p-10 border-none bg-slate-900 text-white rounded-[3rem] shadow-[0_32px_64px_-15px_rgba(15,76,129,0.3)] relative overflow-hidden group">
+          <Card className="p-5 sm:p-10 border-none bg-slate-900 text-white rounded-[2.25rem] sm:rounded-[3rem] shadow-[0_32px_64px_-15px_rgba(15,76,129,0.3)] relative overflow-hidden group">
              <div className="relative z-10">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-3xl font-black tracking-tight">How are you heart-today?</h3>
@@ -90,7 +90,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                     <button
                       key={m.v}
                       onClick={() => setMood(m.v)}
-                      className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all shadow-lg ${
+                      className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center transition-all shadow-lg ${
                         mood === m.v 
                           ? 'bg-secondary text-white scale-110 shadow-secondary/40 ring-4 ring-secondary/20' 
                           : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
@@ -125,14 +125,14 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
              </div>
           </Card>
 
-          <div className="grid grid-cols-2 gap-6">
-            <button className="p-6 bg-white rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+          <div className="grid grid-cols-2 gap-4 sm:gap-6">
+            <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
                   <Bird size={24} />
                </div>
                <span className="text-xs font-black text-slate-800 uppercase tracking-widest leading-tight">Coping<br/>Resources</span>
             </button>
-            <button className="p-6 bg-white rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+            <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
                <div className="w-12 h-12 bg-secondary/10 rounded-2xl flex items-center justify-center text-secondary shadow-inner">
                   <Cloud size={24} />
                </div>
@@ -146,7 +146,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col gap-6"
         >
-          <Card className="p-10 border-none bg-emerald-50 rounded-[3rem] relative shadow-lg overflow-hidden">
+          <Card className="p-5 sm:p-10 border-none bg-emerald-50 rounded-[2.25rem] sm:rounded-[3rem] relative shadow-lg overflow-hidden">
              <div className="relative z-10">
                 <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center text-emerald-500 mb-8 shadow-xl shadow-emerald-900/10">
                    <Sparkles size={32} />
