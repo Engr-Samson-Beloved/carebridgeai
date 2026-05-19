@@ -67,7 +67,7 @@
     --border: oklch(0.92 0.01 250);
     --input: oklch(0.92 0.01 250);
     --ring: oklch(0.428 0.125 250.3);
-    --radius: 1.5rem; /* Increased for that soft minimal look */
+    --radius: 1.25rem; /* Slightly reduced for a tighter, cleaner look */
 }
 
 .dark {

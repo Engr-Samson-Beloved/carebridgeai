@@ -77,7 +77,7 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
 
       {/* Main AI Assessment Card */}
       <section>
-        <Card className="p-8 border-none bg-[#0F4C81] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+        <Card className="p-6 border-none bg-[#0F4C81] text-white rounded-[2rem] shadow-2xl relative overflow-hidden group">
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-6">
               <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center">
@@ -93,14 +93,14 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
                 {t.voiceAssistant}
               </button>
             </div>
-            <h3 className="text-2xl font-black mb-3 tracking-tight">{t.aiTriage}</h3>
-            <p className="text-blue-100/70 text-sm mb-8 leading-relaxed font-medium">
+            <h3 className="text-xl font-extrabold mb-2 tracking-tight">{t.aiTriage}</h3>
+            <p className="text-blue-100/70 text-xs mb-6 leading-relaxed font-medium">
               {t.triageDesc}
             </p>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <Button 
                 onClick={onStart}
-                className="w-full h-14 rounded-2xl bg-white text-[#0F4C81] hover:bg-blue-50 font-bold text-lg shadow-xl shadow-blue-900/40 gap-2"
+                className="w-full h-12 rounded-2xl bg-white text-[#0F4C81] hover:bg-blue-50 font-bold text-base shadow-xl shadow-blue-900/40 gap-2"
               >
                 {t.startAssessment}
                 <ChevronRight size={20} />
@@ -125,7 +125,7 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
         <Button 
           variant="destructive"
           onClick={() => setShowEmergency(true)}
-          className="w-full h-16 rounded-3xl bg-rose-50 border-2 border-rose-100 text-rose-500 font-black uppercase tracking-widest text-sm hover:bg-rose-100 transition-all flex items-center justify-between px-8 group"
+          className="w-full h-13 rounded-2xl bg-rose-50 border-2 border-rose-100 text-rose-500 font-black uppercase tracking-widest text-xs hover:bg-rose-100 transition-all flex items-center justify-between px-6 group"
         >
           <div className="flex items-center gap-3">
             <AlertTriangle size={20} className="group-hover:scale-125 transition-transform" />
@@ -137,14 +137,14 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
 
       {/* WhatsApp Follow-up Setup */}
       <section>
-        <Card className="p-6 border-slate-100 rounded-[2rem] bg-slate-50/50 border relative overflow-hidden group">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm">
-              <MessageSquare size={24} />
+        <Card className="p-5 border-slate-100 rounded-[1.75rem] bg-slate-50/50 border relative overflow-hidden group">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 shadow-sm">
+              <MessageSquare size={20} />
             </div>
             <div className="flex-1">
-              <h4 className="font-bold text-slate-800">{t.whatsappSetup}</h4>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.active}</p>
+              <h4 className="font-extrabold text-sm text-slate-800">{t.whatsappSetup}</h4>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t.active}</p>
             </div>
             <input 
               type="checkbox" 
@@ -153,7 +153,7 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
               className="w-10 h-6 bg-slate-200 checked:bg-emerald-500 appearance-none rounded-full relative cursor-pointer before:content-[''] before:absolute before:w-4 before:h-4 before:bg-white before:rounded-full before:top-1 before:left-1 checked:before:left-5 before:transition-all shadow-inner"
             />
           </div>
-          <p className="text-xs text-slate-500 font-medium leading-relaxed">
+          <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
             {t.whatsappDesc}
           </p>
         </Card>
@@ -197,19 +197,19 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[3rem] p-10 shadow-3xl text-center"
+              className="relative w-full max-w-sm bg-white rounded-[2rem] p-6 shadow-3xl text-center"
             >
-              <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mx-auto mb-8 ring-8 ring-rose-50/50">
-                <AlertTriangle size={40} className="animate-bounce" />
+              <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mx-auto mb-6 ring-8 ring-rose-50/50">
+                <AlertTriangle size={32} className="animate-bounce" />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">{t.emergencyEscalation}</h3>
-              <p className="text-slate-500 font-medium leading-relaxed mb-10">
+              <h3 className="text-xl font-extrabold text-slate-900 mb-3 tracking-tight">{t.emergencyEscalation}</h3>
+              <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">
                 {t.notifyingClinic}
               </p>
               
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Button 
-                  className="w-full h-14 rounded-2xl bg-[#0F4C81] text-white font-bold text-lg"
+                  className="w-full h-12 rounded-xl bg-[#0F4C81] text-white font-bold text-base"
                   onClick={() => {
                     alert("Emergency call initiated...");
                     setShowEmergency(false);
@@ -231,44 +231,44 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
       </AnimatePresence>
 
 
-      {/* Care & Recovery Previews */}
-      <section className="grid grid-cols-1 gap-4">
-        <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-2 ml-1">Nearby Support</h4>
+      {/* Care & Recover      <section className="grid grid-cols-1 gap-3">
+        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 ml-1">Nearby Support</h4>
         
-        <Card className="p-5 border-slate-100 rounded-[2rem] flex items-center justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={onClinicSearch}>
-           <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-[#2EC4B6]/10 rounded-2xl flex items-center justify-center text-[#2EC4B6] shadow-inner">
-                 <MapPin size={28} />
+        <Card className="p-4 border-slate-100 rounded-[1.75rem] flex items-center justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={onClinicSearch}>
+           <div className="flex items-center gap-3">
+              <div className="w-11 h-11 bg-[#2EC4B6]/10 rounded-xl flex items-center justify-center text-[#2EC4B6] shadow-inner shrink-0">
+                 <MapPin size={22} />
               </div>
               <div>
-                 <div className="flex items-center gap-2 mb-0.5">
-                    <h5 className="font-black text-slate-800">Lagos Maternal Center</h5>
-                    <Badge variant="outline" className="text-[9px] h-4 bg-teal-50 border-teal-100 text-[#2EC4B6]">ACTIVE</Badge>
+                 <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                    <h5 className="font-extrabold text-sm text-slate-800">Lagos Maternal Center</h5>
+                    <Badge variant="outline" className="text-[8px] h-3.5 bg-teal-50 border-teal-100 text-[#2EC4B6]">ACTIVE</Badge>
                  </div>
-                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">1.2 km • Open 24/7</p>
+                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">1.2 km • Open 24/7</p>
               </div>
            </div>
-           <ChevronRight className="text-slate-300" size={20} />
+           <ChevronRight className="text-slate-300" size={16} />
         </Card>
-
-        <Card className="p-5 border-slate-100 rounded-[2rem] flex items-center justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-           <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 shadow-inner">
-                 <Heart size={28} />
+        
+        <Card className="p-4 border-slate-100 rounded-[1.75rem] flex items-center justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+           <div className="flex items-center gap-3">
+              <div className="w-11 h-11 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 shadow-inner shrink-0">
+                 <Heart size={22} />
               </div>
               <div>
-                 <h5 className="font-black text-slate-800">Emotional Wellness</h5>
-                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Compassionate AI Support</p>
+                 <h5 className="font-extrabold text-sm text-slate-800">Emotional Wellness</h5>
+                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Compassionate AI Support</p>
               </div>
            </div>
-           <ChevronRight className="text-slate-300" size={20} />
+           <ChevronRight className="text-slate-300" size={16} />
         </Card>
+      </section>
       </section>
 
       {/* Safety Carousel */}
-      <section className="bg-slate-900 mx-[-16px] sm:mx-[-24px] px-6 sm:px-8 py-10 text-white rounded-t-[2.5rem] sm:rounded-t-[3rem]">
-        <div className="flex justify-between items-center mb-6">
-          <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Maternal Safety Tips</h4>
+      <section className="bg-slate-900 mx-[-16px] sm:mx-[-24px] px-6 sm:px-8 py-8 text-white rounded-t-[2.5rem] sm:rounded-t-[3rem]">
+        <div className="flex justify-between items-center mb-5">
+          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Maternal Safety Tips</h4>
           <div className="flex gap-1">
              <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
              <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
@@ -276,13 +276,13 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
           </div>
         </div>
         <div className="flex flex-col gap-4">
-           <div className="flex gap-4 items-start">
-              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-                 <Shield className="text-secondary" size={24} />
+           <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
+                 <Shield className="text-secondary" size={20} />
               </div>
               <div>
-                 <h5 className="font-bold text-lg mb-1 leading-tight">Monitor your iron levels</h5>
-                 <p className="text-sm text-white/60 leading-relaxed font-medium capitalize">Iron deficiency can increase pregnancy complications. Consult your doctor for supplements.</p>
+                 <h5 className="font-extrabold text-base mb-0.5 leading-tight">Monitor your iron levels</h5>
+                 <p className="text-xs text-white/60 leading-relaxed font-medium capitalize">Iron deficiency can increase pregnancy complications. Consult your doctor for supplements.</p>
               </div>
            </div>
         </div>

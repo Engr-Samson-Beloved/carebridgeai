@@ -211,7 +211,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
                )}
             </div>
 
-            <Button size="lg" className="mt-8 rounded-2xl h-14" onClick={() => setStep(2)}>
+            <Button size="lg" className="mt-8 rounded-2xl h-12" onClick={() => setStep(2)}>
               Next Step
               <ChevronRight size={20} />
             </Button>
@@ -248,7 +248,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
               ))}
             </div>
 
-            <Button size="lg" className="mt-4 rounded-2xl h-14" onClick={() => setStep(3)}>
+            <Button size="lg" className="mt-4 rounded-2xl h-12" onClick={() => setStep(3)}>
               Continue
               <ChevronRight size={20} />
             </Button>
@@ -285,7 +285,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
               ))}
             </div>
 
-            <Button size="lg" className="mt-4 rounded-2xl h-14 shadow-lg shadow-primary/20" onClick={() => setStep(4)}>
+            <Button size="lg" className="mt-4 rounded-2xl h-12 shadow-lg shadow-primary/20" onClick={() => setStep(4)}>
               Review Risk Factors
               <ChevronRight size={20} />
             </Button>
@@ -323,7 +323,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
 
             <Button 
               size="lg" 
-              className="mt-4 rounded-2xl h-14 bg-secondary hover:bg-secondary/90 transition-all shadow-xl shadow-secondary/20"
+              className="mt-4 rounded-2xl h-12 bg-secondary hover:bg-secondary/90 transition-all shadow-xl shadow-secondary/20"
               onClick={handleFinish}
               disabled={loading}
             >
@@ -412,10 +412,10 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Button size="lg" className="rounded-2xl h-14 bg-[#0F4C81] text-white font-bold" onClick={onComplete}>
+                  <Button size="lg" className="rounded-2xl h-12 bg-[#0F4C81] text-white font-bold" onClick={onComplete}>
                     Find Clinics
                   </Button>
-                  <Button variant="outline" size="lg" className="rounded-2xl h-14 border-slate-200 text-slate-600 font-bold" onClick={onBack}>
+                  <Button variant="outline" size="lg" className="rounded-2xl h-12 border-slate-200 text-slate-600 font-bold" onClick={onBack}>
                     Home
                   </Button>
                 </div>

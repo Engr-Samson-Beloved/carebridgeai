@@ -67,7 +67,7 @@ export function Referrals({ language }: ReferralsProps) {
   return (
     <div className="px-4 sm:px-8 pb-40 pt-6">
       <div className="mb-8">
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">{t.referrals}</h2>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{t.referrals}</h2>
         <p className="text-slate-500 font-medium">CareBridge AI coordinates your clinical path based on urgency and accessibility.</p>
       </div>
 
@@ -123,7 +123,7 @@ export function Referrals({ language }: ReferralsProps) {
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-black text-xl text-slate-900 group-hover:text-[#0F4C81] transition-colors">{clinic.name}</h3>
+                      <h3 className="font-black text-lg text-slate-900 group-hover:text-[#0F4C81] transition-colors">{clinic.name}</h3>
                       {clinic.maternalCareReady && (
                         <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-[#0F4C81] rounded-full text-[9px] font-black uppercase tracking-wider">
                            <BadgeCheck size={12} />
@@ -186,9 +186,9 @@ export function Referrals({ language }: ReferralsProps) {
                   ))}
                 </div>
 
-                <div className="flex gap-3">
+                 <div className="flex gap-3">
                   <Button 
-                    className={`flex-1 rounded-[1.25rem] h-14 gap-3 font-black text-lg shadow-xl shadow-blue-100 ${
+                    className={`flex-1 rounded-[1.25rem] h-12 gap-3 font-black text-base shadow-xl shadow-blue-100 ${
                       notifiedClinics.includes(clinic.name) ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-[#0F4C81] hover:bg-[#0F4C81]/95'
                     }`}
                     onClick={() => {
@@ -203,17 +203,17 @@ export function Referrals({ language }: ReferralsProps) {
                     {notifiedClinics.includes(clinic.name) ? (
                       <>
                         {t.clinicNotified || 'Clinic Notified'}
-                        <BadgeCheck size={20} />
+                        <BadgeCheck size={18} />
                       </>
                     ) : (
                       <>
                         Call Clinic
-                        <Phone size={20} />
+                        <Phone size={18} />
                       </>
                     )}
                   </Button>
-                  <Button variant="outline" size="icon" className="w-14 h-14 rounded-2xl border-slate-200 text-slate-400 hover:text-[#0F4C81] transition-colors">
-                     <Star size={20} />
+                  <Button variant="outline" size="icon" className="w-12 h-12 rounded-xl border-slate-200 text-slate-400 hover:text-[#0F4C81] transition-colors">
+                     <Star size={18} />
                   </Button>
                 </div>
               </div>
@@ -222,10 +222,10 @@ export function Referrals({ language }: ReferralsProps) {
         ))}
       </div>
 
-      <div className="mt-12 text-center p-8 bg-slate-900 rounded-[3rem] text-white">
-         <h4 className="font-black text-xl mb-3 tracking-tight">Need Urgent Transfer?</h4>
-         <p className="text-white/60 text-sm font-medium mb-8 leading-relaxed">Emergency coordination center is active. Smart routing will prioritize high-fidelity EPAU facilities.</p>
-         <Button className="w-full h-14 bg-rose-500 hover:bg-rose-600 rounded-2xl font-black text-lg uppercase tracking-wider shadow-2xl shadow-rose-900/40">
+      <div className="mt-12 text-center p-6 bg-slate-900 rounded-[2rem] text-white">
+         <h4 className="font-black text-lg mb-2 tracking-tight">Need Urgent Transfer?</h4>
+         <p className="text-white/60 text-xs font-medium mb-6 leading-relaxed">Emergency coordination center is active. Smart routing will prioritize high-fidelity EPAU facilities.</p>
+         <Button className="w-full h-12 bg-rose-500 hover:bg-rose-600 rounded-2xl font-black text-base uppercase tracking-wider shadow-2xl shadow-rose-900/40">
             Activate Emergency Route
          </Button>
       </div>

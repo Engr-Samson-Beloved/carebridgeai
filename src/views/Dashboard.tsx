@@ -69,7 +69,7 @@ export function Dashboard({ language, prefs }: DashboardProps) {
   return (
     <div className="px-4 sm:px-8 pb-40">
       <div className="mb-10">
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Public Health Intelligence</h2>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Public Health Intelligence</h2>
         <p className="text-slate-500 font-medium">Monitoring maternal care impact and risk distribution across African sectors.</p>
       </div>
 
@@ -78,9 +78,9 @@ export function Dashboard({ language, prefs }: DashboardProps) {
            <div className="relative z-10">
             <div className="flex justify-between items-start mb-10">
                 <Users size={24} className="text-blue-100/40" />
-                <ArrowUpRight size={20} className="text-blue-100/40" />
+                <Users size={24} className="text-blue-100/40" />
             </div>
-            <div className="text-4xl font-black mb-1">1,284</div>
+            <div className="text-3xl font-black mb-1">1,284</div>
             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100/40">Registered Cases</div>
            </div>
            <div className="absolute -bottom-6 -right-6 text-white/5 pointer-events-none">
@@ -91,9 +91,9 @@ export function Dashboard({ language, prefs }: DashboardProps) {
            <div className="relative z-10">
             <div className="flex justify-between items-start mb-10">
                 <Activity size={24} className="text-teal-100/40" />
-                <TrendingUp size={20} className="text-teal-100/40" />
+                <Activity size={24} className="text-teal-100/40" />
             </div>
-            <div className="text-4xl font-black mb-1">82%</div>
+            <div className="text-3xl font-black mb-1">98.2%</div>
             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-teal-100/40">Care Continuity</div>
            </div>
            <div className="absolute -bottom-6 -right-6 text-white/5 pointer-events-none">
@@ -179,17 +179,17 @@ export function Dashboard({ language, prefs }: DashboardProps) {
                  <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl text-white shadow-lg border border-white/10">
                     <AlertCircle size={32} />
                  </div>
-                 <h4 className="font-black text-2xl tracking-tighter">Critical Care Gap</h4>
+                 <h4 className="font-black text-xl tracking-tighter">Critical Care Gap</h4>
               </div>
               <p className="text-sm text-red-100 leading-relaxed mb-8 font-medium italic">
                 "AI detects a 34% increase in referral delays in North-Western districts. Immediate clinic resourcing recommended to prevent capacity failure."
               </p>
               <div className="flex gap-4">
-                 <Button className="flex-1 h-14 bg-white text-rose-500 font-black rounded-2xl shadow-xl shadow-red-900/10 uppercase tracking-widest text-xs">
+                 <Button className="flex-1 h-12 bg-white text-rose-500 font-black rounded-2xl shadow-xl shadow-red-900/10 uppercase tracking-widest text-[10px]">
                     Deploy Resources
                  </Button>
-                 <Button variant="ghost" className="h-14 border border-white/20 text-white font-black rounded-2xl px-8 hover:bg-white/10 uppercase tracking-widest text-xs">
-                    Full Sector Analysis
+                 <Button variant="ghost" className="h-12 border border-white/20 text-white font-black rounded-2xl px-6 hover:bg-white/10 uppercase tracking-widest text-[10px]">
+                    Full Analysis
                  </Button>
               </div>
            </div>

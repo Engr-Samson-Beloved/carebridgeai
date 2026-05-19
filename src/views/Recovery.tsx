@@ -56,7 +56,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
   return (
     <div className="px-4 sm:px-6 pb-40">
       <div className="mb-8">
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">{t.recovery}</h2>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{t.recovery}</h2>
         <p className="text-slate-500">A dedicated heart-space for your healing journey.</p>
       </div>
 
@@ -69,7 +69,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
           <Card className="p-5 sm:p-10 border-none bg-slate-900 text-white rounded-[2.25rem] sm:rounded-[3rem] shadow-[0_32px_64px_-15px_rgba(15,76,129,0.3)] relative overflow-hidden group">
              <div className="relative z-10">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-3xl font-black tracking-tight">How are you heart-today?</h3>
+                  <h3 className="text-2xl font-black tracking-tight">How are you heart-today?</h3>
                   <button 
                     onClick={simulateVoiceSpeak}
                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isSpeaking ? 'bg-secondary text-white' : 'bg-white/10 text-white/40'}`}
@@ -114,7 +114,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <Button 
                   onClick={handleLog}
                   disabled={mood === null || loading}
-                  className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-14 font-black transition-all shadow-xl shadow-black/20 text-lg uppercase tracking-wider"
+                  className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 font-black transition-all shadow-xl shadow-black/20 text-base uppercase tracking-wider"
                 >
                   {loading ? 'Processing...' : 'Log Daily Reflection'}
                 </Button>

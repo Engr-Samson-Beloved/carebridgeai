@@ -40,7 +40,7 @@ export function Navigation({ currentView, onViewChange, language }: NavigationPr
   ];
 
   return (
-    <nav className="fixed bottom-6 left-6 right-6 z-50 rounded-[2.25rem] border border-slate-100/90 bg-white/85 backdrop-blur-xl px-2.5 py-2 shadow-[0_12px_40px_-12px_rgba(15,76,129,0.15)] transition-all duration-300 dark:border-slate-800/80 dark:bg-slate-950/85 dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-100 bg-white/90 backdrop-blur-xl px-4 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] shadow-[0_-8px_30px_rgba(15,76,129,0.06)] transition-all duration-300 dark:border-slate-800/80 dark:bg-slate-950/90 dark:shadow-[0_-8px_30px_rgba(0,0,0,0.4)] md:hidden">
       <div className="flex justify-between items-center max-w-md mx-auto gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -49,20 +49,20 @@ export function Navigation({ currentView, onViewChange, language }: NavigationPr
             <button
               key={item.id}
               onClick={() => onViewChange(item.id as AppView)}
-              className={`relative flex flex-1 flex-col items-center gap-1.5 py-2.5 px-1.5 rounded-2xl transition-all duration-300 ${
+              className={`relative flex flex-1 flex-col items-center gap-1 py-1.5 px-1 rounded-xl transition-all duration-300 ${
                 isActive 
                   ? 'text-primary scale-105 font-bold' 
                   : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
               }`}
             >
-              <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="transition-transform duration-300" />
-              <span className={`text-[9px] font-bold uppercase tracking-tight transition-opacity ${isActive ? 'opacity-100' : 'opacity-60'}`}>
+              <Icon size={19} strokeWidth={isActive ? 2.5 : 2} className="transition-transform duration-300" />
+              <span className={`text-[8.5px] font-bold uppercase tracking-tight transition-opacity ${isActive ? 'opacity-100' : 'opacity-60'}`}>
                 {item.label}
               </span>
               {isActive && (
                 <motion.div
                   layoutId="nav-pill"
-                  className="absolute inset-0 bg-primary/8 rounded-2xl -z-10 dark:bg-primary/15"
+                  className="absolute inset-x-1.5 inset-y-0.5 bg-primary/8 rounded-xl -z-10 dark:bg-primary/15"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
