@@ -78,7 +78,7 @@ export function Dashboard({ language, prefs }: DashboardProps) {
            <div className="relative z-10">
             <div className="flex justify-between items-start mb-10">
                 <Users size={24} className="text-blue-100/40" />
-                <Users size={24} className="text-blue-100/40" />
+                <ArrowUpRight size={20} className="text-blue-100/40" />
             </div>
             <div className="text-3xl font-black mb-1">1,284</div>
             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100/40">Registered Cases</div>
@@ -91,7 +91,7 @@ export function Dashboard({ language, prefs }: DashboardProps) {
            <div className="relative z-10">
             <div className="flex justify-between items-start mb-10">
                 <Activity size={24} className="text-teal-100/40" />
-                <Activity size={24} className="text-teal-100/40" />
+                <TrendingUp size={20} className="text-teal-100/40" />
             </div>
             <div className="text-3xl font-black mb-1">98.2%</div>
             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-teal-100/40">Care Continuity</div>
