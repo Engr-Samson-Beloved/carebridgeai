@@ -32,16 +32,16 @@ interface NavigationProps {
 export function Navigation({ currentView, onViewChange, language }: NavigationProps) {
   const t = translations[language];
   const navItems = [
-    { id: 'landing', label: t.landing, icon: Heart },
+    { id: 'landing', label: t.landing || 'Home', icon: Heart },
     { id: 'assessment', label: 'RiskAI', icon: Activity },
     { id: 'referral', label: t.findClinics || 'Clinics', icon: MapPin },
-    { id: 'recovery', label: t.recovery, icon: Brain },
+    { id: 'recovery', label: t.recovery || 'Recovery', icon: Brain },
     { id: 'dashboard', label: t.referrals || 'Analytics', icon: LayoutDashboard },
   ];
 
   return (
-    <nav className="fixed bottom-6 left-6 right-6 z-50 glass rounded-[2.5rem] px-4 py-3 md:hidden">
-      <div className="flex justify-between items-center max-w-md mx-auto">
+    <nav className="fixed bottom-6 left-6 right-6 z-50 rounded-[2.25rem] border border-slate-100/90 bg-white/85 backdrop-blur-xl px-2.5 py-2 shadow-[0_12px_40px_-12px_rgba(15,76,129,0.15)] transition-all duration-300 dark:border-slate-800/80 dark:bg-slate-950/85 dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] md:hidden">
+      <div className="flex justify-between items-center max-w-md mx-auto gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -49,18 +49,20 @@ export function Navigation({ currentView, onViewChange, language }: NavigationPr
             <button
               key={item.id}
               onClick={() => onViewChange(item.id as AppView)}
-              className={`relative flex flex-col items-center gap-1 p-2 transition-all duration-300 ${
-                isActive ? 'text-primary scale-110' : 'text-slate-400 hover:text-slate-600'
+              className={`relative flex flex-1 flex-col items-center gap-1.5 py-2.5 px-1.5 rounded-2xl transition-all duration-300 ${
+                isActive 
+                  ? 'text-primary scale-105 font-bold' 
+                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
               }`}
             >
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+              <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="transition-transform duration-300" />
               <span className={`text-[9px] font-bold uppercase tracking-tight transition-opacity ${isActive ? 'opacity-100' : 'opacity-60'}`}>
                 {item.label}
               </span>
               {isActive && (
                 <motion.div
                   layoutId="nav-pill"
-                  className="absolute inset-0 bg-primary/5 rounded-2xl -z-10"
+                  className="absolute inset-0 bg-primary/8 rounded-2xl -z-10 dark:bg-primary/15"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
