@@ -24,7 +24,11 @@ import {
   ShieldAlert,
   AlertCircle,
   Phone,
-  AlertTriangle
+  AlertTriangle,
+  Flame,
+  Coffee,
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -57,6 +61,16 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
   } | null>(null);
   const [whatsappOptIn, setWhatsappOptIn] = useState(true);
   const [showEmergencyCall, setShowEmergencyCall] = useState(false);
+
+  // Modal Assessment Wizard States
+  const [showModal, setShowModal] = useState(true);
+  const [modalStep, setModalStep] = useState<number | 'intro'>('intro');
+
+  // Daily Streak & Vitals States
+  const [streak, setStreak] = useState(5);
+  const [waterGlasses, setWaterGlasses] = useState(2);
+  const [mealEaten, setMealEaten] = useState(false);
+  const [medTaken, setMedTaken] = useState(false);
 
   const [healthCheck, setHealthCheck] = useState({
     bleedingSeverity: 'none',
@@ -97,7 +111,6 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
     speakText("Take a deep breath. Your body and heart deserve space to heal today.");
   };
 
-  // Text-To-Speech
   const speakText = (text: string) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -112,7 +125,6 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
     }
   };
 
-  // Speech Recognition for answers
   const startSpeechRecognitionForSection = (idx: number) => {
     setIsListening(true);
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -181,59 +193,81 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
   };
 
   // Run AI Risk Logic
-  const runRiskAssessment = () => {
+  const runRiskAssessment = (silent = false) => {
     setAssessing(true);
-    setTimeout(() => {
-      let riskLevel: 'low' | 'moderate' | 'high' = 'low';
-      let reasonText = '';
+    let riskLevel: 'low' | 'moderate' | 'high' = 'low';
+    let reasonText = '';
 
-      if (
-        healthCheck.bleedingSeverity === 'heavy' ||
-        healthCheck.soakingPads ||
-        healthCheck.fainting ||
-        healthCheck.painLevel === 'severe' ||
-        healthCheck.fever
-      ) {
-        riskLevel = 'high';
-        const concerns = [];
-        if (healthCheck.bleedingSeverity === 'heavy' || healthCheck.soakingPads) concerns.push("hemorrhaging indicators (heavy bleeding or soaking pads)");
-        if (healthCheck.fainting) concerns.push("fainting episodes");
-        if (healthCheck.painLevel === 'severe') concerns.push("severe abdominal pain");
-        if (healthCheck.fever) concerns.push("fever (potential systemic infection)");
-        
-        reasonText = `Critical recovery indicators detected: ${concerns.join(', ')}. There is an elevated risk of severe post-pregnancy loss complications (e.g. retained products of conception, infection, or internal bleeding). Immediate medical attention is recommended.`;
-      } else if (
-        healthCheck.bleedingSeverity === 'moderate' ||
-        healthCheck.painLevel === 'moderate' ||
-        healthCheck.dizzy ||
-        healthCheck.weakness ||
-        healthCheck.chills ||
-        healthCheck.foulDischarge ||
-        healthCheck.prevEctopic
-      ) {
-        riskLevel = 'moderate';
-        const concerns = [];
-        if (healthCheck.bleedingSeverity === 'moderate') concerns.push("moderate bleeding");
-        if (healthCheck.painLevel === 'moderate') concerns.push("moderate pain/cramping");
-        if (healthCheck.dizzy || healthCheck.weakness) concerns.push("dizziness or physical weakness");
-        if (healthCheck.foulDischarge) concerns.push("abnormal discharge");
-        if (healthCheck.prevEctopic) concerns.push("previous ectopic pregnancy");
-
-        reasonText = `Some recovery concerns flagged: ${concerns.join(', ')}. While not in acute distress, we advise booking a follow-up assessment with Lagos Maternal Center within 24 to 48 hours to ensure complete recovery.`;
-      } else {
-        riskLevel = 'low';
-        reasonText = "Your recovery parameters appear stable. No primary red flags (such as hemorrhaging, high fever, or loss of consciousness) are present. Continue monitoring daily, rest, and keep hydrated.";
-      }
-
-      setAssessmentResult({
-        risk: riskLevel,
-        text: reasonText
-      });
-      setAssessing(false);
+    if (
+      healthCheck.bleedingSeverity === 'heavy' ||
+      healthCheck.soakingPads ||
+      healthCheck.fainting ||
+      healthCheck.painLevel === 'severe' ||
+      healthCheck.fever
+    ) {
+      riskLevel = 'high';
+      const concerns = [];
+      if (healthCheck.bleedingSeverity === 'heavy' || healthCheck.soakingPads) concerns.push("hemorrhaging indicators (heavy bleeding or soaking pads)");
+      if (healthCheck.fainting) concerns.push("fainting episodes");
+      if (healthCheck.painLevel === 'severe') concerns.push("severe abdominal pain");
+      if (healthCheck.fever) concerns.push("fever (potential systemic infection)");
       
-      // Speak result out loud for accessibility
+      reasonText = `Critical recovery indicators detected: ${concerns.join(', ')}. There is an elevated risk of severe post-pregnancy loss complications (e.g. retained products of conception, infection, or internal bleeding). Immediate medical attention is recommended.`;
+    } else if (
+      healthCheck.bleedingSeverity === 'moderate' ||
+      healthCheck.painLevel === 'moderate' ||
+      healthCheck.dizzy ||
+      healthCheck.weakness ||
+      healthCheck.chills ||
+      healthCheck.foulDischarge ||
+      healthCheck.prevEctopic
+    ) {
+      riskLevel = 'moderate';
+      const concerns = [];
+      if (healthCheck.bleedingSeverity === 'moderate') concerns.push("moderate bleeding");
+      if (healthCheck.painLevel === 'moderate') concerns.push("moderate pain/cramping");
+      if (healthCheck.dizzy || healthCheck.weakness) concerns.push("dizziness or physical weakness");
+      if (healthCheck.foulDischarge) concerns.push("abnormal discharge");
+      if (healthCheck.prevEctopic) concerns.push("previous ectopic pregnancy");
+
+      reasonText = `Some recovery concerns flagged: ${concerns.join(', ')}. While not in acute distress, we advise booking a follow-up assessment with Lagos Maternal Center within 24 to 48 hours to ensure complete recovery.`;
+    } else {
+      riskLevel = 'low';
+      reasonText = "Your recovery parameters appear stable. No primary red flags (such as hemorrhaging, high fever, or loss of consciousness) are present. Continue monitoring daily, rest, and keep hydrated.";
+    }
+
+    setAssessmentResult({
+      risk: riskLevel,
+      text: reasonText
+    });
+    setAssessing(false);
+    
+    if (!silent) {
       speakText(`Health check completed. Risk level is ${riskLevel}. ${reasonText}`);
-    }, 1200);
+    }
+  };
+
+  const getDynamicTips = () => {
+    const risk = assessmentResult?.risk || 'none';
+    if (risk === 'high') {
+      return [
+        { title: "Avoid physical exertion", text: "Complete bed rest is required. Avoid lifting anything heavier than a cup." },
+        { title: "Avoid hot baths", text: "Stick to warm showers. Heat can exacerbate bleeding." },
+        { title: "Drink warm broth", text: "Support hydration and electrolytes without chilling your stomach core." }
+      ];
+    } else if (risk === 'moderate') {
+      return [
+        { title: "Hydrate & Restore", text: "Aim for 8 to 10 glasses of water. Supporting blood volume recovery is critical." },
+        { title: "Eat iron-rich meals", text: "Incorporate spinach, beans, and eggs to replenish red blood cells." },
+        { title: "Avoid sexual activity", text: "Do not insert anything in the vagina to prevent pelvic infection risks." }
+      ];
+    } else {
+      return [
+        { title: "Streak maintenance", text: "Continue tracking water. 8 glasses a day supports tissue healing." },
+        { title: "Calorie density", text: "Consume at least 2,000 nutrients-packed calories daily to rebuild tissue energy." },
+        { title: "Gentle breathing", text: "Practice diaphragmatic breaths for 5 minutes morning and night." }
+      ];
+    }
   };
 
   const sections = [
@@ -249,7 +283,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={opt}
                   onClick={() => setHealthCheck(prev => ({ ...prev, bleedingSeverity: opt }))}
-                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.bleedingSeverity === opt ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.bleedingSeverity === opt ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {opt}
                 </button>
@@ -263,7 +297,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, soakingPads: val }))}
-                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.soakingPads === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.soakingPads === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -277,7 +311,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, bloodClots: val }))}
-                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.bloodClots === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.bloodClots === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -299,7 +333,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={opt}
                   onClick={() => setHealthCheck(prev => ({ ...prev, painLevel: opt }))}
-                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.painLevel === opt ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.painLevel === opt ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {opt}
                 </button>
@@ -313,7 +347,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, cramping: val }))}
-                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.cramping === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.cramping === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -327,7 +361,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, oneSidedPain: val }))}
-                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.oneSidedPain === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.oneSidedPain === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -349,7 +383,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, fainting: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.fainting === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.fainting === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -363,7 +397,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, dizzy: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.dizzy === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.dizzy === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -377,7 +411,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, weakness: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.weakness === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.weakness === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -399,7 +433,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, prevMiscarriage: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.prevMiscarriage === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.prevMiscarriage === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -413,7 +447,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, prevEctopic: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.prevEctopic === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.prevEctopic === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -435,7 +469,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, fever: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.fever === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.fever === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -449,7 +483,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, chills: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.chills === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.chills === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -463,7 +497,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, foulDischarge: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.foulDischarge === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.foulDischarge === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -485,7 +519,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, abortionProcedure: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.abortionProcedure === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.abortionProcedure === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -499,7 +533,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                 <button
                   key={val ? 'yes' : 'no'}
                   onClick={() => setHealthCheck(prev => ({ ...prev, recentMedication: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.recentMedication === val ? 'bg-primary text-white border-primary' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.recentMedication === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -525,7 +559,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
               <button
                 key={cond.k}
                 onClick={() => setHealthCheck(prev => ({ ...prev, [cond.k]: !prev[cond.k as keyof typeof prev] }))}
-                className={`py-2 px-3 text-xs font-black rounded-xl border transition-all ${healthCheck[cond.k as keyof typeof healthCheck] ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                className={`py-2 px-3 text-xs font-black rounded-xl border transition-all ${healthCheck[cond.k as keyof typeof healthCheck] ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
               >
                 {cond.l}
               </button>
@@ -538,10 +572,120 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
 
   return (
     <div className="px-4 sm:px-6 pb-40">
-      <div className="mb-8">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{t.recovery}</h2>
-        <p className="text-slate-500">Intelligent post-pregnancy recovery monitoring and supportive healing.</p>
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-1">{t.recovery}</h2>
+          <p className="text-xs text-slate-500">Post-loss reproductive symptoms, healing check-ins & monitoring.</p>
+        </div>
+        <Badge variant="outline" className="bg-[#0F4C81]/5 text-[#0F4C81] border-[#0F4C81]/20 font-black tracking-widest text-[9px] uppercase py-1 px-3 rounded-full flex items-center gap-1">
+          <Flame size={12} className="text-orange-500 fill-orange-500 animate-pulse" />
+          {streak} Day Streak
+        </Badge>
       </div>
+
+      {/* Responsive Streak & Daily Vitals check-in Panel */}
+      <Card className="p-5 border border-slate-100 rounded-[2rem] bg-white shadow-sm mb-6 space-y-4">
+        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+          <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-1.5">
+            <CheckCircle2 size={15} className="text-emerald-500" />
+            Daily Care & Vitals Check-in
+          </h4>
+          <span className="text-[10px] text-slate-400 font-extrabold uppercase">Today's Vitals</span>
+        </div>
+
+        <div className="space-y-3.5">
+          {/* Water Tracker */}
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <Droplets size={14} className="text-blue-500" /> Have you taken water?
+            </span>
+            <div className="flex gap-1 items-center">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(glass => (
+                <button
+                  key={glass}
+                  onClick={() => setWaterGlasses(glass)}
+                  className={`w-6 h-6.5 text-xs font-black rounded-md flex items-center justify-center transition-all ${
+                    waterGlasses >= glass 
+                      ? 'bg-blue-500 text-white shadow-md shadow-blue-200' 
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-400'
+                  }`}
+                  title={`${glass} Glass`}
+                >
+                  🥛
+                </button>
+              ))}
+              <span className="text-[10px] font-black text-slate-400 ml-1">{waterGlasses}/8</span>
+            </div>
+          </div>
+
+          {/* Meals & Calories Tracker */}
+          <div className="flex items-center justify-between py-1 border-t border-slate-50 pt-2.5">
+            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <Coffee size={14} className="text-amber-600" /> Taken nutrient meals today?
+            </span>
+            <div className="flex gap-1.5">
+              {[true, false].map(val => (
+                <button
+                  key={val ? 'yes' : 'no'}
+                  onClick={() => {
+                    setMealEaten(val);
+                    if (val) setStreak(p => p + 1);
+                  }}
+                  className={`py-1 px-3 text-[10px] font-black uppercase rounded-lg border transition-all ${
+                    mealEaten === val && val 
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
+                      : (mealEaten === val && !val 
+                          ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-100' 
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
+                  }`}
+                >
+                  {val ? 'Yes' : 'No'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Prescribed supplements */}
+          <div className="flex items-center justify-between py-1 border-t border-slate-50 pt-2.5">
+            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <Pill size={14} className="text-purple-600" /> Prescribed vitamins / meds taken?
+            </span>
+            <div className="flex gap-1.5">
+              {[true, false].map(val => (
+                <button
+                  key={val ? 'yes' : 'no'}
+                  onClick={() => setMedTaken(val)}
+                  className={`py-1 px-3 text-[10px] font-black uppercase rounded-lg border transition-all ${
+                    medTaken === val && val 
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
+                      : (medTaken === val && !val 
+                          ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-100' 
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
+                  }`}
+                >
+                  {val ? 'Yes' : 'No'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Advice/Tips Section based on AI Assessment */}
+        <div className="mt-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+          <div className="flex items-center gap-1.5 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
+            <Sparkles size={13} className="text-secondary" />
+            AI Recovery Advice & Tips
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            {getDynamicTips().map((tip, idx) => (
+              <div key={idx} className="p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
+                <span className="block font-black text-slate-800 text-[10.5px] uppercase tracking-wide mb-0.5">{tip.title}</span>
+                <span className="block text-[10.5px] text-slate-500 leading-normal font-medium">{tip.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
 
       {!supportMessage ? (
         <motion.div
@@ -675,6 +819,13 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
             >
               <Volume2 size={16} />
             </button>
+            <Button
+              onClick={() => { setShowModal(true); setModalStep('intro'); }}
+              variant="outline"
+              className="rounded-xl font-bold text-[10px] uppercase h-9 border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              Launch Assessment Flow
+            </Button>
           </div>
         </div>
 
@@ -746,7 +897,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
         {/* Submit Assessment trigger */}
         <div className="pt-2">
           <Button
-            onClick={runRiskAssessment}
+            onClick={() => runRiskAssessment(false)}
             className="w-full h-12 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-extrabold tracking-wider uppercase text-xs shadow-lg shadow-secondary/20"
           >
             {assessing ? 'AI Reassessing Recovery Risk...' : 'Run AI Health Check Assessment'}
@@ -866,6 +1017,133 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
            <ChevronRight className="text-slate-300" />
         </div>
       </div>
+
+      {/* Onboarding Dialog / Modal Assessment Flow */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop blur */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowModal(false)}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Box */}
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="relative bg-white rounded-[2.5rem] p-6 max-w-md w-full shadow-2xl border border-slate-100 z-10 overflow-hidden flex flex-col gap-6"
+            >
+              <button 
+                onClick={() => setShowModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100"
+              >
+                <X size={18} />
+              </button>
+
+              {modalStep === 'intro' ? (
+                <div className="space-y-6 text-center pt-4">
+                  <div className="w-16 h-16 bg-[#0F4C81]/10 rounded-[1.5rem] flex items-center justify-center text-[#0F4C81] mx-auto shadow-inner">
+                    <HeartPulse size={36} className="animate-pulse" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Recovery Symptom Screening</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                      CareBridge AI recommends running a recovery health test to verify post-loss healing, screen warning signs, and activate emergency clinical care coordinates if needed.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5 pt-2">
+                    <Button 
+                      onClick={() => setModalStep(0)}
+                      className="w-full h-11 bg-[#0F4C81] hover:bg-[#0F4C81]/95 text-white font-extrabold rounded-2xl uppercase tracking-wider text-[11px]"
+                    >
+                      Start Recovery Test
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        runRiskAssessment(true);
+                        setShowModal(false);
+                      }}
+                      variant="outline"
+                      className="w-full h-11 border-slate-200 text-[#0F4C81] font-extrabold rounded-2xl uppercase tracking-wider text-[11px]"
+                    >
+                      Direct AI Assessment
+                    </Button>
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="text-slate-400 hover:text-slate-600 font-bold text-xs uppercase tracking-wider mt-1 transition-colors"
+                    >
+                      Take Test Later
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6 pt-2">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Step {modalStep + 1} of 7</span>
+                      <h4 className="text-base font-black text-[#0F4C81]">{sections[modalStep].title}</h4>
+                    </div>
+                    <Badge variant="outline" className="border-slate-200 text-slate-500 font-bold uppercase text-[9px]">
+                      Health Test
+                    </Badge>
+                  </div>
+
+                  {/* Progressive indicator */}
+                  <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-1 bg-[#0F4C81] rounded-full transition-all duration-300" 
+                      style={{ width: `${((modalStep + 1) / 7) * 100}%` }}
+                    />
+                  </div>
+
+                  {/* Section questions */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100/50 min-h-[160px] flex flex-col justify-center">
+                    {sections[modalStep].content}
+                  </div>
+
+                  {/* Navigation Buttons */}
+                  <div className="flex gap-2">
+                    {modalStep > 0 && (
+                      <Button
+                        onClick={() => setModalStep(modalStep - 1)}
+                        variant="outline"
+                        className="flex-1 h-10 border-slate-200 text-slate-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px]"
+                      >
+                        Back
+                      </Button>
+                    )}
+                    {modalStep < 6 ? (
+                      <Button
+                        onClick={() => setModalStep(modalStep + 1)}
+                        className="flex-1 h-10 bg-[#0F4C81] hover:bg-[#0F4C81]/95 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px]"
+                      >
+                        Next Step
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => {
+                          runRiskAssessment(false);
+                          setShowModal(false);
+                        }}
+                        className="flex-1 h-10 bg-secondary hover:bg-secondary/90 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px] shadow-lg shadow-secondary/20"
+                      >
+                        Submit Test
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
