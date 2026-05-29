@@ -252,6 +252,7 @@ export function Header({ language, setLanguage, prefs, onPrefsChange, session, o
         {/* Language selector toggle */}
         <div className="relative">
           <button 
+            id="tour-language"
             onClick={() => setShowLangs(!showLangs)}
             className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary transition-colors"
           >
@@ -287,6 +288,7 @@ export function Header({ language, setLanguage, prefs, onPrefsChange, session, o
 
         {/* Voice Guide Toggle */}
         <button 
+          id="tour-voice"
           onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
           className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${
             prefs.voiceGuided 
@@ -300,6 +302,7 @@ export function Header({ language, setLanguage, prefs, onPrefsChange, session, o
 
         {/* SOS Emergency button */}
         <button 
+          id="tour-sos"
           onClick={() => alert("Initiating emergency clinical dispatch...")}
           className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500"
         >

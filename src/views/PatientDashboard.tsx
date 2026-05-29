@@ -139,7 +139,7 @@ export function PatientDashboard({
 
       {/* Main AI Assessment Card */}
       <section>
-        <Card className="p-6 border-none bg-gradient-to-tr from-[#0F4C81] to-[#1e619c] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+        <Card id="tour-start-triage" className="p-6 border-none bg-gradient-to-tr from-[#0F4C81] to-[#1e619c] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-6">
               <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/15">

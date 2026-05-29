@@ -7,6 +7,7 @@ import { CHWDashboard } from './views/CHWDashboard';
 import { Assessment } from './views/Assessment';
 import { Referrals } from './views/Referrals';
 import { Recovery } from './views/Recovery';
+import { OnboardingTour } from './components/OnboardingTour';
 import { AppView, Language, UserPreferences, UserSession } from './types';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
@@ -15,6 +16,7 @@ export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [view, setView] = useState<AppView>('login');
   const [user, setUser] = useState<any>(null);
+  const [tourStep, setTourStep] = useState<number | null>(null);
   const [prefs, setPrefs] = useState<UserPreferences>({
     language: 'en',
     whatsappEnabled: false,
@@ -37,11 +39,39 @@ export default function App() {
   const handleLogin = (newSession: UserSession) => {
     setSession(newSession);
     setView(newSession.role === 'patient' ? 'patient-dashboard' : 'chw-dashboard');
+    
+    // Automatically trigger live walkthrough for patients on first login
+    if (newSession.role === 'patient') {
+      const isCompleted = localStorage.getItem('carebridge_tour_completed');
+      if (!isCompleted) {
+        // Delay slightly for dashboard layout initialization
+        setTimeout(() => {
+          setTourStep(0);
+        }, 800);
+      }
+    }
   };
 
   const handleSignOut = () => {
     setSession(null);
+    setTourStep(null);
     setView('login');
+  };
+
+  const handleNextTourStep = () => {
+    setTourStep(prev => {
+      if (prev === null) return null;
+      if (prev >= 3) {
+        localStorage.setItem('carebridge_tour_completed', 'true');
+        return null;
+      }
+      return prev + 1;
+    });
+  };
+
+  const handleSkipTour = () => {
+    localStorage.setItem('carebridge_tour_completed', 'true');
+    setTourStep(null);
   };
 
   const renderView = () => {
@@ -148,6 +178,15 @@ export default function App() {
           Empowering Maternal Health Intelligence
         </p>
       </footer>
+
+      {/* Onboarding Tour overlay component */}
+      {tourStep !== null && (
+        <OnboardingTour 
+          step={tourStep} 
+          onNext={handleNextTourStep} 
+          onSkip={handleSkipTour} 
+        />
+      )}
     </div>
   );
 }
