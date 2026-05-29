@@ -8,9 +8,32 @@ app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-model = joblib.load(os.path.join(BASE_DIR, 'epl_model.pkl'))
-scaler = joblib.load(os.path.join(BASE_DIR, 'epl_scaler.pkl'))
-feature_columns = joblib.load(os.path.join(BASE_DIR, 'feature_columns.pkl'))
+class ModelManager:
+    def __init__(self):
+        self.model_path = os.path.join(BASE_DIR, 'epl_model.pkl')
+        self.scaler_path = os.path.join(BASE_DIR, 'epl_scaler.pkl')
+        self.feature_columns_path = os.path.join(BASE_DIR, 'feature_columns.pkl')
+        self.last_modified = 0
+        self.model = None
+        self.scaler = None
+        self.feature_columns = None
+
+    def load_if_changed(self):
+        try:
+            current_mtime = os.path.getmtime(self.model_path)
+            if self.model is None or current_mtime > self.last_modified:
+                print("New model detected. Reloading...")
+                self.model = joblib.load(self.model_path)
+                self.scaler = joblib.load(self.scaler_path)
+                self.feature_columns = joblib.load(self.feature_columns_path)
+                self.last_modified = current_mtime
+        except Exception as e:
+            print(f"Error loading model: {e}")
+            if self.model is None:
+                raise e
+
+model_manager = ModelManager()
+model_manager.load_if_changed()
 
 def identify_care_gaps(data):
     gaps = []
@@ -98,6 +121,7 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        model_manager.load_if_changed()
         data = request.get_json()
 
         if not data:
@@ -129,11 +153,11 @@ def predict():
                 data[key] = value
 
         for key in list(data.keys()):
-            if key not in defaults and key not in feature_columns:
+            if key not in defaults and key not in model_manager.feature_columns:
                 data.pop(key)
 
         input_df = pd.DataFrame([data])
-        input_df = input_df[feature_columns]
+        input_df = input_df[model_manager.feature_columns]
 
         for col in input_df.columns:
             if input_df[col].dtype == 'object':
@@ -148,9 +172,9 @@ def predict():
             except Exception:
                 input_df[col] = 0
 
-        input_scaled = scaler.transform(input_df)
-        prediction = model.predict(input_scaled)[0]
-        probability = model.predict_proba(input_scaled)[0][1]
+        input_scaled = model_manager.scaler.transform(input_df)
+        prediction = model_manager.model.predict(input_scaled)[0]
+        probability = model_manager.model.predict_proba(input_scaled)[0][1]
 
         if probability >= 0.7:
             risk_level = "Low Risk"
