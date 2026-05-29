@@ -74,69 +74,10 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
         });
       });
 
-      // Default mock records if Firestore collection is empty
-      if (dataList.length === 0) {
-        setPatients([
-          {
-            id: "P-4821",
-            name: "Chioma Adebayo",
-            age: 28,
-            location: "Lagos Mainland",
-            date: new Date(Date.now() - 3600000 * 2).toLocaleDateString(),
-            riskLevel: "Medium",
-            prediction: 1,
-            probability: 0.52,
-            action: "Confirm follow-up scheduled. Call within 48 hours to verify status.",
-            careGaps: [
-              "Patient was not referred for further care — referral is a major indicator of follow-up",
-              "Partner was not included in post-loss counselling"
-            ],
-            equityFlags: ["Socioeconomic status below average — cost is a care barrier"],
-            mentalHealthFlag: false,
-            mentalHealthNote: "Standard support guidelines.",
-            followUpRecommendation: "Contact patient within 2 days to verify schedule."
-          },
-          {
-            id: "P-1934",
-            name: "Amara Nwachukwu",
-            age: 32,
-            location: "Ikorodu (Rural)",
-            date: new Date(Date.now() - 3600000 * 24).toLocaleDateString(),
-            riskLevel: "High",
-            prediction: 0,
-            probability: 0.88,
-            action: "DO NOT DISCHARGE without a confirmed appointment. Initiate Immediate Intervention protocol.",
-            careGaps: [
-              "No contraceptive counselling completed",
-              "Discharged in less than 12 hours"
-            ],
-            equityFlags: ["Rural location transport barrier", "No formal referral system at origin facility"],
-            mentalHealthFlag: true,
-            mentalHealthNote: "Severe anxiety risk. Arrange professional grief counselling.",
-            followUpRecommendation: "Dispatch CHW for home visit within 24 hours."
-          },
-          {
-            id: "P-7721",
-            name: "Fatima Bello",
-            age: 24,
-            location: "Lekki Phase 1",
-            date: new Date(Date.now() - 3600000 * 48).toLocaleDateString(),
-            riskLevel: "Low",
-            prediction: 1,
-            probability: 0.95,
-            action: "Standard follow-up schedule in 2 weeks. Document discharge status.",
-            careGaps: [],
-            equityFlags: [],
-            mentalHealthFlag: false,
-            mentalHealthNote: "No specific risk factors.",
-            followUpRecommendation: "Confirm routine follow-up appointment within 14 days."
-          }
-        ]);
-      } else {
-        setPatients(dataList);
-      }
+      setPatients(dataList);
     }, (error) => {
-      console.warn("Screening onSnapshot failed, using offline mock data:", error);
+      console.warn("Screening onSnapshot failed:", error);
+      setPatients([]);
     });
 
     // 2. Listen to notifications
@@ -147,28 +88,10 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
         notesList.push({ id: doc.id, ...doc.data() });
       });
 
-      if (notesList.length === 0) {
-        setNotifications([
-          {
-            id: "n-1",
-            patientName: "Amara Nwachukwu",
-            riskLevel: "High",
-            message: "Critical Case Assigned: High risk score flagged on post-loss recovery test.",
-            timestamp: new Date().toISOString()
-          },
-          {
-            id: "n-2",
-            patientName: "Chioma Adebayo",
-            riskLevel: "Medium",
-            message: "Assigned follow-up case details registered by patient.",
-            timestamp: new Date(Date.now() - 3600000).toISOString()
-          }
-        ]);
-      } else {
-        setNotifications(notesList);
-      }
+      setNotifications(notesList);
     }, (error) => {
-      console.warn("Notifications onSnapshot failed, using offline mock:", error);
+      console.warn("Notifications onSnapshot failed:", error);
+      setNotifications([]);
     });
 
     return () => {
@@ -212,16 +135,16 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
 
   // Chart data
   const riskDistribution = [
-    { name: 'High Risk', value: highRiskCount || 1, color: '#ef4444' },
-    { name: 'Med Risk', value: medRiskCount || 2, color: '#f59e0b' },
-    { name: 'Low Risk', value: (totalScreened - highRiskCount - medRiskCount) || 3, color: '#10b981' }
-  ];
+    { name: 'High Risk', value: highRiskCount, color: '#ef4444' },
+    { name: 'Med Risk', value: medRiskCount, color: '#f59e0b' },
+    { name: 'Low Risk', value: Math.max(0, totalScreened - highRiskCount - medRiskCount), color: '#10b981' }
+  ].filter(item => item.value > 0);
 
   const symptomTrends = [
-    { name: 'Bleeding', count: patients.filter(p => p.careGaps.length > 0).length + 3 },
-    { name: 'Severe Pain', count: patients.filter(p => p.mentalHealthFlag).length + 2 },
-    { name: 'No Partner Counsel', count: patients.filter(p => p.careGaps.some(g => g.includes('partner'))).length + 4 },
-    { name: 'No Referral Note', count: patients.filter(p => p.careGaps.some(g => g.includes('referral'))).length + 2 }
+    { name: 'Bleeding', count: patients.filter(p => p.riskLevel === 'High' || p.riskLevel === 'Medium').length },
+    { name: 'Severe Pain', count: patients.filter(p => p.mentalHealthFlag).length },
+    { name: 'No Partner Counsel', count: patients.filter(p => p.careGaps.some(g => g.toLowerCase().includes('partner'))).length },
+    { name: 'No Referral Note', count: patients.filter(p => p.careGaps.some(g => g.toLowerCase().includes('referral'))).length }
   ];
 
   return (
@@ -429,45 +352,53 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
             {/* Risk Distribution Chart */}
             <Card className="p-4 border-slate-100 rounded-3xl bg-white border">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Risk Level Breakdown</h4>
-              <div className="h-44 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={riskDistribution}
-                      innerRadius={45}
-                      outerRadius={65}
-                      paddingAngle={6}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {riskDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', fontSize: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="h-44 w-full flex items-center justify-center">
+                {totalScreened === 0 ? (
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No cases registered</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={riskDistribution}
+                        innerRadius={45}
+                        outerRadius={65}
+                        paddingAngle={6}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {riskDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', fontSize: '10px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </div>
               <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest mt-2 px-2">
                 <span className="text-rose-500">🔴 High ({highRiskCount})</span>
                 <span className="text-amber-500">🟡 Med ({medRiskCount})</span>
-                <span className="text-emerald-500">🟢 Low ({totalScreened - highRiskCount - medRiskCount})</span>
+                <span className="text-emerald-500">🟢 Low ({Math.max(0, totalScreened - highRiskCount - medRiskCount)})</span>
               </div>
             </Card>
 
             {/* Symptom / Care Gap Counts */}
             <Card className="p-4 border-slate-100 rounded-3xl bg-white border">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Symptom Frequency</h4>
-              <div className="h-44 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={symptomTrends} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" tick={{ fontSize: 7, fontWeight: 700 }} />
-                    <YAxis tick={{ fontSize: 7, fontWeight: 700 }} />
-                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', fontSize: '10px' }} />
-                    <Bar dataKey="count" fill="#0F4C81" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="h-44 w-full flex items-center justify-center">
+                {totalScreened === 0 ? (
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No cases registered</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={symptomTrends} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" tick={{ fontSize: 7, fontWeight: 700 }} />
+                      <YAxis tick={{ fontSize: 7, fontWeight: 700 }} />
+                      <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', fontSize: '10px' }} />
+                      <Bar dataKey="count" fill="#0F4C81" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </Card>
           </div>
