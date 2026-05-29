@@ -1,10 +1,10 @@
 {
-  "projectId": "learned-gecko-2cf5x",
-  "appId": "1:996175142134:web:48e66d34088421b827a0d7",
-  "apiKey": "AIzaSyCnkGyGG-rIvDOrYUF976riun5PP9OaTvc",
-  "authDomain": "learned-gecko-2cf5x.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-24f5967a-b0fc-4949-8ab4-7835b13e3959",
-  "storageBucket": "learned-gecko-2cf5x.firebasestorage.app",
-  "messagingSenderId": "996175142134",
-  "measurementId": ""
+  "projectId": "health-care-5eea1",
+  "appId": "1:607057671820:web:882384dd95ad0eb51eada9",
+  "apiKey": "AIzaSyAvk_wxR2Dt_Vou4nUGGxSNdlwDdOgoDGo",
+  "authDomain": "health-care-5eea1.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "health-care-5eea1.firebasestorage.app",
+  "messagingSenderId": "607057671820",
+  "measurementId": "G-1S78LF8S2Y"
 }
