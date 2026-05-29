@@ -11,16 +11,19 @@ import {
   AlertCircle,
   Search,
   Navigation as NavIcon,
-  Star
+  Star,
+  ArrowLeft
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
 interface ReferralsProps {
   language: Language;
+  onBack?: () => void;
 }
 
-export function Referrals({ language }: ReferralsProps) {
+export function Referrals({ language, onBack }: ReferralsProps) {
   const t = translations[language];
   const [notifiedClinics, setNotifiedClinics] = React.useState<string[]>([]);
   
@@ -66,6 +69,14 @@ export function Referrals({ language }: ReferralsProps) {
 
   return (
     <div className="px-4 sm:px-8 pb-40 pt-6">
+      {onBack && (
+        <button 
+          onClick={onBack}
+          className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 bg-white shadow-sm mb-6 hover:bg-slate-50 transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </button>
+      )}
       <div className="mb-8">
         <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{t.referrals}</h2>
         <p className="text-slate-500 font-medium">CareBridge AI coordinates your clinical path based on urgency and accessibility.</p>
