@@ -149,7 +149,7 @@ export default function App() {
           onSignOut={handleSignOut}
         />
         
-        <main className="max-w-xl mx-auto w-full relative py-6 md:py-12">
+        <main className="max-w-xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full relative py-6 md:py-8 px-4 sm:px-6 md:px-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={view}

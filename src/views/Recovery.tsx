@@ -809,575 +809,584 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         </Badge>
       </div>
 
-      {/* Responsive Streak & Daily Vitals check-in Panel */}
-      <Card className="p-5 border border-slate-100 rounded-[2rem] bg-white shadow-sm mb-6 space-y-4">
-        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
-          <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-1.5">
-            <CheckCircle2 size={15} className="text-emerald-500" />
-            Daily Care & Vitals Check-in
-          </h4>
-          <span className="text-[10px] text-slate-400 font-extrabold uppercase">Today's Vitals</span>
-        </div>
-
-        <div className="space-y-3.5">
-          {/* Water Tracker */}
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <Droplets size={14} className="text-blue-500" /> Have you taken water?
-            </span>
-            <div className="flex gap-1 items-center">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(glass => (
-                <button
-                  key={glass}
-                  onClick={() => setWaterGlasses(glass)}
-                  className={`w-6 h-6.5 text-xs font-black rounded-md flex items-center justify-center transition-all ${
-                    waterGlasses >= glass 
-                      ? 'bg-blue-500 text-white shadow-md shadow-blue-200' 
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-400'
-                  }`}
-                  title={`${glass} Glass`}
-                >
-                  🥛
-                </button>
-              ))}
-              <span className="text-[10px] font-black text-slate-400 ml-1">{waterGlasses}/8</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Daily Care & Symptoms */}
+        <div className="lg:col-span-7 space-y-6">
+          {/* Responsive Streak & Daily Vitals check-in Panel */}
+          <Card className="p-5 border border-slate-100 rounded-[2rem] bg-white shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+              <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-1.5">
+                <CheckCircle2 size={15} className="text-emerald-500" />
+                Daily Care & Vitals Check-in
+              </h4>
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase">Today's Vitals</span>
             </div>
-          </div>
 
-          {/* Meals & Calories Tracker */}
-          <div className="flex items-center justify-between py-1 border-t border-slate-50 pt-2.5">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <Coffee size={14} className="text-amber-600" /> Taken nutrient meals today?
-            </span>
-            <div className="flex gap-1.5">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => {
-                    setMealEaten(val);
-                    if (val) setStreak(p => p + 1);
-                  }}
-                  className={`py-1 px-3 text-[10px] font-black uppercase rounded-lg border transition-all ${
-                    mealEaten === val && val 
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
-                      : (mealEaten === val && !val 
-                          ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-100' 
-                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
-                  }`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Prescribed supplements */}
-          <div className="flex items-center justify-between py-1 border-t border-slate-50 pt-2.5">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <Pill size={14} className="text-purple-600" /> Prescribed vitamins / meds taken?
-            </span>
-            <div className="flex gap-1.5">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setMedTaken(val)}
-                  className={`py-1 px-3 text-[10px] font-black uppercase rounded-lg border transition-all ${
-                    medTaken === val && val 
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
-                      : (medTaken === val && !val 
-                          ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-100' 
-                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
-                  }`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Dynamic Advice/Tips Section based on AI Assessment */}
-        <div className="mt-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
-          <div className="flex items-center gap-1.5 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
-            <Sparkles size={13} className="text-secondary" />
-            AI Recovery Advice & Tips
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            {getDynamicTips().map((tip, idx) => (
-              <div key={idx} className="p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
-                <span className="block font-black text-slate-800 text-[10.5px] uppercase tracking-wide mb-0.5">{tip.title}</span>
-                <span className="block text-[10.5px] text-slate-500 leading-normal font-medium">{tip.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card>
-
-      {!supportMessage ? (
-        <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           className="space-y-8"
-        >
-          <Card className="p-5 sm:p-10 border-none bg-slate-900 text-white rounded-[2.25rem] sm:rounded-[3rem] shadow-[0_32px_64px_-15px_rgba(15,76,129,0.3)] relative overflow-hidden group">
-             <div className="relative z-10">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-black tracking-tight">How are you heart-today?</h3>
-                  <button 
-                    onClick={simulateVoiceSpeak}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isSpeaking ? 'bg-secondary text-white' : 'bg-white/10 text-white/40'}`}
-                  >
-                    <Volume2 size={20} className={isSpeaking ? 'animate-pulse' : ''} />
-                  </button>
-                </div>
-                <p className="text-slate-400 text-sm font-medium mb-10 leading-relaxed italic">"Take a deep breath. Your body and heart deserve space to heal today."</p>
-                
-                <div className="flex justify-between items-center mb-10">
-                  {[
-                    { v: 1, icon: Frown },
-                    { v: 2, icon: Meh },
-                    { v: 3, icon: Smile },
-                    { v: 4, icon: Heart },
-                    { v: 5, icon: Sparkles }
-                  ].map(m => (
+            <div className="space-y-3.5">
+              {/* Water Tracker */}
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Droplets size={14} className="text-blue-500" /> Have you taken water?
+                </span>
+                <div className="flex gap-1 items-center">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(glass => (
                     <button
-                      key={m.v}
-                      onClick={() => setMood(m.v)}
-                      className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center transition-all shadow-lg ${
-                        mood === m.v 
-                          ? 'bg-secondary text-white scale-110 shadow-secondary/40 ring-4 ring-secondary/20' 
-                          : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
+                      key={glass}
+                      onClick={() => setWaterGlasses(glass)}
+                      className={`w-6 h-6.5 text-xs font-black rounded-md flex items-center justify-center transition-all ${
+                        waterGlasses >= glass 
+                          ? 'bg-blue-500 text-white shadow-md shadow-blue-200' 
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-400'
+                      }`}
+                      title={`${glass} Glass`}
+                    >
+                      🥛
+                    </button>
+                  ))}
+                  <span className="text-[10px] font-black text-slate-400 ml-1">{waterGlasses}/8</span>
+                </div>
+              </div>
+
+              {/* Meals & Calories Tracker */}
+              <div className="flex items-center justify-between py-1 border-t border-slate-50 pt-2.5">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Coffee size={14} className="text-amber-600" /> Taken nutrient meals today?
+                </span>
+                <div className="flex gap-1.5">
+                  {[true, false].map(val => (
+                    <button
+                      key={val ? 'yes' : 'no'}
+                      onClick={() => {
+                        setMealEaten(val);
+                        if (val) setStreak(p => p + 1);
+                      }}
+                      className={`py-1 px-3 text-[10px] font-black uppercase rounded-lg border transition-all ${
+                        mealEaten === val && val 
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
+                          : (mealEaten === val && !val 
+                              ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-100' 
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
                       }`}
                     >
-                      <m.icon size={28} />
+                      {val ? 'Yes' : 'No'}
                     </button>
                   ))}
                 </div>
+              </div>
 
-                <div className="bg-white/5 rounded-[2rem] p-6 mb-8 border border-white/10 focus-within:border-secondary/40 transition-colors">
-                  <p className="text-[10px] uppercase font-black tracking-[0.2em] text-secondary mb-4">Current Phase: Early Recovery</p>
-                  <textarea
-                    placeholder="Share a private thought or feeling..."
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="w-full bg-transparent text-sm focus:outline-none placeholder:text-white/20 min-h-[120px] font-medium resize-none"
-                  />
-                </div>
-
-                <Button 
-                  onClick={handleLog}
-                  disabled={mood === null || loading}
-                  className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 font-black transition-all shadow-xl shadow-black/20 text-base uppercase tracking-wider"
-                >
-                  {loading ? 'Processing...' : 'Log Daily Reflection'}
-                </Button>
-             </div>
-             
-             <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
-                <Wind size={180} strokeWidth={1} />
-             </div>
-          </Card>
-
-          <div className="grid grid-cols-2 gap-4 sm:gap-6">
-            <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-               <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
-                  <Bird size={24} />
-               </div>
-               <span className="text-xs font-black text-slate-800 uppercase tracking-widest leading-tight">Coping<br/>Resources</span>
-            </button>
-            <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-               <div className="w-12 h-12 bg-secondary/10 rounded-2xl flex items-center justify-center text-secondary shadow-inner">
-                  <Cloud size={24} />
-               </div>
-               <span className="text-xs font-black text-slate-800 uppercase tracking-widest leading-tight">Healing<br/>Meditation</span>
-            </button>
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col gap-6"
-        >
-          <Card className="p-5 sm:p-10 border-none bg-emerald-50 rounded-[2.25rem] sm:rounded-[3rem] relative shadow-lg overflow-hidden">
-             <div className="relative z-10">
-                <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center text-emerald-500 mb-8 shadow-xl shadow-emerald-900/10">
-                   <Sparkles size={32} />
-                </div>
-                <h3 className="text-2xl font-black text-emerald-900 mb-6 tracking-tight">CareBridge Support</h3>
-                <p className="text-emerald-800/80 leading-relaxed italic text-xl mb-12 font-medium">
-                  "{supportMessage}"
-                </p>
-                <div className="flex flex-col gap-3">
-                  <Button 
-                    className="rounded-2xl bg-emerald-600 text-white h-12 font-black hover:bg-emerald-700 transition-all uppercase tracking-widest text-sm shadow-xl shadow-emerald-200"
-                    onClick={() => { setSupportMessage(null); setMood(null); setNote(''); }}
-                  >
-                    Done for Today
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={simulatePostToWhatsapp}
-                    className="text-emerald-600/60 font-bold text-xs uppercase"
-                  >
-                    Share with Counselor
-                  </Button>
-                </div>
-             </div>
-             
-             {/* Abstract organic shape */}
-             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Recovery Health Check Upgraded Section */}
-      <div className="mt-12 space-y-6">
-        <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-          <div>
-            <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Recovery Health Check</h4>
-            <p className="text-xs text-slate-500">Post-loss reproductive symptoms & danger signs tracker</p>
-          </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => speakText("Recovery Health Check. We will evaluate seven short sections for bleeding, pain, and general indicators to monitor your post-loss recovery.")}
-              className={`w-9 h-9 rounded-full flex items-center justify-center border border-slate-100 bg-white text-slate-600 hover:bg-slate-50 transition-all ${isSpeaking ? 'bg-secondary/10 border-secondary text-secondary' : ''}`}
-            >
-              <Volume2 size={16} />
-            </button>
-            <Button
-              onClick={() => { setShowModal(true); setModalStep('intro'); }}
-              variant="outline"
-              className="rounded-xl font-bold text-[10px] uppercase h-9 border-slate-200 text-slate-600 hover:bg-slate-50"
-            >
-              Launch Assessment Flow
-            </Button>
-          </div>
-        </div>
-
-        {/* Expandable Accordion System */}
-        <div className="space-y-3">
-          {sections.map((sect, idx) => {
-            const Icon = sect.icon;
-            const isOpen = activeSection === idx;
-            return (
-              <Card 
-                key={idx} 
-                className={`border border-slate-100 overflow-hidden transition-all shadow-sm ${
-                  isOpen ? 'ring-2 ring-[#0F4C81]/10 border-[#0F4C81]/25 bg-slate-50/20' : 'bg-white hover:bg-slate-50/50'
-                }`}
-              >
-                <button
-                  onClick={() => setActiveSection(isOpen ? null : idx)}
-                  className="w-full px-5 py-4 flex items-center justify-between font-bold text-slate-800 text-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isOpen ? 'bg-[#0F4C81] text-white' : 'bg-slate-100 text-slate-500'}`}>
-                      <Icon size={16} />
-                    </div>
-                    <span className="font-extrabold">{sect.title}</span>
-                  </div>
-                  <ChevronRight size={16} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-90 text-[#0F4C81]' : ''}`} />
-                </button>
-                
-                {isOpen && (
-                  <div className="px-5 pb-5 pt-2 border-t border-slate-50 space-y-4">
-                    {/* Voice Access Panel */}
-                    <div className="flex gap-2 justify-end mb-2 border-b border-slate-100/50 pb-2">
-                      <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mr-auto flex items-center gap-1.5">
-                        <Volume2 size={10} /> Voice Guidance Active
-                      </span>
-                      <button 
-                        onClick={() => playVoiceGuideForSection(idx)}
-                        className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
-                        title="Read instructions out loud"
-                      >
-                        <Volume2 size={12} />
-                      </button>
-                      <button 
-                        onClick={() => startSpeechRecognitionForSection(idx)}
-                        className={`p-1 rounded-md transition-colors ${isListening ? 'bg-primary/20 text-primary animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-500'}`}
-                        title="Answer by voice"
-                      >
-                        <Mic size={12} />
-                      </button>
-                    </div>
-
-                    {sect.content}
-                    
-                    <div className="flex justify-end pt-2">
-                      <Button
-                        onClick={() => setActiveSection(idx === sections.length - 1 ? null : idx + 1)}
-                        className="bg-[#0F4C81] text-white hover:bg-[#0F4C81]/90 font-bold text-[10px] h-8 rounded-xl px-3 uppercase tracking-wider"
-                      >
-                        {idx === sections.length - 1 ? 'Finish Section' : 'Next Section'}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Submit Assessment trigger */}
-        <div className="pt-2">
-          <Button
-            onClick={() => runRiskAssessment(false)}
-            className="w-full h-12 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-extrabold tracking-wider uppercase text-xs shadow-lg shadow-secondary/20"
-          >
-            {assessing ? 'AI Reassessing Recovery Risk...' : 'Run AI Health Check Assessment'}
-          </Button>
-        </div>
-
-        {/* AI Output Result Card */}
-        {assessmentResult && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="space-y-4"
-          >
-            <Card className={`p-5 rounded-[2rem] border relative overflow-hidden ${
-              assessmentResult.risk === 'high' 
-                ? 'bg-rose-50/70 border-rose-200 text-rose-950' 
-                : (assessmentResult.risk === 'moderate' 
-                    ? 'bg-amber-50/70 border-amber-200 text-amber-950' 
-                    : 'bg-emerald-50/70 border-emerald-200 text-emerald-950')
-            }`}>
-              <div className="relative z-10">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">AI Recovery Risk Assessment</span>
-                  <Badge className={`uppercase text-[9px] font-black tracking-wider px-3.5 py-0.5 rounded-full ${
-                    assessmentResult.risk === 'high' 
-                      ? 'bg-rose-600 text-white' 
-                      : (assessmentResult.risk === 'moderate' 
-                          ? 'bg-amber-500 text-white' 
-                          : 'bg-emerald-600 text-white')
-                  }`}>
-                    {assessmentResult.risk} RISK
-                  </Badge>
-                </div>
-                
-                <h4 className="font-extrabold text-sm mb-2 flex items-center gap-2">
-                  <HeartPulse size={16} />
-                  CareBridge AI Clinical Insight
-                </h4>
-                <p className="text-xs leading-relaxed mb-4 font-bold text-slate-800">
-                  {assessmentResult.text}
-                </p>
-
-                {/* Follow-up Likelihood Indicator */}
-                {assessmentResult.prediction !== undefined && assessmentResult.probability !== undefined && (
-                  <div className="mt-4 p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 space-y-1">
-                    <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                      <span>Follow-up Likelihood</span>
-                      <span className={assessmentResult.prediction === 1 ? "text-emerald-600" : "text-amber-600"}>
-                        {assessmentResult.prediction === 1 ? 'Likely' : 'Unlikely'} ({Math.round(assessmentResult.probability * 100)}%)
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-200/50 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${assessmentResult.prediction === 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                        style={{ width: `${assessmentResult.probability * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Clinical Action Notice */}
-                {assessmentResult.action && (
-                  <div className="mt-3 p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-1.5 shadow-sm">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Clinical Action Required</span>
-                    <p className="text-[11px] font-medium leading-normal">{assessmentResult.action}</p>
-                  </div>
-                )}
-
-                {/* Care Gaps */}
-                {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
-                  <div className="mt-3 p-4 bg-amber-50 border border-amber-200/40 rounded-2xl space-y-2">
-                    <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider block">⚠️ Identified Care Gaps ({assessmentResult.careGaps.length})</span>
-                    <ul className="space-y-1.5">
-                      {assessmentResult.careGaps.map((gap: string, i: number) => (
-                        <li key={i} className="text-[10.5px] font-bold text-amber-900 leading-normal flex items-start gap-2">
-                          <span className="shrink-0 text-amber-500">•</span>
-                          <span>{gap}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Equity Barriers */}
-                {assessmentResult.equityFlags && assessmentResult.equityFlags.length > 0 && (
-                  <div className="mt-3 p-4 bg-blue-50 border border-blue-200/40 rounded-2xl space-y-2">
-                    <span className="text-[10px] font-black text-[#0F4C81] uppercase tracking-wider block">📍 Equity Barriers Detected</span>
-                    <ul className="space-y-1.5">
-                      {assessmentResult.equityFlags.map((flag: string, i: number) => (
-                        <li key={i} className="text-[10.5px] font-bold text-slate-700 leading-normal flex items-start gap-2">
-                          <span className="shrink-0 text-primary">•</span>
-                          <span>{flag}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Mental Health Flag */}
-                {assessmentResult.mentalHealthFlag && (
-                  <div className="mt-3 p-4 bg-purple-50 border border-purple-200/40 rounded-2xl space-y-2 mb-4">
-                    <span className="text-[10px] font-black text-purple-800 uppercase tracking-wider block">🧠 Mental Health Support Flagged</span>
-                    <p className="text-[11px] font-bold text-purple-900 leading-normal">{assessmentResult.mentalHealthNote}</p>
-                    <button 
-                      onClick={() => alert("Connecting to CareBridge counseling support services...")}
-                      className="mt-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-colors shadow-sm"
+              {/* Prescribed supplements */}
+              <div className="flex items-center justify-between py-1 border-t border-slate-50 pt-2.5">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Pill size={14} className="text-purple-600" /> Prescribed vitamins / meds taken?
+                </span>
+                <div className="flex gap-1.5">
+                  {[true, false].map(val => (
+                    <button
+                      key={val ? 'yes' : 'no'}
+                      onClick={() => setMedTaken(val)}
+                      className={`py-1 px-3 text-[10px] font-black uppercase rounded-lg border transition-all ${
+                        medTaken === val && val 
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
+                          : (medTaken === val && !val 
+                              ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-100' 
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
+                      }`}
                     >
-                      Connect to Counselor
+                      {val ? 'Yes' : 'No'}
                     </button>
-                  </div>
-                )}
-
-                {/* WhatsApp follow-up checkbox */}
-                <div className="p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50 flex items-center gap-3 mt-4">
-                  <input
-                    type="checkbox"
-                    id="whatsappOptIn"
-                    checked={whatsappOptIn}
-                    onChange={(e) => setWhatsappOptIn(e.target.checked)}
-                    className="w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer"
-                  />
-                  <label htmlFor="whatsappOptIn" className="text-[10.5px] font-medium text-slate-600 cursor-pointer leading-tight">
-                    Opt into symptom follow-ups, daily reminders & wellness check-ins on WhatsApp
-                  </label>
+                  ))}
                 </div>
+              </div>
+            </div>
 
-                {/* CHW Connect Panel */}
-                {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
-                  <div className="mt-4 p-4 bg-white/80 border border-slate-100 rounded-2xl flex flex-col gap-3 text-slate-800 shadow-sm">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Available Support Workers</h4>
-                        <p className="text-[9px] text-slate-400 font-bold">Connect with a professional counselor</p>
-                      </div>
-                      <Badge className="bg-[#0F4C81] text-white text-[8px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border-none">
-                        {assignedCHW ? "Assigned" : "PAC Ready"}
-                      </Badge>
-                    </div>
+            {/* Dynamic Advice/Tips Section based on AI Assessment */}
+            <div className="mt-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+              <div className="flex items-center gap-1.5 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
+                <Sparkles size={13} className="text-secondary" />
+                AI Recovery Advice & Tips
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {getDynamicTips().map((tip, idx) => (
+                  <div key={idx} className="p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
+                    <span className="block font-black text-slate-800 text-[10.5px] uppercase tracking-wide mb-0.5">{tip.title}</span>
+                    <span className="block text-[10.5px] text-slate-500 leading-normal font-medium">{tip.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
 
-                    {assignedCHW ? (
-                      <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2.5 text-emerald-800">
-                        <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
-                        <div>
-                          <span className="font-extrabold text-[11px] block">Specialist Assigned</span>
-                          <p className="text-[10px] opacity-90 leading-tight">{assignedCHW} has been notified and will contact you for clinical support.</p>
+          {/* Recovery Health Check Upgraded Section */}
+          <div className="space-y-6">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Recovery Health Check</h4>
+                <p className="text-xs text-slate-500">Post-loss reproductive symptoms & danger signs tracker</p>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => speakText("Recovery Health Check. We will evaluate seven short sections for bleeding, pain, and general indicators to monitor your post-loss recovery.")}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center border border-slate-100 bg-white text-slate-600 hover:bg-slate-50 transition-all ${isSpeaking ? 'bg-secondary/10 border-secondary text-secondary' : ''}`}
+                >
+                  <Volume2 size={16} />
+                </button>
+                <Button
+                  onClick={() => { setShowModal(true); setModalStep('intro'); }}
+                  variant="outline"
+                  className="rounded-xl font-bold text-[10px] uppercase h-9 border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  Launch Assessment Flow
+                </Button>
+              </div>
+            </div>
+
+            {/* Expandable Accordion System */}
+            <div className="space-y-3">
+              {sections.map((sect, idx) => {
+                const Icon = sect.icon;
+                const isOpen = activeSection === idx;
+                return (
+                  <Card 
+                    key={idx} 
+                    className={`border border-slate-100 overflow-hidden transition-all shadow-sm ${
+                      isOpen ? 'ring-2 ring-[#0F4C81]/10 border-[#0F4C81]/25 bg-slate-50/20' : 'bg-white hover:bg-slate-50/50'
+                    }`}
+                  >
+                    <button
+                      onClick={() => setActiveSection(isOpen ? null : idx)}
+                      className="w-full px-5 py-4 flex items-center justify-between font-bold text-slate-800 text-sm"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isOpen ? 'bg-[#0F4C81] text-white' : 'bg-slate-100 text-slate-500'}`}>
+                          <Icon size={16} />
                         </div>
+                        <span className="font-extrabold">{sect.title}</span>
                       </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-1 gap-2">
-                          {[
-                            { id: 'chw_tomi', name: 'Nurse Tomi', location: 'Lagos Mainland PAC Dept', avatar: 'https://images.unsplash.com/photo-1590642916589-592bca10dfbf?auto=format&fit=crop&q=80&w=100&h=100' },
-                            { id: 'chw_amina', name: 'Sister Amina', location: 'Ikeja Health Center', avatar: 'https://images.unsplash.com/photo-1594824813573-246434e33963?auto=format&fit=crop&q=80&w=100&h=100' },
-                            { id: 'chw_kelechi', name: 'Dr. Kelechi', location: 'Surulere PAC Outreach', avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=100&h=100' }
-                          ].map((chw) => (
-                            <div 
-                              key={chw.id}
-                              onClick={() => assignCHW(chw.id, chw.name)}
-                              className="p-2 border border-slate-100 rounded-xl hover:border-blue-200 transition-all flex items-center justify-between cursor-pointer bg-slate-50/50 hover:bg-white"
-                            >
-                              <div className="flex items-center gap-2">
-                                <img src={chw.avatar} alt={chw.name} className="w-7 h-7 rounded-full object-cover border border-slate-200" />
-                                <div>
-                                  <span className="font-extrabold text-[11px] text-slate-800 block leading-none">{chw.name}</span>
-                                  <span className="text-[8px] text-slate-400 font-bold uppercase">{chw.location}</span>
-                                </div>
-                              </div>
-                              <span className="text-[9px] font-black text-primary px-2 py-0.5 rounded bg-blue-50/50 hover:bg-blue-50">Select</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="flex gap-2 mt-1">
-                          <Button 
-                            onClick={() => {
-                              const chws = [
-                                { id: 'chw_tomi', name: 'Nurse Tomi' },
-                                { id: 'chw_amina', name: 'Sister Amina' },
-                                { id: 'chw_kelechi', name: 'Dr. Kelechi' }
-                              ];
-                              const randomCHW = chws[Math.floor(Math.random() * chws.length)];
-                              assignCHW(randomCHW.id, randomCHW.name);
-                            }}
-                            className="w-full h-9 bg-[#0F4C81] text-white hover:opacity-95 rounded-xl font-black uppercase tracking-wider text-[9px] border-none"
+                      <ChevronRight size={16} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-90 text-[#0F4C81]' : ''}`} />
+                    </button>
+                    
+                    {isOpen && (
+                      <div className="px-5 pb-5 pt-2 border-t border-slate-50 space-y-4">
+                        {/* Voice Access Panel */}
+                        <div className="flex gap-2 justify-end mb-2 border-b border-slate-100/50 pb-2">
+                          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mr-auto flex items-center gap-1.5">
+                            <Volume2 size={10} /> Voice Guidance Active
+                          </span>
+                          <button 
+                            onClick={() => playVoiceGuideForSection(idx)}
+                            className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
+                            title="Read instructions out loud"
                           >
-                            AI Auto-Match CHW
+                            <Volume2 size={12} />
+                          </button>
+                          <button 
+                            onClick={() => startSpeechRecognitionForSection(idx)}
+                            className={`p-1 rounded-md transition-colors ${isListening ? 'bg-primary/20 text-primary animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-500'}`}
+                            title="Answer by voice"
+                          >
+                            <Mic size={12} />
+                          </button>
+                        </div>
+
+                        {sect.content}
+                        
+                        <div className="flex justify-end pt-2">
+                          <Button
+                            onClick={() => setActiveSection(idx === sections.length - 1 ? null : idx + 1)}
+                            className="bg-[#0F4C81] text-white hover:bg-[#0F4C81]/90 font-bold text-[10px] h-8 rounded-xl px-3 uppercase tracking-wider"
+                          >
+                            {idx === sections.length - 1 ? 'Finish Section' : 'Next Section'}
                           </Button>
                         </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </Card>
-
-            {/* Emergency Escalation Panel for High Risk */}
-            {assessmentResult.risk === 'high' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <Card className="p-5 border-none bg-rose-600 text-white rounded-[2rem] shadow-xl relative overflow-hidden group">
-                  <div className="relative z-10 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0 animate-pulse">
-                        <AlertTriangle size={20} />
                       </div>
-                      <h4 className="font-black text-base tracking-tight">Emergency Care Route Active</h4>
-                    </div>
-                    
-                    <p className="text-xs text-rose-100 leading-relaxed font-medium">
-                      Critical danger indicators are present. CareBridge AI has simulated an urgent clinical notification dispatch to Lagos Maternal Center. Please call our clinical coordinator immediately.
-                    </p>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
 
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => { setShowEmergencyCall(true); alert("Connecting with Lagos Maternal Center Emergency Desk..."); }}
-                        className="flex-1 h-10 bg-white hover:bg-rose-50 text-rose-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] gap-2 shadow-lg shadow-rose-900/20"
+            {/* Submit Assessment trigger */}
+            <div className="pt-2">
+              <Button
+                onClick={() => runRiskAssessment(false)}
+                className="w-full h-12 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-extrabold tracking-wider uppercase text-xs shadow-lg shadow-secondary/20"
+              >
+                {assessing ? 'AI Reassessing Recovery Risk...' : 'Run AI Health Check Assessment'}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Reflections, AI Results, Emergency & Support */}
+        <div className="lg:col-span-5 space-y-6">
+          {!supportMessage ? (
+            <motion.div
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               className="space-y-8"
+            >
+              <Card className="p-5 sm:p-10 border-none bg-slate-900 text-white rounded-[2.25rem] sm:rounded-[3rem] shadow-[0_32px_64px_-15px_rgba(15,76,129,0.3)] relative overflow-hidden group">
+                 <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-2xl font-black tracking-tight">How are you heart-today?</h3>
+                      <button 
+                        onClick={simulateVoiceSpeak}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isSpeaking ? 'bg-secondary text-white' : 'bg-white/10 text-white/40'}`}
                       >
-                        <Phone size={14} /> Call Coordinator
+                        <Volume2 size={20} className={isSpeaking ? 'animate-pulse' : ''} />
+                      </button>
+                    </div>
+                    <p className="text-slate-400 text-sm font-medium mb-10 leading-relaxed italic">"Take a deep breath. Your body and heart deserve space to heal today."</p>
+                    
+                    <div className="flex justify-between items-center mb-10">
+                      {[
+                        { v: 1, icon: Frown },
+                        { v: 2, icon: Meh },
+                        { v: 3, icon: Smile },
+                        { v: 4, icon: Heart },
+                        { v: 5, icon: Sparkles }
+                      ].map(m => (
+                        <button
+                          key={m.v}
+                          onClick={() => setMood(m.v)}
+                          className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center transition-all shadow-lg ${
+                            mood === m.v 
+                              ? 'bg-secondary text-white scale-110 shadow-secondary/40 ring-4 ring-secondary/20' 
+                              : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
+                          }`}
+                        >
+                          <m.icon size={28} />
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="bg-white/5 rounded-[2rem] p-6 mb-8 border border-white/10 focus-within:border-secondary/40 transition-colors">
+                      <p className="text-[10px] uppercase font-black tracking-[0.2em] text-secondary mb-4">Current Phase: Early Recovery</p>
+                      <textarea
+                        placeholder="Share a private thought or feeling..."
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        className="w-full bg-transparent text-sm focus:outline-none placeholder:text-white/20 min-h-[120px] font-medium resize-none"
+                      />
+                    </div>
+
+                    <Button 
+                      onClick={handleLog}
+                      disabled={mood === null || loading}
+                      className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 font-black transition-all shadow-xl shadow-black/20 text-base uppercase tracking-wider"
+                    >
+                      {loading ? 'Processing...' : 'Log Daily Reflection'}
+                    </Button>
+                 </div>
+                 
+                 <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+                    <Wind size={180} strokeWidth={1} />
+                 </div>
+              </Card>
+
+              <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+                   <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
+                      <Bird size={24} />
+                   </div>
+                   <span className="text-xs font-black text-slate-800 uppercase tracking-widest leading-tight">Coping<br/>Resources</span>
+                </button>
+                <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+                   <div className="w-12 h-12 bg-secondary/10 rounded-2xl flex items-center justify-center text-secondary shadow-inner">
+                      <Cloud size={24} />
+                   </div>
+                   <span className="text-xs font-black text-slate-800 uppercase tracking-widest leading-tight">Healing<br/>Meditation</span>
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col gap-6"
+            >
+              <Card className="p-5 sm:p-10 border-none bg-emerald-50 rounded-[2.25rem] sm:rounded-[3rem] relative shadow-lg overflow-hidden">
+                 <div className="relative z-10">
+                    <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center text-emerald-500 mb-8 shadow-xl shadow-emerald-900/10">
+                       <Sparkles size={32} />
+                    </div>
+                    <h3 className="text-2xl font-black text-emerald-900 mb-6 tracking-tight">CareBridge Support</h3>
+                    <p className="text-emerald-800/80 leading-relaxed italic text-xl mb-12 font-medium">
+                      "{supportMessage}"
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      <Button 
+                        className="rounded-2xl bg-emerald-600 text-white h-12 font-black hover:bg-emerald-700 transition-all uppercase tracking-widest text-sm shadow-xl shadow-emerald-200"
+                        onClick={() => { setSupportMessage(null); setMood(null); setNote(''); }}
+                      >
+                        Done for Today
                       </Button>
                       <Button
                         variant="ghost"
-                        onClick={() => alert("Clinic notified: Patient has marked intent to arrive within 15 minutes.")}
-                        className="h-10 border border-white/30 hover:bg-white/10 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px]"
+                        onClick={simulatePostToWhatsapp}
+                        className="text-emerald-600/60 font-bold text-xs uppercase"
                       >
-                        Map Route
+                        Share with Counselor
                       </Button>
                     </div>
-                  </div>
-                  {/* Watermark */}
-                  <div className="absolute -bottom-6 -right-6 opacity-10 pointer-events-none">
-                    <ShieldAlert size={120} />
-                  </div>
-                </Card>
-              </motion.div>
-            )}
-          </motion.div>
-        )}
-      </div>
+                 </div>
+                 
+                 {/* Abstract organic shape */}
+                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              </Card>
+            </motion.div>
+          )}
 
-      <div className="mt-12 space-y-4">
-        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">Community Support</h4>
-        <div className="p-6 bg-white border border-slate-100 rounded-3xl flex items-center justify-between shadow-sm">
-           <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500">
-                 <Heart size={24} />
-              </div>
-              <div>
-                 <h5 className="font-bold text-slate-900">Healing Together</h5>
-                 <p className="text-xs text-slate-500">Private African grief support group</p>
-              </div>
-           </div>
-           <ChevronRight className="text-slate-300" />
+          {/* AI Output Result Card */}
+          {assessmentResult && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-4"
+            >
+              <Card className={`p-5 rounded-[2rem] border relative overflow-hidden ${
+                assessmentResult.risk === 'high' 
+                  ? 'bg-rose-50/70 border-rose-200 text-rose-950' 
+                  : (assessmentResult.risk === 'moderate' 
+                      ? 'bg-amber-50/70 border-amber-200 text-amber-950' 
+                      : 'bg-emerald-50/70 border-emerald-200 text-emerald-950')
+              }`}>
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">AI Recovery Risk Assessment</span>
+                    <Badge className={`uppercase text-[9px] font-black tracking-wider px-3.5 py-0.5 rounded-full ${
+                      assessmentResult.risk === 'high' 
+                        ? 'bg-rose-600 text-white' 
+                        : (assessmentResult.risk === 'moderate' 
+                            ? 'bg-amber-500 text-white' 
+                            : 'bg-emerald-600 text-white')
+                    }`}>
+                      {assessmentResult.risk} RISK
+                    </Badge>
+                  </div>
+                  
+                  <h4 className="font-extrabold text-sm mb-2 flex items-center gap-2">
+                    <HeartPulse size={16} />
+                    CareBridge AI Clinical Insight
+                  </h4>
+                  <p className="text-xs leading-relaxed mb-4 font-bold text-slate-800">
+                    {assessmentResult.text}
+                  </p>
+
+                  {/* Follow-up Likelihood Indicator */}
+                  {assessmentResult.prediction !== undefined && assessmentResult.probability !== undefined && (
+                    <div className="mt-4 p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 space-y-1">
+                      <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                        <span>Follow-up Likelihood</span>
+                        <span className={assessmentResult.prediction === 1 ? "text-emerald-600" : "text-amber-600"}>
+                          {assessmentResult.prediction === 1 ? 'Likely' : 'Unlikely'} ({Math.round(assessmentResult.probability * 100)}%)
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-slate-200/50 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-500 ${assessmentResult.prediction === 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                          style={{ width: `${assessmentResult.probability * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Clinical Action Notice */}
+                  {assessmentResult.action && (
+                    <div className="mt-3 p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-1.5 shadow-sm">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Clinical Action Required</span>
+                      <p className="text-[11px] font-medium leading-normal">{assessmentResult.action}</p>
+                    </div>
+                  )}
+
+                  {/* Care Gaps */}
+                  {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
+                    <div className="mt-3 p-4 bg-amber-50 border border-amber-200/40 rounded-2xl space-y-2">
+                      <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider block">⚠️ Identified Care Gaps ({assessmentResult.careGaps.length})</span>
+                      <ul className="space-y-1.5">
+                        {assessmentResult.careGaps.map((gap: string, i: number) => (
+                          <li key={i} className="text-[10.5px] font-bold text-amber-900 leading-normal flex items-start gap-2">
+                            <span className="shrink-0 text-amber-500">•</span>
+                            <span>{gap}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Equity Barriers */}
+                  {assessmentResult.equityFlags && assessmentResult.equityFlags.length > 0 && (
+                    <div className="mt-3 p-4 bg-blue-50 border border-blue-200/40 rounded-2xl space-y-2">
+                      <span className="text-[10px] font-black text-[#0F4C81] uppercase tracking-wider block">📍 Equity Barriers Detected</span>
+                      <ul className="space-y-1.5">
+                        {assessmentResult.equityFlags.map((flag: string, i: number) => (
+                          <li key={i} className="text-[10.5px] font-bold text-slate-700 leading-normal flex items-start gap-2">
+                            <span className="shrink-0 text-primary">•</span>
+                            <span>{flag}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Mental Health Flag */}
+                  {assessmentResult.mentalHealthFlag && (
+                    <div className="mt-3 p-4 bg-purple-50 border border-purple-200/40 rounded-2xl space-y-2 mb-4">
+                      <span className="text-[10px] font-black text-purple-800 uppercase tracking-wider block">🧠 Mental Health Support Flagged</span>
+                      <p className="text-[11px] font-bold text-purple-900 leading-normal">{assessmentResult.mentalHealthNote}</p>
+                      <button 
+                        onClick={() => alert("Connecting to CareBridge counseling support services...")}
+                        className="mt-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-colors shadow-sm"
+                      >
+                        Connect to Counselor
+                      </button>
+                    </div>
+                  )}
+
+                  {/* WhatsApp follow-up checkbox */}
+                  <div className="p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50 flex items-center gap-3 mt-4">
+                    <input
+                      type="checkbox"
+                      id="whatsappOptIn"
+                      checked={whatsappOptIn}
+                      onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                      className="w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer"
+                    />
+                    <label htmlFor="whatsappOptIn" className="text-[10.5px] font-medium text-slate-600 cursor-pointer leading-tight">
+                      Opt into symptom follow-ups, daily reminders & wellness check-ins on WhatsApp
+                    </label>
+                  </div>
+
+                  {/* CHW Connect Panel */}
+                  {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
+                    <div className="mt-4 p-4 bg-white/80 border border-slate-100 rounded-2xl flex flex-col gap-3 text-slate-800 shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Available Support Workers</h4>
+                          <p className="text-[9px] text-slate-400 font-bold">Connect with a professional counselor</p>
+                        </div>
+                        <Badge className="bg-[#0F4C81] text-white text-[8px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border-none">
+                          {assignedCHW ? "Assigned" : "PAC Ready"}
+                        </Badge>
+                      </div>
+
+                      {assignedCHW ? (
+                        <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2.5 text-emerald-800">
+                          <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
+                          <div>
+                            <span className="font-extrabold text-[11px] block">Specialist Assigned</span>
+                            <p className="text-[10px] opacity-90 leading-tight">{assignedCHW} has been notified and will contact you for clinical support.</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-1 gap-2">
+                            {[
+                              { id: 'chw_tomi', name: 'Nurse Tomi', location: 'Lagos Mainland PAC Dept', avatar: 'https://images.unsplash.com/photo-1590642916589-592bca10dfbf?auto=format&fit=crop&q=80&w=100&h=100' },
+                              { id: 'chw_amina', name: 'Sister Amina', location: 'Ikeja Health Center', avatar: 'https://images.unsplash.com/photo-1594824813573-246434e33963?auto=format&fit=crop&q=80&w=100&h=100' },
+                              { id: 'chw_kelechi', name: 'Dr. Kelechi', location: 'Surulere PAC Outreach', avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=100&h=100' }
+                            ].map((chw) => (
+                              <div 
+                                key={chw.id}
+                                onClick={() => assignCHW(chw.id, chw.name)}
+                                className="p-2 border border-slate-100 rounded-xl hover:border-blue-200 transition-all flex items-center justify-between cursor-pointer bg-slate-50/50 hover:bg-white"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <img src={chw.avatar} alt={chw.name} className="w-7 h-7 rounded-full object-cover border border-slate-200" />
+                                  <div>
+                                    <span className="font-extrabold text-[11px] text-slate-800 block leading-none">{chw.name}</span>
+                                    <span className="text-[8px] text-slate-400 font-bold uppercase">{chw.location}</span>
+                                  </div>
+                                </div>
+                                <span className="text-[9px] font-black text-primary px-2 py-0.5 rounded bg-blue-50/50 hover:bg-blue-50">Select</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex gap-2 mt-1">
+                            <Button 
+                              onClick={() => {
+                                const chws = [
+                                  { id: 'chw_tomi', name: 'Nurse Tomi' },
+                                  { id: 'chw_amina', name: 'Sister Amina' },
+                                  { id: 'chw_kelechi', name: 'Dr. Kelechi' }
+                                ];
+                                const randomCHW = chws[Math.floor(Math.random() * chws.length)];
+                                assignCHW(randomCHW.id, randomCHW.name);
+                              }}
+                              className="w-full h-9 bg-[#0F4C81] text-white hover:opacity-95 rounded-xl font-black uppercase tracking-wider text-[9px] border-none"
+                            >
+                              AI Auto-Match CHW
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Card>
+
+              {/* Emergency Escalation Panel for High Risk */}
+              {assessmentResult.risk === 'high' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Card className="p-5 border-none bg-rose-600 text-white rounded-[2rem] shadow-xl relative overflow-hidden group">
+                    <div className="relative z-10 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0 animate-pulse">
+                          <AlertTriangle size={20} />
+                        </div>
+                        <h4 className="font-black text-base tracking-tight">Emergency Care Route Active</h4>
+                      </div>
+                      
+                      <p className="text-xs text-rose-100 leading-relaxed font-medium">
+                        Critical danger indicators are present. CareBridge AI has simulated an urgent clinical notification dispatch to Lagos Maternal Center. Please call our clinical coordinator immediately.
+                      </p>
+
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => { setShowEmergencyCall(true); alert("Connecting with Lagos Maternal Center Emergency Desk..."); }}
+                          className="flex-1 h-10 bg-white hover:bg-rose-50 text-rose-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] gap-2 shadow-lg shadow-rose-900/20"
+                        >
+                          <Phone size={14} /> Call Coordinator
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => alert("Clinic notified: Patient has marked intent to arrive within 15 minutes.")}
+                          className="h-10 border border-white/30 hover:bg-white/10 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px]"
+                        >
+                          Map Route
+                        </Button>
+                      </div>
+                    </div>
+                    {/* Watermark */}
+                    <div className="absolute -bottom-6 -right-6 opacity-10 pointer-events-none">
+                      <ShieldAlert size={120} />
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Community Support */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">Community Support</h4>
+            <div className="p-6 bg-white border border-slate-100 rounded-3xl flex items-center justify-between shadow-sm">
+               <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500">
+                     <Heart size={24} />
+                  </div>
+                  <div>
+                     <h5 className="font-bold text-slate-900">Healing Together</h5>
+                     <p className="text-xs text-slate-500">Private African grief support group</p>
+                  </div>
+               </div>
+               <ChevronRight className="text-slate-300" />
+            </div>
+          </div>
         </div>
       </div>
 
