@@ -28,22 +28,27 @@ import {
   Flame,
   Coffee,
   CheckCircle2,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { generateSupportMessage } from '../lib/gemini';
-import { Language, UserPreferences } from '../types';
+import { Language, UserPreferences, UserSession } from '../types';
 import { translations } from '../translations';
+import { db } from '../lib/firebase';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 
 interface RecoveryProps {
   language: Language;
   prefs: UserPreferences;
   onPrefsChange: (prefs: Partial<UserPreferences>) => void;
+  session?: UserSession;
+  onBack?: () => void;
 }
 
-export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
+export function Recovery({ language, prefs, onPrefsChange, session, onBack }: RecoveryProps) {
   const t = translations[language];
   const [mood, setMood] = useState<number | null>(null);
   const [note, setNote] = useState('');
@@ -61,6 +66,30 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
   } | null>(null);
   const [whatsappOptIn, setWhatsappOptIn] = useState(true);
   const [showEmergencyCall, setShowEmergencyCall] = useState(false);
+  const [lastAssessmentId, setLastAssessmentId] = useState<string | null>(null);
+  const [assignedCHW, setAssignedCHW] = useState<string | null>(null);
+
+  const assignCHW = async (chwId: string, chwName: string) => {
+    try {
+      setAssignedCHW(chwName);
+      if (lastAssessmentId) {
+        const assessmentRef = doc(db, 'assessments', lastAssessmentId);
+        await updateDoc(assessmentRef, { assignedCHWId: chwId });
+      }
+      await addDoc(collection(db, 'notifications'), {
+        chwId: chwId,
+        patientName: session?.username || "Tomi",
+        riskLevel: assessmentResult?.risk === 'high' ? 'High' : 'Medium',
+        message: `New case: Patient ${session?.username || "Tomi"} flagged as ${assessmentResult?.risk ? assessmentResult.risk.toUpperCase() : 'HIGH'} risk. Immediate follow-up required.`,
+        readStatus: false,
+        timestamp: new Date().toISOString()
+      });
+      alert(`Notification sent: CHW ${chwName} has been assigned to follow up on your case.`);
+    } catch (err) {
+      console.warn("Failed to assign CHW on Firestore:", err);
+      alert(`CHW ${chwName} has been assigned (offline simulation).`);
+    }
+  };
 
   // Modal Assessment Wizard States
   const [showModal, setShowModal] = useState(true);
@@ -383,6 +412,30 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
     };
 
     setAssessmentResult(updatedResult);
+
+    // Save to Firestore assessments collection
+    try {
+      setAssignedCHW(null);
+      const docRef = await addDoc(collection(db, 'assessments'), {
+        patientName: session?.username || "Tomi",
+        location: "Lagos Mainland",
+        timestamp: new Date().toISOString(),
+        riskLevel: riskLevel === 'high' ? 'High' : (riskLevel === 'moderate' ? 'Medium' : 'Low'),
+        prediction: apiData.prediction,
+        probability: apiData.probability,
+        action: apiData.action,
+        careGaps: apiData.careGaps,
+        equityFlags: apiData.equityFlags,
+        mentalHealthFlag: apiData.mentalHealthFlag,
+        mentalHealthNote: apiData.mentalHealthNote,
+        followUpRecommendation: apiData.followUpRecommendation,
+        status: 'Pending',
+        assignedCHWId: null
+      });
+      setLastAssessmentId(docRef.id);
+    } catch (err) {
+      console.warn("Failed to save assessment to Firestore:", err);
+    }
 
     // Save patient record in local registry if CHW Mode is active
     if (prefs.chwMode) {
@@ -1196,6 +1249,73 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                     Opt into symptom follow-ups, daily reminders & wellness check-ins on WhatsApp
                   </label>
                 </div>
+
+                {/* CHW Connect Panel */}
+                {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
+                  <div className="mt-4 p-4 bg-white/80 border border-slate-100 rounded-2xl flex flex-col gap-3 text-slate-800 shadow-sm">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Available Support Workers</h4>
+                        <p className="text-[9px] text-slate-400 font-bold">Connect with a professional counselor</p>
+                      </div>
+                      <Badge className="bg-[#0F4C81] text-white text-[8px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border-none">
+                        {assignedCHW ? "Assigned" : "PAC Ready"}
+                      </Badge>
+                    </div>
+
+                    {assignedCHW ? (
+                      <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2.5 text-emerald-800">
+                        <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
+                        <div>
+                          <span className="font-extrabold text-[11px] block">Specialist Assigned</span>
+                          <p className="text-[10px] opacity-90 leading-tight">{assignedCHW} has been notified and will contact you for clinical support.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 gap-2">
+                          {[
+                            { id: 'chw_tomi', name: 'Nurse Tomi', location: 'Lagos Mainland PAC Dept', avatar: 'https://images.unsplash.com/photo-1590642916589-592bca10dfbf?auto=format&fit=crop&q=80&w=100&h=100' },
+                            { id: 'chw_amina', name: 'Sister Amina', location: 'Ikeja Health Center', avatar: 'https://images.unsplash.com/photo-1594824813573-246434e33963?auto=format&fit=crop&q=80&w=100&h=100' },
+                            { id: 'chw_kelechi', name: 'Dr. Kelechi', location: 'Surulere PAC Outreach', avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=100&h=100' }
+                          ].map((chw) => (
+                            <div 
+                              key={chw.id}
+                              onClick={() => assignCHW(chw.id, chw.name)}
+                              className="p-2 border border-slate-100 rounded-xl hover:border-blue-200 transition-all flex items-center justify-between cursor-pointer bg-slate-50/50 hover:bg-white"
+                            >
+                              <div className="flex items-center gap-2">
+                                <img src={chw.avatar} alt={chw.name} className="w-7 h-7 rounded-full object-cover border border-slate-200" />
+                                <div>
+                                  <span className="font-extrabold text-[11px] text-slate-800 block leading-none">{chw.name}</span>
+                                  <span className="text-[8px] text-slate-400 font-bold uppercase">{chw.location}</span>
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-black text-primary px-2 py-0.5 rounded bg-blue-50/50 hover:bg-blue-50">Select</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-2 mt-1">
+                          <Button 
+                            onClick={() => {
+                              const chws = [
+                                { id: 'chw_tomi', name: 'Nurse Tomi' },
+                                { id: 'chw_amina', name: 'Sister Amina' },
+                                { id: 'chw_kelechi', name: 'Dr. Kelechi' }
+                              ];
+                              const randomCHW = chws[Math.floor(Math.random() * chws.length)];
+                              assignCHW(randomCHW.id, randomCHW.name);
+                            }}
+                            className="w-full h-9 bg-[#0F4C81] text-white hover:opacity-95 rounded-xl font-black uppercase tracking-wider text-[9px] border-none"
+                          >
+                            AI Auto-Match CHW
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </Card>
 

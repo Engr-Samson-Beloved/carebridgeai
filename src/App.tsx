@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Header, Navigation, Sidebar } from './components/Navigation';
-import { Landing } from './views/Landing';
+import { Login } from './views/Login';
+import { PatientDashboard } from './views/PatientDashboard';
+import { CHWDashboard } from './views/CHWDashboard';
 import { Assessment } from './views/Assessment';
 import { Referrals } from './views/Referrals';
 import { Recovery } from './views/Recovery';
-import { Dashboard } from './views/Dashboard';
-import { AppView, Language, UserPreferences } from './types';
+import { AppView, Language, UserPreferences, UserSession } from './types';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 
 export default function App() {
-  const [view, setView] = useState<AppView>('landing');
+  const [session, setSession] = useState<UserSession | null>(null);
+  const [view, setView] = useState<AppView>('login');
   const [user, setUser] = useState<any>(null);
   const [prefs, setPrefs] = useState<UserPreferences>({
     language: 'en',
@@ -31,8 +33,16 @@ export default function App() {
   }, []);
 
   const setLanguage = (lang: Language) => setPrefs(p => ({ ...p, language: lang }));
-  const toggleWhatsapp = () => setPrefs(p => ({ ...p, whatsappEnabled: !p.whatsappEnabled }));
-  const toggleVoice = () => setPrefs(p => ({ ...p, voiceGuided: !p.voiceGuided }));
+
+  const handleLogin = (newSession: UserSession) => {
+    setSession(newSession);
+    setView(newSession.role === 'patient' ? 'patient-dashboard' : 'chw-dashboard');
+  };
+
+  const handleSignOut = () => {
+    setSession(null);
+    setView('login');
+  };
 
   const renderView = () => {
     const commonProps = { 
@@ -42,20 +52,49 @@ export default function App() {
     };
 
     switch (view) {
-      case 'landing':
-        return <Landing onStart={() => setView('assessment')} onClinicSearch={() => setView('referral')} {...commonProps} />;
+      case 'login':
+        return <Login onLogin={handleLogin} />;
+      case 'patient-dashboard':
+        return (
+          <PatientDashboard 
+            onStart={() => setView('recovery')} 
+            onClinicSearch={() => setView('referral')} 
+            session={session!} 
+            onSignOut={handleSignOut} 
+            {...commonProps} 
+          />
+        );
       case 'assessment':
-        return <Assessment onBack={() => setView('landing')} onComplete={() => setView('referral')} {...commonProps} />;
+        return <Assessment onBack={() => setView('patient-dashboard')} onComplete={() => setView('referral')} {...commonProps} />;
       case 'referral':
-        return <Referrals {...commonProps} />;
+        return <Referrals onBack={() => setView('patient-dashboard')} {...commonProps} />;
       case 'recovery':
-        return <Recovery {...commonProps} />;
-      case 'dashboard':
-        return <Dashboard {...commonProps} />;
+        return <Recovery session={session!} onBack={() => setView('patient-dashboard')} {...commonProps} />;
+      case 'chw-dashboard':
+        return <CHWDashboard session={session!} onSignOut={handleSignOut} {...commonProps} />;
       default:
-        return <Landing onStart={() => setView('assessment')} onClinicSearch={() => setView('referral')} {...commonProps} />;
+        return <Login onLogin={handleLogin} />;
     }
   };
+
+  // If not logged in, render the login page directly in a clean full screen container without sidebars or navigations
+  if (!session || view === 'login') {
+    return (
+      <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/10 selection:text-primary flex items-center justify-center">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key="login"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            className="w-full"
+          >
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/10 selection:text-primary flex">
@@ -66,6 +105,8 @@ export default function App() {
         setLanguage={setLanguage} 
         prefs={prefs}
         onPrefsChange={(newPrefs) => setPrefs(p => ({ ...p, ...newPrefs }))}
+        session={session}
+        onSignOut={handleSignOut}
       />
       
       <div className="flex-1 md:ml-72 flex flex-col min-h-screen overflow-x-hidden">
@@ -74,6 +115,8 @@ export default function App() {
           setLanguage={setLanguage} 
           prefs={prefs}
           onPrefsChange={(newPrefs) => setPrefs(p => ({ ...p, ...newPrefs }))}
+          session={session}
+          onSignOut={handleSignOut}
         />
         
         <main className="max-w-xl mx-auto w-full relative py-6 md:py-12">
@@ -96,6 +139,7 @@ export default function App() {
           language={prefs.language} 
           prefs={prefs}
           onPrefsChange={(newPrefs) => setPrefs(p => ({ ...p, ...newPrefs }))}
+          session={session}
         />
       </div>
 
@@ -107,4 +151,3 @@ export default function App() {
     </div>
   );
 }
-

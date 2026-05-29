@@ -45,7 +45,7 @@ export interface RecoveryLog {
   emotionalNote: string;
 }
 
-export type AppView = "landing" | "assessment" | "referral" | "recovery" | "dashboard";
+export type AppView = "login" | "patient-dashboard" | "patient-assessment" | "patient-referrals" | "chw-dashboard" | "landing" | "assessment" | "referral" | "recovery" | "dashboard";
 
 export type Language = 'en' | 'fr' | 'sw' | 'yo' | 'ha';
 
@@ -55,6 +55,30 @@ export interface UserPreferences {
   voiceGuided: boolean;
   emergencyContact?: string;
   chwMode?: boolean;
+}
+
+export interface UserSession {
+  username: string;
+  role: 'patient' | 'chw';
+  chwId?: string;
+}
+
+export interface CHWProfile {
+  id: string;
+  name: string;
+  location: string;
+  onlineStatus: boolean;
+  avatar: string;
+}
+
+export interface FirestoreNotification {
+  id: string;
+  chwId: string;
+  patientName: string;
+  riskLevel: 'Low' | 'Medium' | 'High';
+  message: string;
+  readStatus: boolean;
+  timestamp: string;
 }
 
 export interface CHWPatient {

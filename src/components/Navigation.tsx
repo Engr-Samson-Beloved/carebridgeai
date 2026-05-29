@@ -4,24 +4,19 @@ import {
   Heart, 
   Activity, 
   MapPin, 
-  FileText, 
   LayoutDashboard,
-  ShieldCheck,
-  ChevronRight,
-  Stethoscope,
   HeartPulse,
   Brain,
-  AlertCircle
-} from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { AppView, Language, UserPreferences } from '../types';
-import { translations } from '../translations';
-import { 
+  AlertCircle,
   Globe,
   Mic,
-  MicOff,
-  PhoneCall
+  PhoneCall,
+  LogOut,
+  ChevronRight
 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { AppView, Language, UserPreferences, UserSession } from '../types';
+import { translations } from '../translations';
 
 interface NavigationProps {
   currentView: AppView;
@@ -29,20 +24,29 @@ interface NavigationProps {
   language: Language;
   prefs: UserPreferences;
   onPrefsChange: (prefs: Partial<UserPreferences>) => void;
+  session?: UserSession | null;
 }
 
-export function Navigation({ currentView, onViewChange, language }: NavigationProps) {
+export function Navigation({ currentView, onViewChange, language, session }: NavigationProps) {
   const t = translations[language];
-  const navItems = [
-    { id: 'landing', label: t.landing || 'Home', icon: Heart },
-    { id: 'assessment', label: 'RiskAI', icon: Activity },
-    { id: 'referral', label: t.findClinics || 'Clinics', icon: MapPin },
-    { id: 'recovery', label: t.recovery || 'Recovery', icon: Brain },
-    { id: 'dashboard', label: t.referrals || 'Analytics', icon: LayoutDashboard },
-  ];
+
+  // Dynamic nav items based on role
+  const isCHW = session?.role === 'chw';
+  const navItems = isCHW 
+    ? [
+        { id: 'chw-dashboard', label: 'CHW Dashboard', icon: LayoutDashboard }
+      ]
+    : [
+        { id: 'patient-dashboard', label: t.landing || 'Home', icon: Heart },
+        { id: 'recovery', label: 'Recovery Test', icon: Brain },
+        { id: 'referral', label: t.findClinics || 'Clinics', icon: MapPin },
+        { id: 'assessment', label: 'Risk Triage', icon: Activity },
+      ];
+
+  if (!session) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-100 bg-white/90 backdrop-blur-xl px-4 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] shadow-[0_-8px_30px_rgba(15,76,129,0.06)] transition-all duration-300 dark:border-slate-800/80 dark:bg-slate-950/90 dark:shadow-[0_-8px_30px_rgba(0,0,0,0.4)] md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-100 bg-white/90 backdrop-blur-xl px-4 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] shadow-[0_-8px_30px_rgba(15,76,129,0.06)] transition-all duration-300 dark:border-slate-800/80 dark:bg-slate-950/90 md:hidden">
       <div className="flex justify-between items-center max-w-md mx-auto gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -54,7 +58,7 @@ export function Navigation({ currentView, onViewChange, language }: NavigationPr
               className={`relative flex flex-1 flex-col items-center gap-1 py-1.5 px-1 rounded-xl transition-all duration-300 ${
                 isActive 
                   ? 'text-primary scale-105 font-bold' 
-                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                  : 'text-slate-400 hover:text-slate-600'
               }`}
             >
               <Icon size={19} strokeWidth={isActive ? 2.5 : 2} className="transition-transform duration-300" />
@@ -64,7 +68,7 @@ export function Navigation({ currentView, onViewChange, language }: NavigationPr
               {isActive && (
                 <motion.div
                   layoutId="nav-pill"
-                  className="absolute inset-x-1.5 inset-y-0.5 bg-primary/8 rounded-xl -z-10 dark:bg-primary/15"
+                  className="absolute inset-x-1.5 inset-y-0.5 bg-primary/8 rounded-xl -z-10"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
@@ -78,17 +82,33 @@ export function Navigation({ currentView, onViewChange, language }: NavigationPr
 
 interface SidebarProps extends NavigationProps {
   setLanguage: (lang: Language) => void;
+  onSignOut: () => void;
 }
 
-export function Sidebar({ currentView, onViewChange, language, setLanguage, prefs, onPrefsChange }: SidebarProps) {
+export function Sidebar({ 
+  currentView, 
+  onViewChange, 
+  language, 
+  setLanguage, 
+  prefs, 
+  onPrefsChange, 
+  session, 
+  onSignOut 
+}: SidebarProps) {
   const t = translations[language];
-  const navItems = [
-    { id: 'landing', label: t.landing, icon: Heart },
-    { id: 'assessment', label: t.aiTriage, icon: Activity },
-    { id: 'referral', label: t.referrals, icon: MapPin },
-    { id: 'recovery', label: t.recovery, icon: Brain },
-    { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard },
-  ];
+
+  // Dynamic nav items based on role
+  const isCHW = session?.role === 'chw';
+  const navItems = isCHW 
+    ? [
+        { id: 'chw-dashboard', label: 'CHW Registry Console', icon: LayoutDashboard }
+      ]
+    : [
+        { id: 'patient-dashboard', label: 'Patient Home', icon: Heart },
+        { id: 'recovery', label: 'Recovery Test (API)', icon: Brain },
+        { id: 'referral', label: 'Support Clinics', icon: MapPin },
+        { id: 'assessment', label: 'Pregnancy Triage (AI)', icon: Activity },
+      ];
 
   const languages: { code: Language; label: string }[] = [
     { code: 'en', label: 'English' },
@@ -98,9 +118,12 @@ export function Sidebar({ currentView, onViewChange, language, setLanguage, pref
     { code: 'ha', label: 'Hausa' },
   ];
 
+  if (!session) return null;
+
   return (
     <aside className="hidden md:flex flex-col w-72 h-screen fixed left-0 top-0 bg-white border-r border-slate-100 p-8 z-50 overflow-y-auto">
-      <div className="flex items-center gap-3 mb-10">
+      {/* Brand Title */}
+      <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
           <HeartPulse size={24} />
         </div>
@@ -109,7 +132,8 @@ export function Sidebar({ currentView, onViewChange, language, setLanguage, pref
         </h1>
       </div>
 
-      <div className="mb-8">
+      {/* Language Selector */}
+      <div className="mb-6">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Select Language</p>
         <div className="grid grid-cols-2 gap-2">
           {languages.map((lang) => (
@@ -128,6 +152,40 @@ export function Sidebar({ currentView, onViewChange, language, setLanguage, pref
         </div>
       </div>
 
+      {/* Control Center (Toggles and Emergency SOS) */}
+      <div className="mb-6 space-y-2.5">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-2">Control Center</p>
+
+        {/* Voice Guide Toggle */}
+        <div 
+          onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
+          className="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/70 rounded-2xl cursor-pointer select-none transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${prefs.voiceGuided ? 'bg-[#0F4C81] text-white' : 'bg-white text-slate-400'}`}>
+              <Mic size={16} />
+            </div>
+            <span className="text-[9.5px] font-black uppercase text-slate-500">Voice Guide</span>
+          </div>
+          <div className={`w-8 h-4.5 rounded-full relative transition-colors ${prefs.voiceGuided ? 'bg-[#0F4C81]' : 'bg-slate-200'}`}>
+            <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${prefs.voiceGuided ? 'right-1' : 'left-1'}`} />
+          </div>
+        </div>
+
+        {/* SOS Emergency button */}
+        <Button 
+          variant="destructive" 
+          className="w-full h-12 rounded-2xl font-black uppercase tracking-widest text-[9.5px] gap-2.5 shadow-md shadow-red-100 border-none"
+          onClick={() => alert("Connecting to emergency clinical support...")}
+        >
+          SOS EMERGENCY
+          <AlertCircle size={16} />
+        </Button>
+      </div>
+
+      <div className="border-t border-slate-100/60 my-4" />
+
+      {/* Navigation tabs */}
       <nav className="flex-1 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -138,7 +196,7 @@ export function Sidebar({ currentView, onViewChange, language, setLanguage, pref
               onClick={() => onViewChange(item.id as AppView)}
               className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${
                 isActive 
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                  ? 'bg-[#0F4C81] text-white shadow-lg shadow-blue-100' 
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
               }`}
             >
@@ -150,47 +208,15 @@ export function Sidebar({ currentView, onViewChange, language, setLanguage, pref
         })}
       </nav>
 
-      <div className="pt-8 mt-8 border-t border-slate-50 space-y-3">
-        {/* CHW Mode Toggle */}
-        <div 
-          onClick={() => onPrefsChange({ chwMode: !prefs.chwMode })}
-          className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/70 rounded-2xl cursor-pointer select-none transition-colors"
+      {/* Sign Out Section */}
+      <div className="pt-4 border-t border-slate-100">
+        <button
+          onClick={onSignOut}
+          className="w-full flex items-center gap-4 px-5 py-3 rounded-2xl text-slate-500 hover:text-rose-500 hover:bg-rose-50/50 transition-all font-bold text-sm"
         >
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${prefs.chwMode ? 'bg-[#0F4C81] text-white' : 'bg-white text-slate-400'}`}>
-              <ShieldCheck size={16} />
-            </div>
-            <span className="text-[10px] font-black uppercase text-slate-500">CHW Mode</span>
-          </div>
-          <div className={`w-8 h-4.5 rounded-full relative transition-colors ${prefs.chwMode ? 'bg-[#0F4C81]' : 'bg-slate-200'}`}>
-            <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${prefs.chwMode ? 'right-1' : 'left-1'}`} />
-          </div>
-        </div>
-
-        {/* Voice Guide Toggle */}
-        <div 
-          onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
-          className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/70 rounded-2xl cursor-pointer select-none transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${prefs.voiceGuided ? 'bg-[#0F4C81] text-white' : 'bg-white text-slate-400'}`}>
-              <Mic size={16} />
-            </div>
-            <span className="text-[10px] font-black uppercase text-slate-500">Voice Guide</span>
-          </div>
-          <div className={`w-8 h-4.5 rounded-full relative transition-colors ${prefs.voiceGuided ? 'bg-[#0F4C81]' : 'bg-slate-200'}`}>
-            <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${prefs.voiceGuided ? 'right-1' : 'left-1'}`} />
-          </div>
-        </div>
-
-        <Button 
-          variant="destructive" 
-          className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] gap-3 shadow-xl shadow-red-200"
-          onClick={() => alert("Connecting to emergency clinical support...")}
-        >
-          {t.emergency} SOS
-          <AlertCircle size={18} />
-        </Button>
+          <LogOut size={20} />
+          <span>Exit Portal</span>
+        </button>
       </div>
     </aside>
   );
@@ -201,11 +227,15 @@ interface HeaderProps {
   setLanguage: (lang: Language) => void;
   prefs: UserPreferences;
   onPrefsChange: (prefs: Partial<UserPreferences>) => void;
+  session?: UserSession | null;
+  onSignOut: () => void;
 }
 
-export function Header({ language, setLanguage, prefs, onPrefsChange }: HeaderProps) {
+export function Header({ language, setLanguage, prefs, onPrefsChange, session, onSignOut }: HeaderProps) {
   const [showLangs, setShowLangs] = React.useState(false);
   const t = translations[language];
+
+  if (!session) return null;
 
   return (
     <header className="px-6 py-4 bg-white/80 backdrop-blur-lg sticky top-0 z-40 md:hidden flex items-center justify-between border-b border-slate-50">
@@ -219,6 +249,7 @@ export function Header({ language, setLanguage, prefs, onPrefsChange }: HeaderPr
       </div>
       
       <div className="flex items-center gap-2">
+        {/* Language selector toggle */}
         <div className="relative">
           <button 
             onClick={() => setShowLangs(!showLangs)}
@@ -254,18 +285,7 @@ export function Header({ language, setLanguage, prefs, onPrefsChange }: HeaderPr
           </AnimatePresence>
         </div>
 
-        <button 
-          onClick={() => onPrefsChange({ chwMode: !prefs.chwMode })}
-          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${
-            prefs.chwMode 
-              ? 'bg-[#0F4C81] border-[#0F4C81] text-white shadow-sm' 
-              : 'bg-slate-50 border-slate-100 text-slate-400'
-          }`}
-          title="Toggle CHW Mode"
-        >
-           <ShieldCheck size={18} />
-        </button>
-
+        {/* Voice Guide Toggle */}
         <button 
           onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
           className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${
@@ -278,14 +298,23 @@ export function Header({ language, setLanguage, prefs, onPrefsChange }: HeaderPr
            <Mic size={18} />
         </button>
 
+        {/* SOS Emergency button */}
         <button 
           onClick={() => alert("Initiating emergency clinical dispatch...")}
           className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500"
         >
           <PhoneCall size={18} />
         </button>
+
+        {/* Sign Out Button */}
+        <button 
+          onClick={onSignOut}
+          className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-rose-500"
+          title="Sign Out"
+        >
+          <LogOut size={16} />
+        </button>
       </div>
     </header>
   );
 }
-
