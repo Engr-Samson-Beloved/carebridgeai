@@ -14,7 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { AppView, Language } from '../types';
+import { AppView, Language, UserPreferences } from '../types';
 import { translations } from '../translations';
 import { 
   Globe,
@@ -27,6 +27,8 @@ interface NavigationProps {
   currentView: AppView;
   onViewChange: (view: AppView) => void;
   language: Language;
+  prefs: UserPreferences;
+  onPrefsChange: (prefs: Partial<UserPreferences>) => void;
 }
 
 export function Navigation({ currentView, onViewChange, language }: NavigationProps) {
@@ -78,7 +80,7 @@ interface SidebarProps extends NavigationProps {
   setLanguage: (lang: Language) => void;
 }
 
-export function Sidebar({ currentView, onViewChange, language, setLanguage }: SidebarProps) {
+export function Sidebar({ currentView, onViewChange, language, setLanguage, prefs, onPrefsChange }: SidebarProps) {
   const t = translations[language];
   const navItems = [
     { id: 'landing', label: t.landing, icon: Heart },
@@ -149,17 +151,38 @@ export function Sidebar({ currentView, onViewChange, language, setLanguage }: Si
       </nav>
 
       <div className="pt-8 mt-8 border-t border-slate-50 space-y-3">
-        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+        {/* CHW Mode Toggle */}
+        <div 
+          onClick={() => onPrefsChange({ chwMode: !prefs.chwMode })}
+          className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/70 rounded-2xl cursor-pointer select-none transition-colors"
+        >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${prefs.chwMode ? 'bg-[#0F4C81] text-white' : 'bg-white text-slate-400'}`}>
+              <ShieldCheck size={16} />
+            </div>
+            <span className="text-[10px] font-black uppercase text-slate-500">CHW Mode</span>
+          </div>
+          <div className={`w-8 h-4.5 rounded-full relative transition-colors ${prefs.chwMode ? 'bg-[#0F4C81]' : 'bg-slate-200'}`}>
+            <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${prefs.chwMode ? 'right-1' : 'left-1'}`} />
+          </div>
+        </div>
+
+        {/* Voice Guide Toggle */}
+        <div 
+          onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
+          className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/70 rounded-2xl cursor-pointer select-none transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${prefs.voiceGuided ? 'bg-[#0F4C81] text-white' : 'bg-white text-slate-400'}`}>
               <Mic size={16} />
             </div>
             <span className="text-[10px] font-black uppercase text-slate-500">Voice Guide</span>
           </div>
-          <div className="w-8 h-4 bg-slate-200 rounded-full relative cursor-pointer">
-            <div className="absolute right-1 top-0.5 w-3 h-3 bg-white rounded-full shadow-sm" />
+          <div className={`w-8 h-4.5 rounded-full relative transition-colors ${prefs.voiceGuided ? 'bg-[#0F4C81]' : 'bg-slate-200'}`}>
+            <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${prefs.voiceGuided ? 'right-1' : 'left-1'}`} />
           </div>
         </div>
+
         <Button 
           variant="destructive" 
           className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] gap-3 shadow-xl shadow-red-200"
@@ -176,9 +199,11 @@ export function Sidebar({ currentView, onViewChange, language, setLanguage }: Si
 interface HeaderProps {
   language: Language;
   setLanguage: (lang: Language) => void;
+  prefs: UserPreferences;
+  onPrefsChange: (prefs: Partial<UserPreferences>) => void;
 }
 
-export function Header({ language, setLanguage }: HeaderProps) {
+export function Header({ language, setLanguage, prefs, onPrefsChange }: HeaderProps) {
   const [showLangs, setShowLangs] = React.useState(false);
   const t = translations[language];
 
@@ -229,7 +254,27 @@ export function Header({ language, setLanguage }: HeaderProps) {
           </AnimatePresence>
         </div>
 
-        <button className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+        <button 
+          onClick={() => onPrefsChange({ chwMode: !prefs.chwMode })}
+          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${
+            prefs.chwMode 
+              ? 'bg-[#0F4C81] border-[#0F4C81] text-white shadow-sm' 
+              : 'bg-slate-50 border-slate-100 text-slate-400'
+          }`}
+          title="Toggle CHW Mode"
+        >
+           <ShieldCheck size={18} />
+        </button>
+
+        <button 
+          onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
+          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${
+            prefs.voiceGuided 
+              ? 'bg-[#0F4C81] border-[#0F4C81] text-white shadow-sm' 
+              : 'bg-slate-50 border-slate-100 text-slate-400'
+          }`}
+          title="Toggle Voice Guide"
+        >
            <Mic size={18} />
         </button>
 

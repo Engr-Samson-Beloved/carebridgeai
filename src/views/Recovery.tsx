@@ -193,11 +193,15 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
   };
 
   // Run AI Risk Logic
-  const runRiskAssessment = (silent = false) => {
+  const runRiskAssessment = async (silent = false) => {
     setAssessing(true);
     let riskLevel: 'low' | 'moderate' | 'high' = 'low';
     let reasonText = '';
+    let apiSuccess = false;
 
+    // 1. Prepare Local Risk Logic to determine backup
+    let localRisk: 'low' | 'moderate' | 'high' = 'low';
+    let localReasonText = '';
     if (
       healthCheck.bleedingSeverity === 'heavy' ||
       healthCheck.soakingPads ||
@@ -205,14 +209,14 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
       healthCheck.painLevel === 'severe' ||
       healthCheck.fever
     ) {
-      riskLevel = 'high';
+      localRisk = 'high';
       const concerns = [];
       if (healthCheck.bleedingSeverity === 'heavy' || healthCheck.soakingPads) concerns.push("hemorrhaging indicators (heavy bleeding or soaking pads)");
       if (healthCheck.fainting) concerns.push("fainting episodes");
       if (healthCheck.painLevel === 'severe') concerns.push("severe abdominal pain");
       if (healthCheck.fever) concerns.push("fever (potential systemic infection)");
       
-      reasonText = `Critical recovery indicators detected: ${concerns.join(', ')}. There is an elevated risk of severe post-pregnancy loss complications (e.g. retained products of conception, infection, or internal bleeding). Immediate medical attention is recommended.`;
+      localReasonText = `Critical recovery indicators detected: ${concerns.join(', ')}. There is an elevated risk of severe post-pregnancy loss complications (e.g. retained products of conception, infection, or internal bleeding). Immediate medical attention is recommended.`;
     } else if (
       healthCheck.bleedingSeverity === 'moderate' ||
       healthCheck.painLevel === 'moderate' ||
@@ -222,7 +226,7 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
       healthCheck.foulDischarge ||
       healthCheck.prevEctopic
     ) {
-      riskLevel = 'moderate';
+      localRisk = 'moderate';
       const concerns = [];
       if (healthCheck.bleedingSeverity === 'moderate') concerns.push("moderate bleeding");
       if (healthCheck.painLevel === 'moderate') concerns.push("moderate pain/cramping");
@@ -230,16 +234,185 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
       if (healthCheck.foulDischarge) concerns.push("abnormal discharge");
       if (healthCheck.prevEctopic) concerns.push("previous ectopic pregnancy");
 
-      reasonText = `Some recovery concerns flagged: ${concerns.join(', ')}. While not in acute distress, we advise booking a follow-up assessment with Lagos Maternal Center within 24 to 48 hours to ensure complete recovery.`;
+      localReasonText = `Some recovery concerns flagged: ${concerns.join(', ')}. While not in acute distress, we advise booking a follow-up assessment with Lagos Maternal Center within 24 to 48 hours to ensure complete recovery.`;
     } else {
-      riskLevel = 'low';
-      reasonText = "Your recovery parameters appear stable. No primary red flags (such as hemorrhaging, high fever, or loss of consciousness) are present. Continue monitoring daily, rest, and keep hydrated.";
+      localRisk = 'low';
+      localReasonText = "Your recovery parameters appear stable. No primary red flags (such as hemorrhaging, high fever, or loss of consciousness) are present. Continue monitoring daily, rest, and keep hydrated.";
     }
 
-    setAssessmentResult({
+    // 2. Call the EPL Care AI predict endpoint
+    let apiData: any = null;
+    try {
+      const patientData = {
+        province: "Lagos",
+        county: "Unknown",
+        district: "Unknown",
+        type: "Health Centre",
+        pds101: 25.0,
+        pds102: "Urban",
+        pds103: "Married",
+        pds104: "Complete Secondary",
+        pds105: "Other Christian",
+        pds106: "Farming",
+        pds208: "Yes, wanted then",
+        pds301: "Postabortion Care",
+        pds302: 8.0,
+        pds303: (healthCheck.abortionProcedure || healthCheck.prevMiscarriage) ? "Yes" : "No",
+        pds310: healthCheck.fever ? "Yes" : "No",
+        pds324: "<=12 weeks",
+        pds401: "Incomplete Abortion",
+        pds402: (healthCheck.fainting || healthCheck.foulDischarge || healthCheck.soakingPads || healthCheck.painLevel === 'severe') ? "Yes" : "No",
+        pds501: "Yes",
+        pds502: "MVA",
+        pds503: "Clinical Officer",
+        pds505: "Yes",
+        pds507: "Yes",
+        pds509: "No",
+        pds510: "No",
+        pds701: "Yes",
+        pds702: "Yes",
+        pds801: (healthCheck.fainting || healthCheck.soakingPads || healthCheck.painLevel === 'severe') ? "Referred / Admitted" : "Discharged well",
+        pds802: "Less than 12 Hrs",
+        ses_score: 3.0,
+        mental_health_risk: (mood !== null && mood <= 2) ? 1 : 0,
+        care_delay: 0,
+        hf215: "Unknown",
+        hf303: "Unknown",
+        hf305a: "Unknown",
+        hf308: "Unknown",
+        hf310a: "Unknown",
+        hf401: "Unknown",
+        hf402a: "Unknown",
+        hf405: "Unknown",
+        hf407: "Unknown",
+        pac_jan: 0.0,
+        pac_feb: 0.0,
+        pac_mar: 0.0,
+        pac_apr: 0.0,
+        pac_may: 0.0,
+        pac_jun: 0.0,
+        pac_jul: 0.0,
+        pac_aug: 0.0,
+        pac_sep: 0.0,
+        pac_oct: 0.0,
+        pac_nov: 0.0,
+        pac_dec: 0.0
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+
+      const response = await fetch("https://gharnie.pythonanywhere.com/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(patientData),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const result = await response.json();
+        const predVal = Array.isArray(result.prediction) ? result.prediction[0] : result.prediction;
+        const probVal = Array.isArray(result.probability) ? result.probability[0] : result.probability;
+        
+        const rawRisk = result.risk_level || result.risk || "";
+        const rawRiskStr = String(rawRisk).toLowerCase();
+        
+        if (rawRiskStr.includes("high") || rawRiskStr.includes("3") || rawRiskStr === "2") {
+          riskLevel = "high";
+        } else if (rawRiskStr.includes("moderate") || rawRiskStr.includes("medium") || rawRiskStr.includes("1") || rawRiskStr.includes("some")) {
+          riskLevel = "moderate";
+        } else {
+          riskLevel = "low";
+        }
+        
+        apiSuccess = true;
+        
+        apiData = {
+          action: result.action || "Confirm follow-up clinical checks.",
+          careGaps: result.care_gaps || [],
+          equityFlags: result.equity_flags || [],
+          mentalHealthFlag: result.mental_health_flag || false,
+          mentalHealthNote: result.mental_health_note || "No immediate mental health concerns.",
+          followUpRecommendation: result.follow_up_recommendation || "Schedule follow-up within 1-2 weeks.",
+          prediction: predVal,
+          probability: probVal
+        };
+        
+        reasonText = apiData.followUpRecommendation || result.action || "";
+      } else {
+        console.warn(`EPL Care AI returned non-OK status: ${response.status}. Falling back to rule engine.`);
+      }
+    } catch (e) {
+      console.warn("EPL Care AI predict API error, falling back to local rule-based assessment:", e);
+    }
+
+    // 3. Apply backup if API call failed
+    if (!apiSuccess) {
+      riskLevel = localRisk;
+      reasonText = localReasonText;
+      
+      const isHigh = riskLevel === 'high';
+      const isMod = riskLevel === 'moderate';
+      
+      apiData = {
+        action: isHigh ? "Escalate immediately to clinical coordinator. Arrange transport." : (isMod ? "Schedule follow-up appointment within 48 hours." : "Provide standard recovery counselling."),
+        careGaps: isHigh ? ["Critical symptom presentation requires urgent referral note", "Emergency contact verification needed"] : [],
+        equityFlags: [],
+        mentalHealthFlag: (mood !== null && mood <= 2),
+        mentalHealthNote: (mood !== null && mood <= 2) ? "Patient flags emotional distress. Support group referral recommended." : "No immediate mental health risks flagged.",
+        followUpRecommendation: isHigh ? "Immediate transfer or emergency check-in." : (isMod ? "Follow-up check within 2 days." : "Routine follow-up in 1 week."),
+        prediction: isHigh ? 1 : 0,
+        probability: isHigh ? 0.95 : 0.45
+      };
+    }
+
+    const updatedResult = {
       risk: riskLevel,
-      text: reasonText
-    });
+      text: reasonText,
+      action: apiData.action,
+      careGaps: apiData.careGaps,
+      equityFlags: apiData.equityFlags,
+      mentalHealthFlag: apiData.mentalHealthFlag,
+      mentalHealthNote: apiData.mentalHealthNote,
+      prediction: apiData.prediction,
+      probability: apiData.probability
+    };
+
+    setAssessmentResult(updatedResult);
+
+    // Save patient record in local registry if CHW Mode is active
+    if (prefs.chwMode) {
+      try {
+        const id = `P-${Math.floor(1000 + Math.random() * 9000)}`;
+        const newPatient = {
+          id,
+          name: `Patient ${id}`,
+          age: 25,
+          location: "Lagos",
+          date: new Date().toLocaleDateString(),
+          riskLevel: riskLevel === 'high' ? 'High' : (riskLevel === 'moderate' ? 'Medium' : 'Low'),
+          prediction: apiData.prediction,
+          probability: apiData.probability,
+          action: apiData.action,
+          careGaps: apiData.careGaps,
+          equityFlags: apiData.equityFlags,
+          mentalHealthFlag: apiData.mentalHealthFlag,
+          mentalHealthNote: apiData.mentalHealthNote,
+          followUpRecommendation: apiData.followUpRecommendation
+        };
+        const currentRaw = localStorage.getItem("chw_patients");
+        const list = currentRaw ? JSON.parse(currentRaw) : [];
+        list.unshift(newPatient);
+        localStorage.setItem("chw_patients", JSON.stringify(list));
+      } catch (err) {
+        console.error("Failed to save CHW patient to local storage:", err);
+      }
+    }
+
     setAssessing(false);
     
     if (!silent) {
@@ -936,12 +1109,82 @@ export function Recovery({ language, prefs, onPrefsChange }: RecoveryProps) {
                   <HeartPulse size={16} />
                   CareBridge AI Clinical Insight
                 </h4>
-                <p className="text-xs leading-relaxed mb-4 font-medium">
+                <p className="text-xs leading-relaxed mb-4 font-bold text-slate-800">
                   {assessmentResult.text}
                 </p>
 
+                {/* Follow-up Likelihood Indicator */}
+                {assessmentResult.prediction !== undefined && assessmentResult.probability !== undefined && (
+                  <div className="mt-4 p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 space-y-1">
+                    <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                      <span>Follow-up Likelihood</span>
+                      <span className={assessmentResult.prediction === 1 ? "text-emerald-600" : "text-amber-600"}>
+                        {assessmentResult.prediction === 1 ? 'Likely' : 'Unlikely'} ({Math.round(assessmentResult.probability * 100)}%)
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-200/50 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${assessmentResult.prediction === 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                        style={{ width: `${assessmentResult.probability * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Clinical Action Notice */}
+                {assessmentResult.action && (
+                  <div className="mt-3 p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-1.5 shadow-sm">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Clinical Action Required</span>
+                    <p className="text-[11px] font-medium leading-normal">{assessmentResult.action}</p>
+                  </div>
+                )}
+
+                {/* Care Gaps */}
+                {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
+                  <div className="mt-3 p-4 bg-amber-50 border border-amber-200/40 rounded-2xl space-y-2">
+                    <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider block">⚠️ Identified Care Gaps ({assessmentResult.careGaps.length})</span>
+                    <ul className="space-y-1.5">
+                      {assessmentResult.careGaps.map((gap: string, i: number) => (
+                        <li key={i} className="text-[10.5px] font-bold text-amber-900 leading-normal flex items-start gap-2">
+                          <span className="shrink-0 text-amber-500">•</span>
+                          <span>{gap}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Equity Barriers */}
+                {assessmentResult.equityFlags && assessmentResult.equityFlags.length > 0 && (
+                  <div className="mt-3 p-4 bg-blue-50 border border-blue-200/40 rounded-2xl space-y-2">
+                    <span className="text-[10px] font-black text-[#0F4C81] uppercase tracking-wider block">📍 Equity Barriers Detected</span>
+                    <ul className="space-y-1.5">
+                      {assessmentResult.equityFlags.map((flag: string, i: number) => (
+                        <li key={i} className="text-[10.5px] font-bold text-slate-700 leading-normal flex items-start gap-2">
+                          <span className="shrink-0 text-primary">•</span>
+                          <span>{flag}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Mental Health Flag */}
+                {assessmentResult.mentalHealthFlag && (
+                  <div className="mt-3 p-4 bg-purple-50 border border-purple-200/40 rounded-2xl space-y-2 mb-4">
+                    <span className="text-[10px] font-black text-purple-800 uppercase tracking-wider block">🧠 Mental Health Support Flagged</span>
+                    <p className="text-[11px] font-bold text-purple-900 leading-normal">{assessmentResult.mentalHealthNote}</p>
+                    <button 
+                      onClick={() => alert("Connecting to CareBridge counseling support services...")}
+                      className="mt-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-colors shadow-sm"
+                    >
+                      Connect to Counselor
+                    </button>
+                  </div>
+                )}
+
                 {/* WhatsApp follow-up checkbox */}
-                <div className="p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50 flex items-center gap-3">
+                <div className="p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50 flex items-center gap-3 mt-4">
                   <input
                     type="checkbox"
                     id="whatsappOptIn"

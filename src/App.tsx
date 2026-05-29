@@ -59,10 +59,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/10 selection:text-primary flex">
-      <Sidebar currentView={view} onViewChange={setView} language={prefs.language} setLanguage={setLanguage} />
+      <Sidebar 
+        currentView={view} 
+        onViewChange={setView} 
+        language={prefs.language} 
+        setLanguage={setLanguage} 
+        prefs={prefs}
+        onPrefsChange={(newPrefs) => setPrefs(p => ({ ...p, ...newPrefs }))}
+      />
       
       <div className="flex-1 md:ml-72 flex flex-col min-h-screen overflow-x-hidden">
-        <Header language={prefs.language} setLanguage={setLanguage} />
+        <Header 
+          language={prefs.language} 
+          setLanguage={setLanguage} 
+          prefs={prefs}
+          onPrefsChange={(newPrefs) => setPrefs(p => ({ ...p, ...newPrefs }))}
+        />
         
         <main className="max-w-xl mx-auto w-full relative py-6 md:py-12">
           <AnimatePresence mode="wait">
@@ -78,7 +90,13 @@ export default function App() {
           </AnimatePresence>
         </main>
 
-        <Navigation currentView={view} onViewChange={setView} language={prefs.language} />
+        <Navigation 
+          currentView={view} 
+          onViewChange={setView} 
+          language={prefs.language} 
+          prefs={prefs}
+          onPrefsChange={(newPrefs) => setPrefs(p => ({ ...p, ...newPrefs }))}
+        />
       </div>
 
       <footer className="hidden xl:block fixed bottom-8 right-8 text-right opacity-30 pointer-events-none">

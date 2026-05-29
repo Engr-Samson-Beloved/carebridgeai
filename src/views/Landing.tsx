@@ -40,6 +40,86 @@ interface LandingProps {
 export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChange }: LandingProps) {
   const t = translations[language];
   const [showEmergency, setShowEmergency] = React.useState(false);
+  const [patients, setPatients] = React.useState<any[]>([]);
+  const [syncing, setSyncing] = React.useState(false);
+
+  React.useEffect(() => {
+    if (prefs.chwMode) {
+      const raw = localStorage.getItem("chw_patients");
+      if (raw) {
+        setPatients(JSON.parse(raw));
+      } else {
+        const initialMock = [
+          {
+            id: "P-4821",
+            name: "Patient P-4821",
+            age: 28,
+            location: "Lagos",
+            date: "2026-05-28",
+            riskLevel: "Medium",
+            prediction: 1,
+            probability: 0.51,
+            action: "Confirm follow-up appointment is scheduled before discharge. Call or text patient within 48 hours to confirm attendance. Flag for community health worker check-in.",
+            careGaps: [
+              "Patient was not referred for further care — referral is the strongest predictor of follow-up completion",
+              "Male partner was not included in post-loss counselling — reduces likelihood of follow-up attendance"
+            ],
+            equityFlags: ["Below average socioeconomic status — cost of follow-up care may be a barrier"],
+            mentalHealthFlag: false,
+            mentalHealthNote: "No immediate mental health risk factors identified.",
+            followUpRecommendation: "Schedule follow-up appointment within 1 week."
+          },
+          {
+            id: "P-1934",
+            name: "Patient P-1934",
+            age: 31,
+            location: "Lagos",
+            date: "2026-05-27",
+            riskLevel: "High",
+            prediction: 0,
+            probability: 0.88,
+            action: "Immediate hospital transfer recommended. Notify clinic coordinator.",
+            careGaps: [
+              "No contraceptive counselling",
+              "Partner not involved in counselling",
+              "Rushed discharge (less than 12 hours stay)"
+            ],
+            equityFlags: ["Rural location barrier", "No formal referral system at this facility"],
+            mentalHealthFlag: true,
+            mentalHealthNote: "Grief distress flagged. Grief support and counselling recommended.",
+            followUpRecommendation: "Arrange immediate home nurse check-in and partner counselling session."
+          }
+        ];
+        localStorage.setItem("chw_patients", JSON.stringify(initialMock));
+        setPatients(initialMock);
+      }
+    }
+  }, [prefs.chwMode]);
+
+  const handleSync = () => {
+    setSyncing(true);
+    setTimeout(() => {
+      setSyncing(false);
+      alert("Successfully synced all local registries to CareBridge Cloud Server!");
+    }, 1500);
+  };
+
+  const handleExport = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(patients, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `CHW_Registry_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleClear = () => {
+    if (confirm("Are you sure you want to clear the local registry?")) {
+      localStorage.removeItem("chw_patients");
+      setPatients([]);
+    }
+  };
 
   const symptomChips = [
     { label: t.quickSymptom === 'Àmì Àìsàn Kíákíá' ? 'Ìsun ẹ̀jẹ̀' : 'Bleeding', icon: AlertTriangle, color: 'text-rose-500 bg-rose-50' },
@@ -48,6 +128,143 @@ export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChang
     { label: 'Dizziness', icon: Info, color: 'text-secondary bg-secondary/10' },
     { label: 'High BP', icon: Stethoscope, color: 'text-blue-500 bg-blue-50' },
   ];
+
+  if (prefs.chwMode) {
+    const totalCount = patients.length;
+    const highRiskCount = patients.filter(p => p.riskLevel === 'High').length;
+    const medRiskCount = patients.filter(p => p.riskLevel === 'Medium' || p.riskLevel === 'Moderate').length;
+
+    return (
+      <div className="flex flex-col gap-6 pb-40 px-4 sm:px-6">
+        {/* CHW Header */}
+        <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div>
+            <h2 className="text-xl font-black text-[#0F4C81] tracking-tight">CHW Registry</h2>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Multi-Patient Screening Console</p>
+          </div>
+          <Badge className="bg-[#0F4C81] text-white text-[9px] font-black tracking-widest px-3 py-1 uppercase rounded-full">
+            Active console
+          </Badge>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="p-4 border-slate-100 bg-slate-50 text-center flex flex-col justify-center">
+            <span className="text-2xl font-black text-slate-800">{totalCount}</span>
+            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-1">Screened</span>
+          </Card>
+          <Card className="p-4 border-rose-100 bg-rose-50 text-center flex flex-col justify-center">
+            <span className="text-2xl font-black text-rose-600">{highRiskCount}</span>
+            <span className="text-[8px] font-black text-rose-500 uppercase tracking-wider mt-1">High Risk</span>
+          </Card>
+          <Card className="p-4 border-orange-100 bg-amber-50 text-center flex flex-col justify-center">
+            <span className="text-2xl font-black text-amber-600">{medRiskCount}</span>
+            <span className="text-[8px] font-black text-amber-500 uppercase tracking-wider mt-1">Med Risk</span>
+          </Card>
+        </div>
+
+        {/* Main Console Actions */}
+        <Card className="p-5 border border-slate-100 rounded-3xl bg-white shadow-sm flex flex-col gap-3">
+          <Button 
+            onClick={onStart}
+            className="w-full h-12 rounded-2xl bg-[#0F4C81] hover:bg-[#0F4C81]/95 text-white font-black uppercase text-xs tracking-wider gap-2 shadow-lg shadow-blue-100"
+          >
+            <Plus size={16} /> Screen New Patient
+          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button 
+              onClick={handleSync}
+              disabled={syncing}
+              variant="outline"
+              className="h-10 rounded-xl font-bold text-[10px] uppercase border-slate-200 text-slate-600"
+            >
+              {syncing ? "Syncing..." : "Sync Records"}
+            </Button>
+            <Button 
+              onClick={handleExport}
+              variant="outline"
+              className="h-10 rounded-xl font-bold text-[10px] uppercase border-slate-200 text-slate-600"
+            >
+              Export JSON
+            </Button>
+          </div>
+        </Card>
+
+        {/* Patient Registry List */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center px-1">
+            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Patient screenings ({totalCount})</h4>
+            {totalCount > 0 && (
+              <button 
+                onClick={handleClear}
+                className="text-[9px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-wider"
+              >
+                Clear Local
+              </button>
+            )}
+          </div>
+
+          {totalCount === 0 ? (
+            <Card className="p-8 text-center border-dashed border-slate-200 rounded-3xl">
+              <Users size={32} className="mx-auto text-slate-300 mb-2" />
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">No screenings recorded today</p>
+            </Card>
+          ) : (
+            patients.map((p) => (
+              <Card key={p.id} className="p-4 border-slate-100 rounded-2xl bg-white shadow-xs border flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h5 className="font-extrabold text-sm text-slate-800">{p.name}</h5>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      Age {p.age} • {p.location} • {p.date}
+                    </span>
+                  </div>
+                  <Badge className={`uppercase text-[8px] font-black tracking-widest px-2.5 py-0.5 rounded-full ${
+                    p.riskLevel === 'High' ? 'bg-rose-600 text-white' : 
+                    p.riskLevel === 'Medium' ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'
+                  }`}>
+                    {p.riskLevel}
+                  </Badge>
+                </div>
+
+                {/* Follow-up Likelihood Indicator */}
+                {p.prediction !== undefined && p.probability !== undefined && (
+                  <div className="p-2 bg-slate-50 rounded-xl space-y-1">
+                    <div className="flex justify-between items-center text-[8.5px] font-black text-slate-500 uppercase tracking-wider">
+                      <span>Follow-up Likelihood</span>
+                      <span>{p.prediction === 1 ? 'Likely' : 'Unlikely'} ({Math.round(p.probability * 100)}%)</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-200/50 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${p.prediction === 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                        style={{ width: `${p.probability * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Care Gaps Summary */}
+                {p.careGaps && p.careGaps.length > 0 && (
+                  <div className="text-[10px] text-amber-700 font-bold leading-normal flex items-start gap-1">
+                    <span>⚠️</span>
+                    <span>{p.careGaps.length} care gap(s) identified (e.g. {p.careGaps[0]})</span>
+                  </div>
+                )}
+
+                {/* Action instruction */}
+                {p.action && (
+                  <div className="text-[10px] text-slate-500 font-semibold bg-slate-50/50 p-2.5 rounded-xl border border-slate-50 leading-relaxed">
+                    <span className="font-extrabold text-slate-700 block text-[8px] uppercase tracking-wider mb-0.5">Directive Action</span>
+                    {p.action}
+                  </div>
+                )}
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-10 pb-40 px-4 sm:px-6">

@@ -54,5 +54,24 @@ export interface UserPreferences {
   whatsappEnabled: boolean;
   voiceGuided: boolean;
   emergencyContact?: string;
+  chwMode?: boolean;
 }
+
+export interface CHWPatient {
+  id: string;
+  name: string;
+  age: number;
+  location: string;
+  date: string;
+  riskLevel: 'Low' | 'Medium' | 'High';
+  prediction: number;
+  probability: number;
+  action: string;
+  careGaps: string[];
+  equityFlags: string[];
+  mentalHealthFlag: boolean;
+  mentalHealthNote: string;
+  followUpRecommendation: string;
+}
+
 
