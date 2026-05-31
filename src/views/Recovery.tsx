@@ -102,6 +102,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
   const [medTaken, setMedTaken] = useState(false);
 
   const [healthCheck, setHealthCheck] = useState({
+    pregnancyWeek: 8,
     bleedingSeverity: 'none',
     soakingPads: false,
     bloodClots: false,
@@ -124,9 +125,53 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     otherConditions: false,
   });
 
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const availableTags = ['Bleeding', 'Pelvic Pain', 'Headache', 'Fever', 'Nausea', 'Fatigue'];
+
+  const scanSymptomKeywords = (text: string) => {
+    const lower = text.toLowerCase();
+    const suggested: string[] = [];
+    if (lower.includes('bleed') || lower.includes('blood') || lower.includes('spot')) suggested.push('Bleeding');
+    if (lower.includes('pain') || lower.includes('cramp') || lower.includes('ache') || lower.includes('stomach')) suggested.push('Pelvic Pain');
+    if (lower.includes('head') || lower.includes('migrain')) suggested.push('Headache');
+    if (lower.includes('fever') || lower.includes('temp') || lower.includes('hot') || lower.includes('chill')) suggested.push('Fever');
+    if (lower.includes('sick') || lower.includes('vomit') || lower.includes('nause')) suggested.push('Nausea');
+    if (lower.includes('tired') || lower.includes('weak') || lower.includes('fatig') || lower.includes('exhaust')) suggested.push('Fatigue');
+    return suggested;
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleNoteChange = (val: string) => {
+    setNote(val);
+    const scanned = scanSymptomKeywords(val);
+    setSelectedTags(prev => {
+      const uniqueScanned = scanned.filter(t => !prev.includes(t));
+      return [...prev, ...uniqueScanned];
+    });
+  };
+
   const handleLog = async () => {
     if (mood === null) return;
     setLoading(true);
+
+    // Save to Firestore symptom_logs collection
+    try {
+      await addDoc(collection(db, 'symptom_logs'), {
+        patientName: session?.username || "Tomi",
+        timestamp: new Date().toISOString(),
+        mood: mood,
+        note: note,
+        tags: selectedTags
+      });
+    } catch (err) {
+      console.warn("Failed to save daily symptom log to Firestore:", err);
+    }
+
     const msg = await generateSupportMessage(mood, note);
     setSupportMessage(msg);
     setLoading(false);
@@ -164,7 +209,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       recognition.onresult = (event: any) => {
         const resultText = event.results[0][0].transcript.toLowerCase();
         
-        if (idx === 0) {
+        if (idx === 1) { // Vaginal Hemorrhage (was 0)
           if (resultText.includes('heavy') || resultText.includes('severe') || resultText.includes('forte')) {
             setHealthCheck(p => ({ ...p, bleedingSeverity: 'heavy', soakingPads: true }));
           } else if (resultText.includes('moderate') || resultText.includes('moyenne')) {
@@ -177,7 +222,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
           if (resultText.includes('yes') || resultText.includes('oui')) {
             setHealthCheck(p => ({ ...p, soakingPads: true }));
           }
-        } else if (idx === 1) {
+        } else if (idx === 2) { // Pain (was 1)
           if (resultText.includes('severe') || resultText.includes('grave')) {
             setHealthCheck(p => ({ ...p, painLevel: 'severe' }));
           } else if (resultText.includes('moderate') || resultText.includes('moyen')) {
@@ -185,11 +230,11 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
           } else if (resultText.includes('mild') || resultText.includes('faible')) {
             setHealthCheck(p => ({ ...p, painLevel: 'mild' }));
           }
-        } else if (idx === 2) {
+        } else if (idx === 3) { // Dizziness (was 2)
           if (resultText.includes('yes') || resultText.includes('oui')) {
             setHealthCheck(p => ({ ...p, fainting: true, dizzy: true }));
           }
-        } else if (idx === 4) {
+        } else if (idx === 5) { // Fever (was 4)
           if (resultText.includes('yes') || resultText.includes('oui') || resultText.includes('fever') || resultText.includes('fièvre')) {
             setHealthCheck(p => ({ ...p, fever: true }));
           }
@@ -210,13 +255,14 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
   const playVoiceGuideForSection = (idx: number) => {
     const guides = [
-      "Section 1: Bleeding history. Please select bleeding severity, whether you are soaking pads, and if you are passing blood clots.",
-      "Section 2: Pain history. Select your pain level, and if you have cramping or one-sided localized pain.",
-      "Section 3: Dizziness and fainting. Note if you have fainted, feel dizzy, or have severe body weakness.",
-      "Section 4: Pregnancy history. Flag if you have a history of miscarriages or ectopic pregnancies.",
-      "Section 5: Fever and infection. Flag if you have fever, chills, or abnormal discharge.",
-      "Section 6: Procedure or medication. Have you had a surgical termination or taken medical abortion pills recently?",
-      "Section 7: Existing medical conditions. Select any chronic conditions like high blood pressure, diabetes, or anemia."
+      "Section 1: Gestational age. Please specify your gestational age in pregnancy weeks.",
+      "Section 2: Bleeding history. Please select bleeding severity, whether you are soaking pads, and if you are passing blood clots.",
+      "Section 3: Pain history. Select your pain level, and if you have cramping or one-sided localized pain.",
+      "Section 4: Dizziness and fainting. Note if you have fainted, feel dizzy, or have severe body weakness.",
+      "Section 5: Pregnancy history. Flag if you have a history of miscarriages or ectopic pregnancies.",
+      "Section 6: Fever and infection. Flag if you have fever, chills, or abnormal discharge.",
+      "Section 7: Procedure or medication. Have you had a surgical termination or taken medical abortion pills recently?",
+      "Section 8: Existing medical conditions. Select any chronic conditions like high blood pressure, diabetes, or anemia."
     ];
     speakText(guides[idx]);
   };
@@ -285,10 +331,10 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         pds106: "Farming",
         pds208: "Yes, wanted then",
         pds301: "Postabortion Care",
-        pds302: 8.0,
+        pds302: Number(healthCheck.pregnancyWeek) || 8.0,
         pds303: (healthCheck.abortionProcedure || healthCheck.prevMiscarriage) ? "Yes" : "No",
         pds310: healthCheck.fever ? "Yes" : "No",
-        pds324: "<=12 weeks",
+        pds324: Number(healthCheck.pregnancyWeek) <= 12 ? "<=12 weeks" : ">12 weeks",
         pds401: "Incomplete Abortion",
         pds402: (healthCheck.fainting || healthCheck.foulDischarge || healthCheck.soakingPads || healthCheck.painLevel === 'severe') ? "Yes" : "No",
         pds501: "Yes",
@@ -498,26 +544,65 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
   const sections = [
     {
-      title: "Bleeding History",
+      title: "Gestational Age Status",
+      icon: Calendar,
+      content: (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Pregnancy Duration (Weeks)</span>
+            <div className="flex items-center gap-4 bg-slate-100/50 p-2.5 rounded-2xl border border-slate-200/50">
+              <button
+                type="button"
+                onClick={() => setHealthCheck(prev => ({ ...prev, pregnancyWeek: Math.max(1, prev.pregnancyWeek - 1) }))}
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-lg text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                -
+              </button>
+              <div className="flex-1 text-center">
+                <span className="text-xl font-black text-[#0F4C81]">{healthCheck.pregnancyWeek}</span>
+                <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wide block">Weeks Gestation</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHealthCheck(prev => ({ ...prev, pregnancyWeek: Math.min(42, prev.pregnancyWeek + 1) }))}
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-lg text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                +
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-400 font-bold leading-normal mt-1">
+              * Note: First-trimester pregnancy loss is typically defined as occurring before 12 completed weeks, and second-trimester loss between 12 and 24 weeks. This parameter directly affects EPL Care clinical risk predictions.
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Vaginal Hemorrhage Severity",
       icon: Droplets,
       content: (
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Bleeding Severity</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Active Bleeding Severity</span>
             <div className="grid grid-cols-4 gap-1.5">
-              {['none', 'spotting', 'moderate', 'heavy'].map(opt => (
+              {[
+                { k: 'none', l: 'None' },
+                { k: 'spotting', l: 'Spotting' },
+                { k: 'moderate', l: 'Moderate Active' },
+                { k: 'heavy', l: 'Heavy Saturation' }
+              ].map(opt => (
                 <button
-                  key={opt}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, bleedingSeverity: opt }))}
-                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.bleedingSeverity === opt ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  key={opt.k}
+                  onClick={() => setHealthCheck(prev => ({ ...prev, bleedingSeverity: opt.k }))}
+                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.bleedingSeverity === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
-                  {opt}
+                  {opt.l}
                 </button>
               ))}
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Are you soaking pads?</span>
+            <span className="text-xs font-bold text-slate-700">Are you soaking pads (≥ 1 pad/hr)?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -531,7 +616,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Passing blood clots?</span>
+            <span className="text-xs font-bold text-slate-700">Passing blood clots (large size)?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -548,26 +633,31 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Pain History",
+      title: "Acute Abdominal & Pelvic Pain",
       icon: Activity,
       content: (
         <div className="space-y-3">
           <div className="space-y-1.5">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Pain Intensity</span>
             <div className="grid grid-cols-4 gap-1.5">
-              {['none', 'mild', 'moderate', 'severe'].map(opt => (
+              {[
+                { k: 'none', l: 'None' },
+                { k: 'mild', l: 'Mild Pain' },
+                { k: 'moderate', l: 'Moderate Pain' },
+                { k: 'severe', l: 'Acute Severe' }
+              ].map(opt => (
                 <button
-                  key={opt}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, painLevel: opt }))}
-                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.painLevel === opt ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  key={opt.k}
+                  onClick={() => setHealthCheck(prev => ({ ...prev, painLevel: opt.k }))}
+                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.painLevel === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
-                  {opt}
+                  {opt.l}
                 </button>
               ))}
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Experiencing cramping?</span>
+            <span className="text-xs font-bold text-slate-700">Experiencing uterine cramping?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -581,7 +671,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">One-sided localized pain?</span>
+            <span className="text-xs font-bold text-slate-700">One-sided localized adnexal pain?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -598,12 +688,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Dizziness & Fainting",
+      title: "Syncope & Orthostatic Dizziness",
       icon: HeartPulse,
       content: (
         <div className="space-y-3">
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700">Any fainting / loss of consciousness?</span>
+            <span className="text-xs font-bold text-slate-700">Syncope / Loss of consciousness?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -617,7 +707,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Feeling dizzy or lightheaded?</span>
+            <span className="text-xs font-bold text-slate-700">Orthostatic dizziness or lightheadedness?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -631,7 +721,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Severe body weakness?</span>
+            <span className="text-xs font-bold text-slate-700">Asthenia / Severe body weakness?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -648,12 +738,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Pregnancy History",
+      title: "Obstetric Risk Factors",
       icon: ClipboardList,
       content: (
         <div className="space-y-3">
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Previous miscarriage history?</span>
+            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Previous spontaneous miscarriage history?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -667,7 +757,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Previous ectopic pregnancy?</span>
+            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Previous ectopic pregnancy history?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -684,12 +774,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Fever & Infection Symptoms",
+      title: "Pyrexia & Infection Symptoms",
       icon: Thermometer,
       content: (
         <div className="space-y-3">
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700">Do you have a fever?</span>
+            <span className="text-xs font-bold text-slate-700">Pyrexia / Febrile illness (Fever ≥ 38.0°C)?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -703,7 +793,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Chills or body shivers?</span>
+            <span className="text-xs font-bold text-slate-700">Rigor / Chills / Shivering?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -717,7 +807,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Foul-smelling abnormal discharge?</span>
+            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Purulent / Foul-smelling vaginal discharge?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -734,12 +824,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Procedure or Medication History",
+      title: "Post-abortion Intervention History",
       icon: Pill,
       content: (
         <div className="space-y-3">
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Prior termination/abortion procedure?</span>
+            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Prior surgical uterine evacuation (MVA/D&C)?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -753,7 +843,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
             </div>
           </div>
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Taken termination meds recently?</span>
+            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Recent medical abortion pharmacotherapy?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -770,17 +860,17 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Existing Medical Conditions",
+      title: "Co-morbidities & Chronic Risk Factors",
       icon: ShieldAlert,
       content: (
         <div className="space-y-3">
           <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Select all conditions that apply</span>
           <div className="flex flex-wrap gap-2">
             {[
-              { k: 'hypertension', l: 'Hypertension' },
-              { k: 'diabetes', l: 'Diabetes' },
-              { k: 'anemia', l: 'Anemia' },
-              { k: 'otherConditions', l: 'Other Conditions' },
+              { k: 'hypertension', l: 'Gestational / Chronic Hypertension' },
+              { k: 'diabetes', l: 'Gestational Diabetes Mellitus' },
+              { k: 'anemia', l: 'Anemia (Hb < 11g/dL)' },
+              { k: 'otherConditions', l: 'Other Clinical Co-morbidities' },
             ].map(cond => (
               <button
                 key={cond.k}
@@ -1028,7 +1118,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
               <Card className="p-5 sm:p-10 border-none bg-slate-900 text-white rounded-[2.25rem] sm:rounded-[3rem] shadow-[0_32px_64px_-15px_rgba(15,76,129,0.3)] relative overflow-hidden group">
                  <div className="relative z-10">
                     <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-2xl font-black tracking-tight">How are you heart-today?</h3>
+                      <h3 className="text-2xl font-black tracking-tight">Daily Symptom Log</h3>
                       <button 
                         onClick={simulateVoiceSpeak}
                         className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isSpeaking ? 'bg-secondary text-white' : 'bg-white/10 text-white/40'}`}
@@ -1036,7 +1126,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                         <Volume2 size={20} className={isSpeaking ? 'animate-pulse' : ''} />
                       </button>
                     </div>
-                    <p className="text-slate-400 text-sm font-medium mb-10 leading-relaxed italic">"Take a deep breath. Your body and heart deserve space to heal today."</p>
+                    <p className="text-slate-400 text-sm font-medium mb-10 leading-relaxed italic">"Log your physical symptoms and mood daily. Type freely; our clinical keyword scanner will automatically highlight tags."</p>
                     
                     <div className="flex justify-between items-center mb-10">
                       {[
@@ -1060,14 +1150,41 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                       ))}
                     </div>
 
-                    <div className="bg-white/5 rounded-[2rem] p-6 mb-8 border border-white/10 focus-within:border-secondary/40 transition-colors">
-                      <p className="text-[10px] uppercase font-black tracking-[0.2em] text-secondary mb-4">Current Phase: Early Recovery</p>
+                    <div className="bg-white/5 rounded-[2rem] p-6 mb-6 border border-white/10 focus-within:border-secondary/40 transition-colors">
+                      <p className="text-[10px] uppercase font-black tracking-[0.2em] text-secondary mb-4">Daily Symptoms & Reflections</p>
                       <textarea
-                        placeholder="Share a private thought or feeling..."
+                        placeholder="Describe physical symptoms (e.g. bleeding, pelvic pain, headache, fever) or how you feel today..."
                         value={note}
-                        onChange={(e) => setNote(e.target.value)}
+                        onChange={(e) => {
+                          setNote(e.target.value);
+                          handleNoteChange(e.target.value);
+                        }}
                         className="w-full bg-transparent text-sm focus:outline-none placeholder:text-white/20 min-h-[120px] font-medium resize-none"
                       />
+                    </div>
+
+                    {/* Clickable and Suggested Symptom Tags */}
+                    <div className="mb-8 space-y-2.5">
+                      <span className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 block">Symptom Tags (Click to toggle)</span>
+                      <div className="flex flex-wrap gap-2">
+                        {availableTags.map(tag => {
+                          const isSelected = selectedTags.includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => toggleTag(tag)}
+                              className={`py-1.5 px-3.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                                isSelected 
+                                  ? 'bg-secondary text-white border-secondary shadow-md shadow-secondary/20' 
+                                  : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/70'
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     <Button 
@@ -1075,7 +1192,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                       disabled={mood === null || loading}
                       className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 font-black transition-all shadow-xl shadow-black/20 text-base uppercase tracking-wider"
                     >
-                      {loading ? 'Processing...' : 'Log Daily Reflection'}
+                      {loading ? 'Processing...' : 'Log Daily Symptoms'}
                     </Button>
                  </div>
                  
@@ -1459,7 +1576,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                 <div className="space-y-6 pt-2">
                   <div className="flex justify-between items-center">
                     <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Step {modalStep + 1} of 7</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Step {modalStep + 1} of {sections.length}</span>
                       <h4 className="text-base font-black text-[#0F4C81]">{sections[modalStep].title}</h4>
                     </div>
                     <Badge variant="outline" className="border-slate-200 text-slate-500 font-bold uppercase text-[9px]">
@@ -1471,7 +1588,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                   <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                     <div 
                       className="h-1 bg-[#0F4C81] rounded-full transition-all duration-300" 
-                      style={{ width: `${((modalStep + 1) / 7) * 100}%` }}
+                      style={{ width: `${((modalStep + 1) / sections.length) * 100}%` }}
                     />
                   </div>
 
@@ -1491,7 +1608,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                         Back
                       </Button>
                     )}
-                    {modalStep < 6 ? (
+                    {modalStep < sections.length - 1 ? (
                       <Button
                         onClick={() => setModalStep(modalStep + 1)}
                         className="flex-1 h-10 bg-[#0F4C81] hover:bg-[#0F4C81]/95 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px]"

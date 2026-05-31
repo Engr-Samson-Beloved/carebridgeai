@@ -232,12 +232,12 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
             </div>
 
             <div className="space-y-4">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Vaginal Bleeding</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Vaginal Hemorrhage / Active Bleeding Severity</label>
               {[
-                { l: "None", v: 0 },
-                { l: "Spotting", v: 1 },
-                { l: "Moderate", v: 2 },
-                { l: "Severe", v: 3 }
+                { l: "Dry / Normal Discharge (No Bleeding)", v: 0 },
+                { l: "Spotting / Light Bleeding (Less than a sanitary pad per 4 hours)", v: 1 },
+                { l: "Moderate Active Bleeding (Soaking 1-2 pads per 4 hours, small clots)", v: 2 },
+                { l: "Heavy Hemorrhage (Soaking a pad in under 1 hour or continuous flow)", v: 3 }
               ].map(opt => (
                 <OptionCard 
                   key={opt.v}
@@ -270,10 +270,10 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
 
             <div className="grid grid-cols-1 gap-3">
               {[
-                { id: 'abdominalPain', label: 'Severe Abdominal Pain', icon: AlertTriangle },
-                { id: 'dizziness', label: 'Dizziness or Fainting', icon: Info },
-                { id: 'fever', label: 'Fever or Chills', icon: HeartPulse },
-                { id: 'hypertension', label: 'High Blood Pressure', icon: Stethoscope }
+                { id: 'abdominalPain', label: 'Acute Severe Abdominal/Pelvic Pain (Sharp, localized or persistent)', icon: AlertTriangle },
+                { id: 'dizziness', label: 'Syncope / Orthostatic Dizziness (Fainting episodes, lightheadedness)', icon: Info },
+                { id: 'fever', label: 'Pyrexia / Elevated Temperature (Fever ≥ 38.0°C / 100.4°F or chills)', icon: HeartPulse },
+                { id: 'hypertension', label: 'Severe Hypertension Indicators (Persistent headache, visual disturbance)', icon: Stethoscope }
               ].map(item => (
                 <OptionCard 
                   key={item.id}
