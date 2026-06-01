@@ -177,6 +177,76 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     setLoading(false);
   };
 
+  const handleLogSymptomsDirectly = async (logMood: number, logNote: string, logTags: string[]) => {
+    setMood(logMood);
+    setNote(logNote);
+    setSelectedTags(logTags);
+    setLoading(true);
+
+    try {
+      await addDoc(collection(db, 'symptom_logs'), {
+        patientName: session?.username || "Tomi",
+        timestamp: new Date().toISOString(),
+        mood: logMood,
+        note: logNote,
+        tags: logTags
+      });
+    } catch (err) {
+      console.warn("Failed to save daily symptom log to Firestore:", err);
+    }
+
+    const msg = await generateSupportMessage(logMood, logNote);
+    setSupportMessage(msg);
+    setLoading(false);
+  };
+
+  React.useEffect(() => {
+    const handleCareBridgeAction = (e: Event) => {
+      const { type, data } = (e as CustomEvent).detail;
+      if (type === 'LOG_SYMPTOMS') {
+        const logMood = data?.mood || 3;
+        const logNote = data?.note || "";
+        const logTags = data?.tags || [];
+        handleLogSymptomsDirectly(logMood, logNote, logTags);
+      } else if (type === 'RUN_ASSESSMENT') {
+        const updatedCheck = {
+          pregnancyWeek: data?.pregnancyWeek !== undefined ? Number(data.pregnancyWeek) : 8,
+          bleedingSeverity: data?.bleedingSeverity || 'none',
+          soakingPads: !!data?.soakingPads,
+          bloodClots: !!data?.bloodClots,
+          cramping: !!data?.cramping,
+          oneSidedPain: !!data?.oneSidedPain,
+          painLevel: data?.painLevel || 'none',
+          fainting: !!data?.fainting,
+          dizzy: !!data?.dizzy,
+          weakness: !!data?.weakness,
+          prevMiscarriage: !!data?.prevMiscarriage,
+          prevEctopic: !!data?.prevEctopic,
+          fever: !!data?.fever,
+          chills: !!data?.chills,
+          foulDischarge: !!data?.foulDischarge,
+          abortionProcedure: !!data?.abortionProcedure,
+          recentMedication: !!data?.recentMedication,
+          hypertension: !!data?.hypertension,
+          diabetes: !!data?.diabetes,
+          anemia: !!data?.anemia,
+          otherConditions: !!data?.otherConditions
+        };
+        setHealthCheck(updatedCheck);
+        runRiskAssessment(false, updatedCheck);
+      } else if (type === 'ASSIGN_CHW') {
+        if (data?.chwId && data?.chwName) {
+          assignCHW(data.chwId, data.chwName);
+        }
+      }
+    };
+
+    window.addEventListener('carebridge-action', handleCareBridgeAction);
+    return () => {
+      window.removeEventListener('carebridge-action', handleCareBridgeAction);
+    };
+  }, [lastAssessmentId, assessmentResult]);
+
   const simulatePostToWhatsapp = () => {
     alert("Simulation: Your recovery message has been synced to your private WhatsApp follow-up line.");
   };
@@ -268,7 +338,8 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
   };
 
   // Run AI Risk Logic
-  const runRiskAssessment = async (silent = false) => {
+  const runRiskAssessment = async (silent = false, tempHealthCheck?: any) => {
+    const activeCheck = tempHealthCheck || healthCheck;
     setAssessing(true);
     let riskLevel: 'low' | 'moderate' | 'high' = 'low';
     let reasonText = '';
@@ -278,36 +349,36 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     let localRisk: 'low' | 'moderate' | 'high' = 'low';
     let localReasonText = '';
     if (
-      healthCheck.bleedingSeverity === 'heavy' ||
-      healthCheck.soakingPads ||
-      healthCheck.fainting ||
-      healthCheck.painLevel === 'severe' ||
-      healthCheck.fever
+      activeCheck.bleedingSeverity === 'heavy' ||
+      activeCheck.soakingPads ||
+      activeCheck.fainting ||
+      activeCheck.painLevel === 'severe' ||
+      activeCheck.fever
     ) {
       localRisk = 'high';
       const concerns = [];
-      if (healthCheck.bleedingSeverity === 'heavy' || healthCheck.soakingPads) concerns.push("hemorrhaging indicators (heavy bleeding or soaking pads)");
-      if (healthCheck.fainting) concerns.push("fainting episodes");
-      if (healthCheck.painLevel === 'severe') concerns.push("severe abdominal pain");
-      if (healthCheck.fever) concerns.push("fever (potential systemic infection)");
+      if (activeCheck.bleedingSeverity === 'heavy' || activeCheck.soakingPads) concerns.push("hemorrhaging indicators (heavy bleeding or soaking pads)");
+      if (activeCheck.fainting) concerns.push("fainting episodes");
+      if (activeCheck.painLevel === 'severe') concerns.push("severe abdominal pain");
+      if (activeCheck.fever) concerns.push("fever (potential systemic infection)");
       
       localReasonText = `Critical recovery indicators detected: ${concerns.join(', ')}. There is an elevated risk of severe post-pregnancy loss complications (e.g. retained products of conception, infection, or internal bleeding). Immediate medical attention is recommended.`;
     } else if (
-      healthCheck.bleedingSeverity === 'moderate' ||
-      healthCheck.painLevel === 'moderate' ||
-      healthCheck.dizzy ||
-      healthCheck.weakness ||
-      healthCheck.chills ||
-      healthCheck.foulDischarge ||
-      healthCheck.prevEctopic
+      activeCheck.bleedingSeverity === 'moderate' ||
+      activeCheck.painLevel === 'moderate' ||
+      activeCheck.dizzy ||
+      activeCheck.weakness ||
+      activeCheck.chills ||
+      activeCheck.foulDischarge ||
+      activeCheck.prevEctopic
     ) {
       localRisk = 'moderate';
       const concerns = [];
-      if (healthCheck.bleedingSeverity === 'moderate') concerns.push("moderate bleeding");
-      if (healthCheck.painLevel === 'moderate') concerns.push("moderate pain/cramping");
-      if (healthCheck.dizzy || healthCheck.weakness) concerns.push("dizziness or physical weakness");
-      if (healthCheck.foulDischarge) concerns.push("abnormal discharge");
-      if (healthCheck.prevEctopic) concerns.push("previous ectopic pregnancy");
+      if (activeCheck.bleedingSeverity === 'moderate') concerns.push("moderate bleeding");
+      if (activeCheck.painLevel === 'moderate') concerns.push("moderate pain/cramping");
+      if (activeCheck.dizzy || activeCheck.weakness) concerns.push("dizziness or physical weakness");
+      if (activeCheck.foulDischarge) concerns.push("abnormal discharge");
+      if (activeCheck.prevEctopic) concerns.push("previous ectopic pregnancy");
 
       localReasonText = `Some recovery concerns flagged: ${concerns.join(', ')}. While not in acute distress, we advise booking a follow-up assessment with Lagos Maternal Center within 24 to 48 hours to ensure complete recovery.`;
     } else {
@@ -331,12 +402,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         pds106: "Farming",
         pds208: "Yes, wanted then",
         pds301: "Postabortion Care",
-        pds302: Number(healthCheck.pregnancyWeek) || 8.0,
-        pds303: (healthCheck.abortionProcedure || healthCheck.prevMiscarriage) ? "Yes" : "No",
-        pds310: healthCheck.fever ? "Yes" : "No",
-        pds324: Number(healthCheck.pregnancyWeek) <= 12 ? "<=12 weeks" : ">12 weeks",
+        pds302: Number(activeCheck.pregnancyWeek) || 8.0,
+        pds303: (activeCheck.abortionProcedure || activeCheck.prevMiscarriage) ? "Yes" : "No",
+        pds310: activeCheck.fever ? "Yes" : "No",
+        pds324: Number(activeCheck.pregnancyWeek) <= 12 ? "<=12 weeks" : ">12 weeks",
         pds401: "Incomplete Abortion",
-        pds402: (healthCheck.fainting || healthCheck.foulDischarge || healthCheck.soakingPads || healthCheck.painLevel === 'severe') ? "Yes" : "No",
+        pds402: (activeCheck.fainting || activeCheck.foulDischarge || activeCheck.soakingPads || activeCheck.painLevel === 'severe') ? "Yes" : "No",
         pds501: "Yes",
         pds502: "MVA",
         pds503: "Clinical Officer",
@@ -346,7 +417,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         pds510: "No",
         pds701: "Yes",
         pds702: "Yes",
-        pds801: (healthCheck.fainting || healthCheck.soakingPads || healthCheck.painLevel === 'severe') ? "Referred / Admitted" : "Discharged well",
+        pds801: (activeCheck.fainting || activeCheck.soakingPads || activeCheck.painLevel === 'severe') ? "Referred / Admitted" : "Discharged well",
         pds802: "Less than 12 Hrs",
         ses_score: 3.0,
         mental_health_risk: (mood !== null && mood <= 2) ? 1 : 0,

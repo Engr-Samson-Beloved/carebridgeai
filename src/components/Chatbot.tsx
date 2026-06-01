@@ -30,6 +30,7 @@ interface ChatMessage {
   text: string;
   timestamp: Date;
   navigationTarget?: string | null;
+  actions?: { type: string; payload: any }[] | null;
 }
 
 export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
@@ -130,7 +131,8 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
       role: 'model',
       text: result.replyText,
       timestamp: new Date(),
-      navigationTarget: result.navigationTarget
+      navigationTarget: result.navigationTarget,
+      actions: result.actions
     };
 
     setMessages(prev => [...prev, modelMsg]);
@@ -151,6 +153,16 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
           timestamp: new Date()
         }]);
       }, 1500);
+    }
+
+    // Handle action execution via event dispatching
+    if (result.actions && Array.isArray(result.actions)) {
+      result.actions.forEach((act: any) => {
+        console.log("Broadcasting carebridge action:", act.type, act.payload);
+        window.dispatchEvent(new CustomEvent('carebridge-action', {
+          detail: { type: act.type, data: act.payload }
+        }));
+      });
     }
   };
 
@@ -256,6 +268,46 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
                           >
                             Launch Health Test
                           </Button>
+                        </Card>
+                      )}
+
+                      {/* Conversational UI: Health Worker selection card */}
+                      {isModel && (msg.actions?.some(a => a.type === 'ASSIGN_CHW') || msg.text.toLowerCase().includes('nurse tomi') || msg.text.toLowerCase().includes('sister amina')) && (
+                        <Card className="mt-3 p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-2 text-white">
+                          <span className="text-[9px] font-black text-primary uppercase tracking-widest block">Available Health Workers</span>
+                          <div className="space-y-2">
+                            {[
+                              { id: 'chw_tomi', name: 'Nurse Tomi', location: 'Lagos Mainland PAC Dept', avatar: 'https://images.unsplash.com/photo-1590642916589-592bca10dfbf?auto=format&fit=crop&q=80&w=100&h=100' },
+                              { id: 'chw_amina', name: 'Sister Amina', location: 'Ikeja Health Center', avatar: 'https://images.unsplash.com/photo-1594824813573-246434e33963?auto=format&fit=crop&q=80&w=100&h=100' },
+                              { id: 'chw_kelechi', name: 'Dr. Kelechi', location: 'Surulere PAC Outreach', avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=100&h=100' }
+                            ].map((chw) => (
+                              <div 
+                                key={chw.id}
+                                onClick={() => {
+                                  window.dispatchEvent(new CustomEvent('carebridge-action', {
+                                    detail: { type: 'ASSIGN_CHW', data: { chwId: chw.id, chwName: chw.name } }
+                                  }));
+                                  // Add local chat notification
+                                  setMessages(prev => [...prev, {
+                                    id: `msg-${Date.now() + 5}`,
+                                    role: 'model',
+                                    text: `✅ CareBridge: CHW ${chw.name} has been selected to follow up on your case.`,
+                                    timestamp: new Date()
+                                  }]);
+                                }}
+                                className="p-2 border border-slate-800 rounded-lg hover:border-slate-700 transition-all flex items-center justify-between cursor-pointer bg-slate-950/40 hover:bg-slate-950/80"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <img src={chw.avatar} alt={chw.name} className="w-6 h-6 rounded-full object-cover border border-slate-800" />
+                                  <div>
+                                    <span className="font-extrabold text-[10px] text-slate-200 block leading-none">{chw.name}</span>
+                                    <span className="text-[7.5px] text-slate-400 font-bold uppercase">{chw.location}</span>
+                                  </div>
+                                </div>
+                                <span className="text-[8.5px] font-black text-primary px-2 py-0.5 rounded bg-blue-900/20 hover:bg-blue-900/40">Select</span>
+                              </div>
+                            ))}
+                          </div>
                         </Card>
                       )}
 

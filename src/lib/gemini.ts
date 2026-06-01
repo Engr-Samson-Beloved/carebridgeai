@@ -94,17 +94,54 @@ Key Guidelines:
    - "recovery" (Symptoms Accordion recovery test or health check)
    - "referral" (Support Clinics directory or Live Routing Map)
    - "assessment" (AI Pregnancy Triage screen)
-   For example:
-   - If they say: "where is the nearest clinic", "show me doctor", "hospital near me", set navigationTarget to "referral".
-   - If they say: "I want to start the health check", "take recovery test", "screen my symptoms", set navigationTarget to "recovery".
-   - If they say: "take me to triage", "do pregnancy triage", set navigationTarget to "assessment".
-   - If they say: "go home", "show my water intake", "dashboard", set navigationTarget to "patient-dashboard".
+
+5. Action Execution System: You can execute actions in the application on behalf of the user. In your JSON response, return an array under "actions". If the user reports logging metrics, describe their symptoms, run assessments, or assign health workers, return the matching actions:
+   a. LOG_WATER: User drank water/hydrated. Payload: { "amount": 1 }
+   b. LOG_NUTRITION: User ate a meal. Payload: {}
+   c. LOG_MEDICINE: User took medication. Payload: {}
+   d. LOG_SYMPTOMS: User logs mood/symptoms. Extract:
+      - mood: number 1-5 based on their feeling (1 is very bad/sad, 5 is very happy/healthy).
+      - note: summary text of how they are feeling/what they wrote.
+      - tags: string array, matching only these: "Bleeding", "Pelvic Pain", "Headache", "Fever", "Nausea", "Fatigue"
+    e. RUN_ASSESSMENT: User wants to start or complete the triage checkup. Return the payload when you have sufficient inputs (pregnancyWeek defaults to 8 if not specified). You MUST output all 19 keys in the payload object. Set booleans to true/false and strings to "none" if not mentioned. Do not omit any keys.
+       Example payload structure:
+       {
+         "pregnancyWeek": 9,
+         "bleedingSeverity": "moderate",
+         "soakingPads": false,
+         "bloodClots": true,
+         "cramping": true,
+         "oneSidedPain": false,
+         "painLevel": "none",
+         "fainting": false,
+         "dizzy": false,
+         "weakness": false,
+         "fever": false,
+         "chills": false,
+         "foulDischarge": false,
+         "abortionProcedure": false,
+         "prevMiscarriage": false,
+         "prevEctopic": false,
+         "hypertension": false,
+         "diabetes": false,
+         "anemia": false
+       }
+   f. ASSIGN_CHW: User wants to assign a counselor or health worker. The available CHWs are:
+      - "Nurse Tomi" (chwId: "chw_tomi")
+      - "Sister Amina" (chwId: "chw_amina")
+      - "Dr. Kelechi" (chwId: "chw_kelechi")
+      Payload: { "chwId": "chw_tomi" | "chw_amina" | "chw_kelechi", "chwName": "Nurse Tomi" | "Sister Amina" | "Dr. Kelechi" }
+
+Crucial Output Guidelines:
+1. "replyText" MUST strictly be the final, empathetic message written to the patient. It must NEVER contain code snippets, developer arguments, schema reasoning, fallback discussions, or meta-commentary.
+2. "actions" MUST always be included in the response. If there are no actions for the application to execute, set "actions" to an empty array: []. Do not omit it.
 
 Output Format:
 You MUST respond in valid JSON format matching the schema:
 {
-  "replyText": "Empathetic, clear response in text",
-  "navigationTarget": "optional-view-id-or-null"
+  "replyText": "Empathetic, clear response in text to be shown directly to the patient",
+  "navigationTarget": "optional-view-id-or-null",
+  "actions": [ { "type": "action-type", "payload": {} } ]
 }
 `;
 
@@ -133,9 +170,50 @@ export async function generateChatResponse(
           type: Type.OBJECT,
           properties: {
             replyText: { type: Type.STRING },
-            navigationTarget: { type: Type.STRING, nullable: true }
+            navigationTarget: { type: Type.STRING, nullable: true },
+            actions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  type: { type: Type.STRING },
+                  payload: {
+                    type: Type.OBJECT,
+                    properties: {
+                      amount: { type: Type.INTEGER },
+                      mood: { type: Type.INTEGER },
+                      note: { type: Type.STRING },
+                      tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      chwId: { type: Type.STRING },
+                      chwName: { type: Type.STRING },
+                      
+                      pregnancyWeek: { type: Type.INTEGER },
+                      bleedingSeverity: { type: Type.STRING },
+                      soakingPads: { type: Type.BOOLEAN },
+                      bloodClots: { type: Type.BOOLEAN },
+                      cramping: { type: Type.BOOLEAN },
+                      oneSidedPain: { type: Type.BOOLEAN },
+                      painLevel: { type: Type.STRING },
+                      fainting: { type: Type.BOOLEAN },
+                      dizzy: { type: Type.BOOLEAN },
+                      weakness: { type: Type.BOOLEAN },
+                      fever: { type: Type.BOOLEAN },
+                      chills: { type: Type.BOOLEAN },
+                      foulDischarge: { type: Type.BOOLEAN },
+                      abortionProcedure: { type: Type.BOOLEAN },
+                      prevMiscarriage: { type: Type.BOOLEAN },
+                      prevEctopic: { type: Type.BOOLEAN },
+                      hypertension: { type: Type.BOOLEAN },
+                      diabetes: { type: Type.BOOLEAN },
+                      anemia: { type: Type.BOOLEAN }
+                    }
+                  }
+                },
+                required: ["type"]
+              }
+            }
           },
-          required: ["replyText"]
+          required: ["replyText", "actions"]
         }
       }
     });
@@ -153,7 +231,8 @@ export async function generateChatResponse(
 
     return {
       replyText: "I am here for you and want to help you heal. If you are feeling severe pain or heavy bleeding, please check our clinics directory immediately or use our emergency SOS option.",
-      navigationTarget: navTarget
+      navigationTarget: navTarget,
+      actions: []
     };
   }
 }

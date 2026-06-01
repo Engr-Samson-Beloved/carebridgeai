@@ -51,6 +51,31 @@ export function PatientDashboard({
   const [medTaken, setMedTaken] = useState(false);
   const [streak, setStreak] = useState(4);
 
+  React.useEffect(() => {
+    const handleCareBridgeAction = (e: Event) => {
+      const { type, data } = (e as CustomEvent).detail;
+      if (type === 'LOG_WATER') {
+        const increment = data?.amount || 1;
+        setWaterGlasses(prev => {
+          const next = Math.min(10, prev + increment);
+          if (prev < 8 && next >= 8) {
+            setStreak(s => s + 1);
+          }
+          return next;
+        });
+      } else if (type === 'LOG_NUTRITION') {
+        setMealEaten(true);
+      } else if (type === 'LOG_MEDICINE') {
+        setMedTaken(true);
+      }
+    };
+
+    window.addEventListener('carebridge-action', handleCareBridgeAction);
+    return () => {
+      window.removeEventListener('carebridge-action', handleCareBridgeAction);
+    };
+  }, []);
+
   // Appointments Tracking State
   const [appointments, setAppointments] = useState<any[]>(() => {
     const saved = localStorage.getItem('carebridge_appointments');
