@@ -167,15 +167,15 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] font-sans">
+    <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-[100] font-sans flex flex-col items-end">
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 30 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="mb-4 w-[360px] h-[520px] bg-slate-900/95 border border-slate-800 text-white rounded-[2.5rem] shadow-[0_32px_64px_-15px_rgba(15,76,129,0.5)] backdrop-blur-xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300"
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", stiffness: 350, damping: 28 }}
+            className="mb-4 w-[calc(100vw-2rem)] sm:w-[360px] h-[450px] md:h-[550px] max-h-[calc(100vh-160px)] bg-slate-950/95 border border-slate-800 text-white rounded-[2.5rem] shadow-[0_24px_50px_-12px_rgba(15,76,129,0.4)] backdrop-blur-xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300"
           >
             {/* Header */}
             <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-gradient-to-r from-slate-900 to-slate-950">
