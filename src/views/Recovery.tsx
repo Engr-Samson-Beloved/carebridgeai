@@ -595,19 +595,19 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     if (risk === 'high') {
       return [
         { title: "Avoid physical exertion", text: "Complete bed rest is required. Avoid lifting anything heavier than a cup." },
-        { title: "Avoid hot baths", text: "Stick to warm showers. Heat can exacerbate bleeding." },
+        { title: "Specific Nutrition", text: "Eat leafy green vegetables rich in iron (promotes blood circulation), folate (assists recovery), and fiber (supports digestion)." },
         { title: "Drink warm broth", text: "Support hydration and electrolytes without chilling your stomach core." }
       ];
     } else if (risk === 'moderate') {
       return [
         { title: "Hydrate & Restore", text: "Aim for 8 to 10 glasses of water. Supporting blood volume recovery is critical." },
-        { title: "Eat iron-rich meals", text: "Incorporate spinach, beans, and eggs to replenish red blood cells." },
+        { title: "Specific Nutrition", text: "Incorporate leafy green vegetables (rich in iron for blood circulation, folate for tissue recovery, and fiber for good digestion)." },
         { title: "Avoid sexual activity", text: "Do not insert anything in the vagina to prevent pelvic infection risks." }
       ];
     } else {
       return [
         { title: "Streak maintenance", text: "Continue tracking water. 8 glasses a day supports tissue healing." },
-        { title: "Calorie density", text: "Consume at least 2,000 nutrients-packed calories daily to rebuild tissue energy." },
+        { title: "Specific Nutrition", text: "Eat green vegetables (iron for circulation, folate for cell recovery, fiber for digestion) and protein instead of calorie tracking." },
         { title: "Gentle breathing", text: "Practice diaphragmatic breaths for 5 minutes morning and night." }
       ];
     }
@@ -1533,7 +1533,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                         Critical danger indicators are present. CareBridge AI has simulated an urgent clinical notification dispatch to Lagos Maternal Center. Please call our clinical coordinator immediately.
                       </p>
 
-                      <div className="flex gap-2">
+                       <div className="flex gap-2">
                         <Button 
                           onClick={() => { setShowEmergencyCall(true); alert("Connecting with Lagos Maternal Center Emergency Desk..."); }}
                           className="flex-1 h-10 bg-white hover:bg-rose-50 text-rose-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] gap-2 shadow-lg shadow-rose-900/20"
@@ -1547,6 +1547,58 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                         >
                           Map Route
                         </Button>
+                      </div>
+
+                      {/* Hospital Suggestions */}
+                      <div className="border-t border-rose-500/40 pt-3.5 space-y-2.5">
+                        <span className="text-[10px] font-black uppercase text-rose-100 tracking-wider block">
+                          Suggested Facilities (Urgency Level 2-3)
+                        </span>
+                        
+                        <div className="space-y-2">
+                          {[
+                            {
+                              name: "City Maternal Care",
+                              distance: "2.4 km",
+                              urgency: "Level 3",
+                              address: "12 Medical Road, Ikeja",
+                              specialty: "EPAU, Emergency OBGYN"
+                            },
+                            {
+                              name: "St. Jude Women’s Hosp.",
+                              distance: "5.1 km",
+                              urgency: "Level 2",
+                              address: "45 Unity Street, Surulere",
+                              specialty: "General OBGYN, Post-loss Care"
+                            }
+                          ].map(hosp => (
+                            <div key={hosp.name} className="p-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-all border border-white/5 flex flex-col gap-1.5 text-white">
+                              <div className="flex justify-between items-center">
+                                <h5 className="font-extrabold text-xs">{hosp.name}</h5>
+                                <span className="text-[8px] font-black px-1.5 py-0.5 bg-rose-700 border border-rose-600 rounded-md uppercase">
+                                  {hosp.urgency}
+                                </span>
+                              </div>
+                              <p className="text-[9.5px] text-rose-100 font-bold uppercase tracking-wider">{hosp.distance} • {hosp.specialty}</p>
+                              <div className="flex gap-2 mt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => alert(`Calling ${hosp.name}...`)}
+                                  className="flex-1 py-1.5 text-[9px] font-black bg-white text-rose-600 rounded-xl hover:bg-rose-50 transition-colors uppercase tracking-wider cursor-pointer border-none"
+                                >
+                                  Call Hospital
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => alert(`Mapping route to ${hosp.name} (${hosp.address})...`)}
+                                  className="flex-1 py-1.5 text-[9px] font-black bg-white/25 hover:bg-white/35 text-white rounded-xl transition-colors border border-white/15 uppercase tracking-wider cursor-pointer border-none"
+                                >
+                                  Directions
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     {/* Watermark */}

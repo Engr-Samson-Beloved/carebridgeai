@@ -78,8 +78,8 @@ export function Referrals({ language, onBack }: ReferralsProps) {
         </button>
       )}
       <div className="mb-8">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{t.referrals}</h2>
-        <p className="text-slate-500 font-medium">CareBridge AI coordinates your clinical path based on urgency and accessibility.</p>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Care Options & Clinics</h2>
+        <p className="text-slate-500 font-medium">Access maternal support clinics, professional counselors, and peer WhatsApp communities in your local area.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -244,6 +244,82 @@ export function Referrals({ language, onBack }: ReferralsProps) {
                      <NavIcon size={14} />
                   </Button>
                </div>
+            </div>
+          </div>
+
+          {/* WhatsApp Support Group */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1">WhatsApp Support Group</h4>
+            <Card className="p-5 border-slate-100 rounded-[2rem] shadow-sm hover:shadow-md transition-all border bg-gradient-to-r from-emerald-50/50 to-teal-50/50">
+              <div className="flex gap-4 items-start">
+                <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 shrink-0 shadow-inner">
+                  <Phone size={22} className="fill-emerald-100" />
+                </div>
+                <div className="space-y-1.5 flex-1 font-sans">
+                  <h5 className="font-extrabold text-sm text-slate-800">Peer Loss & Recovery Group</h5>
+                  <p className="text-xs text-slate-500 leading-normal font-medium">
+                    Connect with certified midwives and peer counselors in our private support community on WhatsApp.
+                  </p>
+                  <Button 
+                    onClick={() => alert("Opening WhatsApp: Connecting you to CareBridge peer loss & recovery group...")}
+                    className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px] gap-2 mt-2"
+                  >
+                    Join WhatsApp Support Group
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Counselor Directory */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Maternal Counselors</h4>
+            <div className="space-y-3">
+              {[
+                {
+                  name: "Mrs. Funmi Davies (LPC)",
+                  center: "Surulere Support Center",
+                  distance: "3.2 km",
+                  specialty: "Post-partum emotional care, grief counseling",
+                  phone: "+234 809 123 4567"
+                },
+                {
+                  name: "Dr. Ngozi Nwosu",
+                  center: "Ikeja Therapy Plaza",
+                  distance: "1.8 km",
+                  specialty: "High-risk pregnancy stress, loss recovery",
+                  phone: "+234 812 987 6543"
+                }
+              ].map((coun, idx) => (
+                <Card key={idx} className="p-4 border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition-all border bg-white flex flex-col gap-2 font-sans">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h5 className="font-extrabold text-xs text-slate-800">{coun.name}</h5>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{coun.center} • {coun.distance}</p>
+                    </div>
+                    <span className="text-[9px] font-black uppercase bg-purple-50 text-purple-600 border border-purple-100 rounded-md px-1.5 py-0.5">
+                      Counselor
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium leading-normal italic">
+                    "{coun.specialty}"
+                  </p>
+                  <div className="flex gap-2 mt-1.5">
+                    <button
+                      onClick={() => alert(`Dialing ${coun.name} (${coun.phone})...`)}
+                      className="flex-1 py-1.5 text-[9px] font-black bg-primary/10 hover:bg-primary/15 text-primary rounded-xl transition-all uppercase tracking-wider cursor-pointer border-none"
+                    >
+                      Call Counselor
+                    </button>
+                    <button
+                      onClick={() => alert(`Booking session with ${coun.name}...`)}
+                      className="flex-1 py-1.5 text-[9px] font-black bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all uppercase tracking-wider cursor-pointer border-none"
+                    >
+                      Book Session
+                    </button>
+                  </div>
+                </Card>
+              ))}
             </div>
           </div>
         </div>

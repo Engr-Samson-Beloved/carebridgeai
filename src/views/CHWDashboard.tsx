@@ -123,46 +123,77 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
     if (newVisit.painLevel !== 'none') careGaps.push("Requires pelvic pain management check");
     if (newVisit.fever || newVisit.foulDischarge) careGaps.push("Flagged for potential systemic infection follow-up");
 
+    const localRecord = {
+      id: `local-assessment-${Date.now()}`,
+      name: newVisit.patientName,
+      age: Number(newVisit.age) || 25,
+      location: newVisit.location,
+      pregnancyWeek: Number(newVisit.pregnancyWeek) || 8,
+      bleedingSeverity: newVisit.bleedingSeverity,
+      painLevel: newVisit.painLevel,
+      riskLevel: riskLevel,
+      prediction: riskLevel === 'High' ? 0 : 1, 
+      probability: riskLevel === 'High' ? 0.85 : 0.45,
+      action: newVisit.recommendations || (riskLevel === 'High' ? "Refer immediately to secondary hospital." : "Routine Health Worker home follow-up check."),
+      careGaps: careGaps,
+      equityFlags: ["Rural Outreach Access"],
+      mentalHealthFlag: false,
+      mentalHealthNote: newVisit.notes || "Logged during rural Health Worker outreach field visit.",
+      loggedByCHW: session.username || "Tomi",
+      timestamp: new Date().toISOString()
+    };
+
+    // Save locally immediately
+    try {
+      const savedLocal = localStorage.getItem('carebridge_local_assessments');
+      const currentLocal = savedLocal ? JSON.parse(savedLocal) : [];
+      localStorage.setItem('carebridge_local_assessments', JSON.stringify([localRecord, ...currentLocal]));
+    } catch (e) {
+      console.warn("Failed to save field visit locally:", e);
+    }
+
+    // Reset inputs and close visit modal instantly to ensure UI doesn't hang
+    const patientName = newVisit.patientName;
+    setShowVisitModal(false);
+    setNewVisit({
+      patientName: '',
+      age: '25',
+      location: 'Lagos Mainland',
+      pregnancyWeek: '8',
+      bleedingSeverity: 'none',
+      painLevel: 'none',
+      fever: false,
+      chills: false,
+      fainting: false,
+      foulDischarge: false,
+      notes: '',
+      recommendations: ''
+    });
+
+    // Save to Firestore in background
     try {
       await addDoc(collection(db, 'assessments'), {
-        patientName: newVisit.patientName,
-        age: Number(newVisit.age) || 25,
-        location: newVisit.location,
-        pregnancyWeek: Number(newVisit.pregnancyWeek) || 8,
-        bleedingSeverity: newVisit.bleedingSeverity,
-        painLevel: newVisit.painLevel,
-        riskLevel: riskLevel,
-        prediction: riskLevel === 'High' ? 0 : 1, 
-        probability: riskLevel === 'High' ? 0.85 : 0.45,
-        action: newVisit.recommendations || (riskLevel === 'High' ? "Refer immediately to secondary hospital." : "Routine Health Worker home follow-up check."),
-        careGaps: careGaps,
-        equityFlags: ["Rural Outreach Access"],
-        mentalHealthFlag: false,
-        mentalHealthNote: newVisit.notes || "Logged during rural Health Worker outreach field visit.",
-        loggedByCHW: session.username,
-        timestamp: new Date().toISOString()
+        patientName: localRecord.name,
+        age: localRecord.age,
+        location: localRecord.location,
+        pregnancyWeek: localRecord.pregnancyWeek,
+        bleedingSeverity: localRecord.bleedingSeverity,
+        painLevel: localRecord.painLevel,
+        riskLevel: localRecord.riskLevel,
+        prediction: localRecord.prediction, 
+        probability: localRecord.probability,
+        action: localRecord.action,
+        careGaps: localRecord.careGaps,
+        equityFlags: localRecord.equityFlags,
+        mentalHealthFlag: localRecord.mentalHealthFlag,
+        mentalHealthNote: localRecord.mentalHealthNote,
+        loggedByCHW: localRecord.loggedByCHW,
+        timestamp: localRecord.timestamp
       });
-
-      alert(`Field visit record logged successfully for patient ${newVisit.patientName}.`);
-      setShowVisitModal(false);
-      setNewVisit({
-        patientName: '',
-        age: '25',
-        location: 'Lagos Mainland',
-        pregnancyWeek: '8',
-        bleedingSeverity: 'none',
-        painLevel: 'none',
-        fever: false,
-        chills: false,
-        fainting: false,
-        foulDischarge: false,
-        notes: '',
-        recommendations: ''
-      });
+      alert(`Field visit record logged successfully for patient ${patientName}.`);
     } catch (err) {
-      console.warn("Failed to save field visit to Firestore:", err);
-      alert("Error saving field visit log (simulating local backup).");
-      setShowVisitModal(false);
+      console.warn("Failed to save field visit to Firestore, fell back to local storage:", err);
+      alert(`Field visit record saved locally for patient ${patientName} (offline simulation).`);
     }
   };
 
@@ -192,10 +223,39 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
         });
       });
 
-      setPatients(dataList);
+      // Retrieve and merge local storage assessments for offline-first display
+      let localList: any[] = [];
+      try {
+        const savedLocal = localStorage.getItem('carebridge_local_assessments');
+        localList = savedLocal ? JSON.parse(savedLocal) : [];
+      } catch (e) {
+        console.warn("Failed to parse local assessments:", e);
+      }
+
+      // Filter out local items that have been successfully synced to Firestore (using name & location matching as keys)
+      const syncedNames = new Set(dataList.map(item => `${item.name}-${item.location}`));
+      const uniqueLocal = localList.filter(item => !syncedNames.has(`${item.name}-${item.location}`));
+
+      const formattedLocal = uniqueLocal.map(item => ({
+        ...item,
+        date: item.timestamp ? new Date(item.timestamp).toLocaleDateString() : new Date().toLocaleDateString()
+      })) as unknown as CHWPatient[];
+
+      setPatients([...formattedLocal, ...dataList]);
     }, (error) => {
-      console.warn("Screening onSnapshot failed:", error);
-      setPatients([]);
+      console.warn("Screening onSnapshot failed, loading local items only:", error);
+      let localList: any[] = [];
+      try {
+        const savedLocal = localStorage.getItem('carebridge_local_assessments');
+        localList = savedLocal ? JSON.parse(savedLocal) : [];
+      } catch (e) {
+        console.warn("Failed to parse local assessments:", e);
+      }
+      const formattedLocal = localList.map(item => ({
+        ...item,
+        date: item.timestamp ? new Date(item.timestamp).toLocaleDateString() : new Date().toLocaleDateString()
+      })) as unknown as CHWPatient[];
+      setPatients(formattedLocal);
     });
 
     // 2. Listen to notifications

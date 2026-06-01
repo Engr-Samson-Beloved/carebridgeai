@@ -40,8 +40,7 @@ export function Navigation({ currentView, onViewChange, language, session }: Nav
     : [
         { id: 'patient-dashboard', label: t.landing || 'Home', icon: Heart },
         { id: 'recovery', label: 'Recovery Test', icon: Brain },
-        { id: 'referral', label: t.findClinics || 'Clinics', icon: MapPin },
-        { id: 'assessment', label: 'Risk Triage', icon: Activity },
+        { id: 'referral', label: 'Care Options', icon: HeartPulse },
       ];
 
   if (!session) return null;
@@ -107,8 +106,7 @@ export function Sidebar({
     : [
         { id: 'patient-dashboard', label: 'Patient Home', icon: Heart },
         { id: 'recovery', label: 'Recovery Test (API)', icon: Brain },
-        { id: 'referral', label: 'Support Clinics', icon: MapPin },
-        { id: 'assessment', label: 'Pregnancy Triage (AI)', icon: Activity },
+        { id: 'referral', label: 'Care Options', icon: HeartPulse },
       ];
 
   const languages: { code: Language; label: string }[] = [

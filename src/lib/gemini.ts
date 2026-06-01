@@ -14,6 +14,34 @@ if (!apiKey) {
 
 const ai = new GoogleGenAI({ apiKey });
 
+async function generateWithFallback(options: {
+  model: string;
+  contents: any;
+  config?: any;
+}) {
+  const models = [options.model, "gemini-1.5-flash", "gemini-1.5-pro"];
+  let lastError: any = null;
+  
+  for (const modelName of models) {
+    try {
+      console.log(`Attempting generateContent with model: ${modelName}`);
+      const response = await ai.models.generateContent({
+        ...options,
+        model: modelName
+      });
+      return response;
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`Model ${modelName} failed:`, err);
+      if (err.status === "RESOURCE_EXHAUSTED" || err.message?.includes("429") || err.message?.includes("quota") || err.status === 429) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
 export async function explainRisk(assessment: any) {
   const model = "gemini-2.5-flash";
   
@@ -36,7 +64,7 @@ export async function explainRisk(assessment: any) {
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await generateWithFallback({
       model,
       contents: prompt,
       config: {
@@ -72,7 +100,7 @@ export async function generateSupportMessage(mood: number, note: string) {
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await generateWithFallback({
       model,
       contents: prompt,
     });
@@ -92,8 +120,7 @@ Key Guidelines:
 4. App Navigation Detection: If the user indicates they want to perform an action or view something that corresponds to our app's features, identify the appropriate "navigationTarget" view in your response:
    - "patient-dashboard" (Home, streak, water tracker, log reflections)
    - "recovery" (Symptoms Accordion recovery test or health check)
-   - "referral" (Support Clinics directory or Live Routing Map)
-   - "assessment" (AI Pregnancy Triage screen)
+   - "referral" (Care Options directory, support counselors, WhatsApp groups, and clinics)
 
 5. Action Execution System: You can execute actions in the application on behalf of the user. In your JSON response, return an array under "actions". If the user reports logging metrics, describe their symptoms, run assessments, or assign health workers, return the matching actions:
    a. LOG_WATER: User drank water/hydrated. Payload: { "amount": 1 }
@@ -160,7 +187,7 @@ export async function generateChatResponse(
   ];
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await generateWithFallback({
       model,
       contents,
       config: {
@@ -224,9 +251,9 @@ export async function generateChatResponse(
     // Simple fallback parsing context to help navigation even offline/error
     let navTarget: string | null = null;
     const lower = newMessage.toLowerCase();
-    if (lower.includes("clinic") || lower.includes("hospital") || lower.includes("doctor") || lower.includes("referral")) navTarget = "referral";
+    if (lower.includes("clinic") || lower.includes("hospital") || lower.includes("doctor") || lower.includes("referral") || lower.includes("care") || lower.includes("counselor") || lower.includes("whatsapp")) navTarget = "referral";
     else if (lower.includes("test") || lower.includes("recovery") || lower.includes("check")) navTarget = "recovery";
-    else if (lower.includes("triage") || lower.includes("assess") || lower.includes("risk")) navTarget = "assessment";
+    else if (lower.includes("triage") || lower.includes("assess") || lower.includes("risk")) navTarget = "referral";
     else if (lower.includes("home") || lower.includes("dashboard")) navTarget = "patient-dashboard";
 
     return {

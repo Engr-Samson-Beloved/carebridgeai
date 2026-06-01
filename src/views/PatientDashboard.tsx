@@ -100,6 +100,7 @@ export function PatientDashboard({
   });
 
   const [showAddAppt, setShowAddAppt] = useState(false);
+  const [isApptsExpanded, setIsApptsExpanded] = useState(false);
   const [newType, setNewType] = useState('Antenatal Visit');
   const [newRecur, setNewRecur] = useState('weekly');
   const [newDay, setNewDay] = useState(4); // Thursday (keep for legacy compatibility if needed)
@@ -226,6 +227,18 @@ export function PatientDashboard({
     { label: 'Dizziness', icon: Info, color: 'text-secondary bg-secondary/10' },
     { label: 'High BP', icon: Stethoscope, color: 'text-blue-500 bg-blue-50' },
   ];
+
+  const getApptPriority = (appt: any) => {
+    const reminder = getAppointmentReminder(appt);
+    if (!reminder) return 0;
+    if (reminder.status === 'today') return 3;
+    if (reminder.status === 'tomorrow') return 2;
+    if (reminder.status === 'upcoming') return 1;
+    return 0;
+  };
+
+  const sortedAppointments = [...appointments].sort((a, b) => getApptPriority(b) - getApptPriority(a));
+  const visibleAppointments = isApptsExpanded ? sortedAppointments : sortedAppointments.slice(0, 1);
 
   return (
     <div className="flex flex-col gap-8 pb-40 px-4 sm:px-6 w-full max-w-7xl mx-auto">
@@ -438,61 +451,79 @@ export function PatientDashboard({
                     <p className="text-[10px] text-slate-400 font-bold">No appointments tracked. Click + to add.</p>
                   </div>
                 ) : (
-                  appointments.map((appt) => {
-                    const reminder = getAppointmentReminder(appt);
-                    return (
-                      <div 
-                        key={appt.id} 
-                        className={`p-3.5 rounded-2xl border transition-all flex flex-col gap-2 relative group overflow-hidden ${
-                          reminder?.status === 'today' ? 'bg-rose-50/70 border-rose-100 text-rose-950 ring-2 ring-rose-500/10' :
-                          reminder?.status === 'tomorrow' ? 'bg-amber-50/70 border-amber-100 text-amber-950' :
-                          'bg-slate-50/40 border-slate-100 text-slate-700 hover:border-slate-200'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="text-[9px] font-black uppercase tracking-wider block opacity-40">
-                              {appt.recurrence === 'weekly' 
-                                ? `Every ${
-                                    Array.isArray(appt.daysOfWeek) 
-                                      ? appt.daysOfWeek.map((d: number) => getDayName(d)).join(', ') 
-                                      : getDayName(appt.dayOfWeek)
-                                  }`
-                                : 'One-Time'}
-                            </span>
-                            <span className="font-extrabold text-xs block mt-0.5">{appt.type}</span>
-                          </div>
-                          
-                          <button 
-                            onClick={() => handleDeleteAppt(appt.id)}
-                            className="absolute right-2 top-2 p-1 text-[10px] text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none"
-                            title="Cancel appointment"
+                  <>
+                    <div className="space-y-3">
+                      {visibleAppointments.map((appt) => {
+                        const reminder = getAppointmentReminder(appt);
+                        return (
+                          <div 
+                            key={appt.id} 
+                            className={`p-3.5 rounded-2xl border transition-all flex flex-col gap-2 relative group overflow-hidden ${
+                              reminder?.status === 'today' ? 'bg-rose-50/70 border-rose-100 text-rose-950 ring-2 ring-rose-500/10' :
+                              reminder?.status === 'tomorrow' ? 'bg-amber-50/70 border-amber-100 text-amber-950' :
+                              'bg-slate-50/40 border-slate-100 text-slate-700 hover:border-slate-200'
+                            }`}
                           >
-                            ✕
-                          </button>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <span className="text-[9px] font-black uppercase tracking-wider block opacity-40">
+                                  {appt.recurrence === 'weekly' 
+                                    ? `Every ${
+                                        Array.isArray(appt.daysOfWeek) 
+                                          ? appt.daysOfWeek.map((d: number) => getDayName(d)).join(', ') 
+                                          : getDayName(appt.dayOfWeek)
+                                      }`
+                                    : 'One-Time'}
+                                </span>
+                                <span className="font-extrabold text-xs block mt-0.5">{appt.type}</span>
+                              </div>
+                              
+                              <button 
+                                onClick={() => handleDeleteAppt(appt.id)}
+                                className="absolute right-2 top-2 p-1 text-[10px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-opacity cursor-pointer border-none z-10"
+                                title="Cancel appointment"
+                              >
+                                ✕
+                              </button>
 
-                          <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
-                            reminder?.status === 'today' ? 'bg-rose-500 border-none text-white' :
-                            reminder?.status === 'tomorrow' ? 'bg-amber-500 border-none text-white' :
-                            'bg-slate-100 border-slate-200 text-slate-500'
-                          }`}>
-                            {reminder?.status === 'today' ? 'TODAY' : reminder?.status === 'tomorrow' ? 'TOMORROW' : appt.time}
-                          </Badge>
-                        </div>
+                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                                reminder?.status === 'today' ? 'bg-rose-500 border-none text-white' :
+                                reminder?.status === 'tomorrow' ? 'bg-amber-500 border-none text-white' :
+                                'bg-slate-100 border-slate-200 text-slate-500'
+                              }`}>
+                                {reminder?.status === 'today' ? 'TODAY' : reminder?.status === 'tomorrow' ? 'TOMORROW' : appt.time}
+                              </Badge>
+                            </div>
 
-                        {reminder && (
-                          <div className={`p-2.5 rounded-xl text-[10px] font-bold leading-normal flex items-start gap-2 ${
-                            reminder.status === 'today' ? 'bg-white/60 text-rose-950 border border-rose-200/30' :
-                            reminder.status === 'tomorrow' ? 'bg-white/60 text-amber-950 border border-amber-200/30' :
-                            'bg-slate-50/50 text-slate-600 border border-slate-100'
-                          }`}>
-                            <span className="shrink-0">📅</span>
-                            <span>{reminder.message}</span>
+                            {reminder && (
+                              <div className={`p-2.5 rounded-xl text-[10px] font-bold leading-normal flex items-start gap-2 ${
+                                reminder.status === 'today' ? 'bg-white/60 text-rose-950 border border-rose-200/30' :
+                                reminder.status === 'tomorrow' ? 'bg-white/60 text-amber-950 border border-amber-200/30' :
+                                'bg-slate-50/50 text-slate-600 border border-slate-100'
+                              }`}>
+                                <span className="shrink-0">📅</span>
+                                <span>{reminder.message}</span>
+                              </div>
+                            )}
                           </div>
+                        );
+                      })}
+                    </div>
+
+                    {appointments.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setIsApptsExpanded(!isApptsExpanded)}
+                        className="w-full text-center py-2 text-[10px] font-black uppercase text-slate-500 hover:text-primary transition-colors flex items-center justify-center gap-1 cursor-pointer border-none bg-transparent"
+                      >
+                        {isApptsExpanded ? (
+                          <>Collapse Appointments ▴</>
+                        ) : (
+                          <>Show All Appointments ({appointments.length}) ▾</>
                         )}
-                      </div>
-                    );
-                  })
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}
