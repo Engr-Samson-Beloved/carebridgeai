@@ -8,6 +8,7 @@ import { Assessment } from './views/Assessment';
 import { Referrals } from './views/Referrals';
 import { Recovery } from './views/Recovery';
 import { OnboardingTour } from './components/OnboardingTour';
+import { Chatbot } from './components/Chatbot';
 import { AppView, Language, UserPreferences, UserSession } from './types';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
@@ -185,6 +186,15 @@ export default function App() {
           step={tourStep} 
           onNext={handleNextTourStep} 
           onSkip={handleSkipTour} 
+        />
+      )}
+
+      {/* Gemini Chatbot for Patients */}
+      {session && session.role === 'patient' && (
+        <Chatbot 
+          language={prefs.language} 
+          onNavigate={setView} 
+          username={session.username} 
         />
       )}
     </div>
