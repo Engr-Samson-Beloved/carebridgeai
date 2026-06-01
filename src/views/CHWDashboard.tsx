@@ -134,11 +134,11 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
         riskLevel: riskLevel,
         prediction: riskLevel === 'High' ? 0 : 1, 
         probability: riskLevel === 'High' ? 0.85 : 0.45,
-        action: newVisit.recommendations || (riskLevel === 'High' ? "Refer immediately to secondary hospital." : "Routine CHW home follow-up check."),
+        action: newVisit.recommendations || (riskLevel === 'High' ? "Refer immediately to secondary hospital." : "Routine Health Worker home follow-up check."),
         careGaps: careGaps,
         equityFlags: ["Rural Outreach Access"],
         mentalHealthFlag: false,
-        mentalHealthNote: newVisit.notes || "Logged during rural CHW outreach field visit.",
+        mentalHealthNote: newVisit.notes || "Logged during rural Health Worker outreach field visit.",
         loggedByCHW: session.username,
         timestamp: new Date().toISOString()
       });
@@ -273,13 +273,22 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
           <div className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm overflow-hidden ring-4 ring-[#0F4C81]/10">
             <img 
               src="https://images.unsplash.com/photo-1590642916589-592bca10dfbf?auto=format&fit=crop&q=80&w=200&h=200" 
-              alt="CHW profile"
+              alt="Health Worker profile"
               className="w-full h-full object-cover"
             />
           </div>
           <div>
-            <p className="text-[10px] font-black text-[#0F4C81] uppercase tracking-widest leading-none mb-1">CHW Registry Console</p>
-            <h2 className="text-lg font-black text-slate-800">Nurse {session.username}</h2>
+            <p className="text-[10px] font-black text-[#0F4C81] uppercase tracking-widest leading-none mb-1">Health Worker Console</p>
+            <h2 className="text-lg font-black text-slate-800">
+              {(() => {
+                const name = session.username;
+                const lower = name.toLowerCase();
+                if (lower.startsWith('dr.') || lower.startsWith('nurse') || lower.startsWith('midwife') || lower.startsWith('chw') || lower.startsWith('hw') || lower.startsWith('dr ')) {
+                  return name;
+                }
+                return `Health Worker ${name}`;
+              })()}
+            </h2>
           </div>
         </div>
 

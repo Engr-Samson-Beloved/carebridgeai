@@ -77,7 +77,8 @@ export function PatientDashboard({
   const [showAddAppt, setShowAddAppt] = useState(false);
   const [newType, setNewType] = useState('Antenatal Visit');
   const [newRecur, setNewRecur] = useState('weekly');
-  const [newDay, setNewDay] = useState(4); // Thursday
+  const [newDay, setNewDay] = useState(4); // Thursday (keep for legacy compatibility if needed)
+  const [newDays, setNewDays] = useState<number[]>([4]); // Selected days array (default Thursday)
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('09:00');
   const [newNotes, setNewNotes] = useState('');
@@ -93,12 +94,17 @@ export function PatientDashboard({
       alert("Please select a date.");
       return;
     }
+    if (newRecur === 'weekly' && newDays.length === 0) {
+      alert("Please select at least one day.");
+      return;
+    }
     
     const newAppt = {
       id: `appt-${Date.now()}`,
       type: newType,
       recurrence: newRecur,
-      dayOfWeek: newRecur === 'weekly' ? Number(newDay) : null,
+      dayOfWeek: newRecur === 'weekly' ? newDays[0] : null,
+      daysOfWeek: newRecur === 'weekly' ? newDays : null,
       date: newRecur === 'none' ? newDate : null,
       time: newTime,
       notes: newNotes
@@ -107,6 +113,7 @@ export function PatientDashboard({
     saveAppointments([...appointments, newAppt]);
     setShowAddAppt(false);
     setNewNotes('');
+    setNewDays([4]); // Reset to Thursday default
   };
 
   const handleDeleteAppt = (id: string) => {
@@ -125,24 +132,39 @@ export function PatientDashboard({
     today.setHours(0,0,0,0);
     
     if (appt.recurrence === 'weekly') {
-      const targetDay = Number(appt.dayOfWeek); // 0-6
+      const days: number[] = Array.isArray(appt.daysOfWeek) 
+        ? appt.daysOfWeek 
+        : (appt.dayOfWeek !== null && appt.dayOfWeek !== undefined ? [Number(appt.dayOfWeek)] : []);
+      
+      if (days.length === 0) return null;
+
       const currentDay = today.getDay();
       
-      const diff = (targetDay - currentDay + 7) % 7;
-      if (diff === 0) {
+      // Calculate diffs for each day
+      const diffs = days.map(d => ({
+        day: d,
+        diff: (d - currentDay + 7) % 7
+      }));
+
+      // Sort so that today (0) or tomorrow (1) or closest next day is first
+      diffs.sort((a, b) => a.diff - b.diff);
+
+      const closest = diffs[0];
+
+      if (closest.diff === 0) {
         return {
           status: 'today',
           message: `Your recurring ${appt.type} is TODAY! ${appt.notes || 'Remember to pack your card and keep hydrated.'}`
         };
-      } else if (diff === 1) {
+      } else if (closest.diff === 1) {
         return {
           status: 'tomorrow',
-          message: `Reminder: Your recurring ${appt.type} is TOMORROW (${getDayName(targetDay)})! ${appt.notes || 'Remember to pack your card and prepare your questions.'}`
+          message: `Reminder: Your recurring ${appt.type} is TOMORROW (${getDayName(closest.day)})! ${appt.notes || 'Remember to pack your card and prepare your questions.'}`
         };
       } else {
         return {
           status: 'upcoming',
-          message: `Next recurring ${appt.type} is next ${getDayName(targetDay)}. ${appt.notes || ''}`
+          message: `Next recurring ${appt.type} is next ${getDayName(closest.day)}. ${appt.notes || ''}`
         };
       }
     } else {
@@ -310,20 +332,40 @@ export function PatientDashboard({
 
                 {newRecur === 'weekly' ? (
                   <div>
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-1">Select Day</label>
-                    <select 
-                      value={newDay} 
-                      onChange={e => setNewDay(Number(e.target.value))}
-                      className="w-full text-xs bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 font-bold focus:outline-none"
-                    >
-                      <option value="1">Every Monday</option>
-                      <option value="2">Every Tuesday</option>
-                      <option value="3">Every Wednesday</option>
-                      <option value="4">Every Thursday</option>
-                      <option value="5">Every Friday</option>
-                      <option value="6">Every Saturday</option>
-                      <option value="0">Every Sunday</option>
-                    </select>
+                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-1.5">Select Days of Week (Select multiple if needed)</label>
+                    <div className="flex flex-wrap gap-1">
+                      {[
+                        { v: 1, l: 'Mon' },
+                        { v: 2, l: 'Tue' },
+                        { v: 3, l: 'Wed' },
+                        { v: 4, l: 'Thu' },
+                        { v: 5, l: 'Fri' },
+                        { v: 6, l: 'Sat' },
+                        { v: 0, l: 'Sun' }
+                      ].map(d => {
+                        const isSelected = newDays.includes(d.v);
+                        return (
+                          <button
+                            type="button"
+                            key={d.v}
+                            onClick={() => {
+                              setNewDays(prev => 
+                                prev.includes(d.v) 
+                                  ? (prev.length > 1 ? prev.filter(x => x !== d.v) : prev) // keep at least one
+                                  : [...prev, d.v]
+                              );
+                            }}
+                            className={`py-1 px-2.5 text-[9px] font-black uppercase rounded-xl border transition-all ${
+                              isSelected 
+                                ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' 
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            {d.l}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -385,7 +427,13 @@ export function PatientDashboard({
                         <div className="flex justify-between items-start">
                           <div>
                             <span className="text-[9px] font-black uppercase tracking-wider block opacity-40">
-                              {appt.recurrence === 'weekly' ? 'Weekly' : 'One-Time'}
+                              {appt.recurrence === 'weekly' 
+                                ? `Every ${
+                                    Array.isArray(appt.daysOfWeek) 
+                                      ? appt.daysOfWeek.map((d: number) => getDayName(d)).join(', ') 
+                                      : getDayName(appt.dayOfWeek)
+                                  }`
+                                : 'One-Time'}
                             </span>
                             <span className="font-extrabold text-xs block mt-0.5">{appt.type}</span>
                           </div>
@@ -465,25 +513,6 @@ export function PatientDashboard({
             </div>
           </Card>
 
-          {/* Quick Symptom Chips */}
-          <Card className="p-5 border-slate-100 rounded-[2rem] bg-white border shadow-sm">
-            <div className="flex justify-between items-center mb-4 ml-1">
-              <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Quick Risk Triggers</h4>
-              <Volume2 size={14} className="text-slate-300" />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {symptomChips.map((chip) => (
-                <button
-                  key={chip.label}
-                  onClick={onStart}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-full font-bold text-xs border border-transparent hover:border-slate-200 transition-all shadow-xs cursor-pointer ${chip.color}`}
-                >
-                  <chip.icon size={12} />
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-          </Card>
         </div>
 
         {/* COLUMN 3: Nearby Support Clinics & Emergency Quick Actions */}

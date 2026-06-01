@@ -35,7 +35,7 @@ export function Navigation({ currentView, onViewChange, language, session }: Nav
   const isCHW = session?.role === 'chw';
   const navItems = isCHW 
     ? [
-        { id: 'chw-dashboard', label: 'CHW Dashboard', icon: LayoutDashboard }
+        { id: 'chw-dashboard', label: 'Health Worker Dashboard', icon: LayoutDashboard }
       ]
     : [
         { id: 'patient-dashboard', label: t.landing || 'Home', icon: Heart },
@@ -102,7 +102,7 @@ export function Sidebar({
   const isCHW = session?.role === 'chw';
   const navItems = isCHW 
     ? [
-        { id: 'chw-dashboard', label: 'CHW Registry Console', icon: LayoutDashboard }
+        { id: 'chw-dashboard', label: 'Health Worker Console', icon: LayoutDashboard }
       ]
     : [
         { id: 'patient-dashboard', label: 'Patient Home', icon: Heart },
@@ -133,7 +133,32 @@ export function Sidebar({
         </h1>
       </div>
 
-      {/* Language Selector */}
+      {/* Navigation tabs (Moved to top) */}
+      <nav className="space-y-1 mb-6">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = currentView === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onViewChange(item.id as AppView)}
+              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${
+                isActive 
+                  ? 'bg-[#0F4C81] text-white shadow-lg shadow-blue-100' 
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+              }`}
+            >
+              <Icon size={20} />
+              <span className="truncate">{item.label}</span>
+              {isActive && <ChevronRight size={16} className="ml-auto shrink-0" />}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-slate-100/60 my-4" />
+
+      {/* Language Selector (Moved down) */}
       <div className="mb-6">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Select Language</p>
         <div className="grid grid-cols-2 gap-2">
@@ -153,8 +178,8 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Control Center (Toggles and Emergency SOS) */}
-      <div className="mb-6 space-y-2.5">
+      {/* Control Center (Toggles and Emergency SOS - Moved down) */}
+      <div className="mb-6 space-y-2.5 flex-1 flex flex-col justify-end">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-2">Control Center</p>
 
         {/* Voice Guide Toggle */}
@@ -200,33 +225,8 @@ export function Sidebar({
         </Button>
       </div>
 
-      <div className="border-t border-slate-100/60 my-4" />
-
-      {/* Navigation tabs */}
-      <nav className="flex-1 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentView === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onViewChange(item.id as AppView)}
-              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${
-                isActive 
-                  ? 'bg-[#0F4C81] text-white shadow-lg shadow-blue-100' 
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <Icon size={20} />
-              <span className="truncate">{item.label}</span>
-              {isActive && <ChevronRight size={16} className="ml-auto shrink-0" />}
-            </button>
-          );
-        })}
-      </nav>
-
       {/* Sign Out Section */}
-      <div className="pt-4 border-t border-slate-100">
+      <div className="pt-4 border-t border-slate-100 mt-auto">
         <button
           onClick={onSignOut}
           className="w-full flex items-center gap-4 px-5 py-3 rounded-2xl text-slate-500 hover:text-rose-500 hover:bg-rose-50/50 transition-all font-bold text-sm"

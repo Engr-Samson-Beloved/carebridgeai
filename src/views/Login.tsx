@@ -151,7 +151,7 @@ export function Login({ onLogin }: LoginProps) {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${role === 'chw' ? 'bg-[#0F4C81] text-white' : 'bg-slate-100 text-slate-400'}`}>
                     <Sparkles size={16} />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider">CHW Portal</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider">Health Worker Portal</span>
                 </button>
               </div>
             </div>
