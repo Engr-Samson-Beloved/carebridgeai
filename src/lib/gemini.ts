@@ -115,7 +115,6 @@ export async function generateChatResponse(
   const model = "gemini-2.5-flash";
   
   const contents = [
-    { role: "system", parts: [{ text: CHAT_SYSTEM_INSTRUCTION }] },
     ...history.map(h => ({
       role: h.role === "user" ? "user" : "model",
       parts: [{ text: h.text }]
@@ -128,6 +127,7 @@ export async function generateChatResponse(
       model,
       contents,
       config: {
+        systemInstruction: CHAT_SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
