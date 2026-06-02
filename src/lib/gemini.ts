@@ -19,7 +19,7 @@ async function generateWithFallback(options: {
   contents: any;
   config?: any;
 }) {
-  const models = [options.model, "gemini-1.5-flash", "gemini-1.5-pro"];
+  const models = [options.model, "gemini-flash-latest", "gemini-pro-latest", "gemini-2.0-flash"];
   let lastError: any = null;
   
   for (const modelName of models) {
