@@ -1294,208 +1294,346 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         {/* Left Column: Daily Care & Symptoms */}
         <div className="lg:col-span-7 space-y-6">
           {/* Responsive Streak & Daily Vitals check-in Panel */}
-          <Card className="p-5 border border-slate-100 rounded-[2rem] bg-white shadow-sm space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-50 pb-2">
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-1.5">
-                <CheckCircle2 size={15} className="text-emerald-500" />
-                Daily Care & Vitals Check-in
-              </h4>
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase">Today's Vitals</span>
-            </div>
-
-            <div className="space-y-3.5">
-              {/* Water Tracker */}
-              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Droplets size={14} className="text-blue-500" /> Have you taken water?
-                </span>
-                <div className="flex gap-1 items-center">
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(glass => (
-                    <button
-                      key={glass}
-                      onClick={() => setWaterGlasses(glass)}
-                      className={`w-6 h-6.5 text-xs font-black rounded-md flex items-center justify-center transition-all ${
-                        waterGlasses >= glass 
-                          ? 'bg-blue-500 text-white shadow-md shadow-blue-200' 
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-400'
-                      }`}
-                      title={`${glass} Glass`}
-                    >
-                      🥛
-                    </button>
-                  ))}
-                  <span className="text-[10px] font-black text-slate-400 ml-1">{waterGlasses}/8</span>
+          {(() => {
+            const vitalsLoggedCount = (waterGlasses >= 8 ? 1 : waterGlasses / 8) + (mealEaten ? 1 : 0) + (medTaken ? 1 : 0);
+            const completionPercent = Math.round((vitalsLoggedCount / 3) * 100);
+            return (
+              <Card className="p-6 border border-slate-100/80 rounded-[2.5rem] bg-gradient-to-tr from-white via-slate-50/50 to-blue-50/20 shadow-[0_8px_30px_rgba(0,0,0,0.02)] space-y-5">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-1.5">
+                    <CheckCircle2 size={15} className="text-emerald-500" />
+                    Daily Care & Vitals Check-in
+                  </h4>
+                  <span className="text-[10px] text-slate-400 font-extrabold uppercase">Today's Vitals</span>
                 </div>
-              </div>
 
-              {/* Meals & Calories Tracker */}
-              <div className="flex items-center justify-between py-1 border-t border-slate-50 pt-2.5">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Coffee size={14} className="text-amber-600" /> Taken nutrient meals today?
-                </span>
-                <div className="flex gap-1.5">
-                  {[true, false].map(val => (
-                    <button
-                      key={val ? 'yes' : 'no'}
-                      onClick={() => {
-                        setMealEaten(val);
-                        if (val) setStreak(p => p + 1);
-                      }}
-                      className={`py-1 px-3 text-[10px] font-black uppercase rounded-lg border transition-all ${
-                        mealEaten === val && val 
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
-                          : (mealEaten === val && !val 
-                              ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-100' 
-                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
-                      }`}
-                    >
-                      {val ? 'Yes' : 'No'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Prescribed supplements */}
-              <div className="flex items-center justify-between py-1 border-t border-slate-50 pt-2.5">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Pill size={14} className="text-purple-600" /> Prescribed vitamins / meds taken?
-                </span>
-                <div className="flex gap-1.5">
-                  {[true, false].map(val => (
-                    <button
-                      key={val ? 'yes' : 'no'}
-                      onClick={() => setMedTaken(val)}
-                      className={`py-1 px-3 text-[10px] font-black uppercase rounded-lg border transition-all ${
-                        medTaken === val && val 
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-100' 
-                          : (medTaken === val && !val 
-                              ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-100' 
-                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50')
-                      }`}
-                    >
-                      {val ? 'Yes' : 'No'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Dynamic Advice/Tips Section based on AI Assessment */}
-            <div className="mt-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
-              <div className="flex items-center gap-1.5 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
-                <Sparkles size={13} className="text-secondary" />
-                AI Recovery Advice & Tips
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {getDynamicTips().map((tip, idx) => (
-                  <div key={idx} className="p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
-                    <span className="block font-black text-slate-800 text-[10.5px] uppercase tracking-wide mb-0.5">{tip.title}</span>
-                    <span className="block text-[10.5px] text-slate-500 leading-normal font-medium">{tip.text}</span>
+                {/* Vitals Completion Progress Bar */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    <span>Logging Progress</span>
+                    <span className="text-emerald-500 font-extrabold">{completionPercent}%</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          </Card>
+                  <div className="h-2 w-full bg-slate-100/70 rounded-full overflow-hidden border border-slate-200/20">
+                    <div 
+                      className="h-full bg-gradient-to-r from-emerald-400 via-teal-500 to-blue-500 rounded-full transition-all duration-500" 
+                      style={{ width: `${completionPercent}%` }}
+                    />
+                  </div>
+                </div>
 
-          {/* Recovery Health Check Upgraded Section */}
-          <div className="space-y-6">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-              <div>
-                <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Recovery Health Check</h4>
-                <p className="text-xs text-slate-500">Post-loss reproductive symptoms & danger signs tracker</p>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => speakText("Recovery Health Check. We will evaluate seven short sections for bleeding, pain, and general indicators to monitor your post-loss recovery.")}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center border border-slate-100 bg-white text-slate-600 hover:bg-slate-50 transition-all ${isSpeaking ? 'bg-secondary/10 border-secondary text-secondary' : ''}`}
-                >
-                  <Volume2 size={16} />
-                </button>
-                <Button
-                  onClick={() => { setShowModal(true); setModalStep('intro'); }}
-                  variant="outline"
-                  className="rounded-xl font-bold text-[10px] uppercase h-9 border-slate-200 text-slate-600 hover:bg-slate-50"
-                >
-                  Launch Assessment Flow
-                </Button>
-              </div>
-            </div>
+                <div className="space-y-4">
+                  {/* Water Tracker */}
+                  <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between py-1">
+                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 shrink-0">
+                      <Droplets size={14} className="text-blue-500" /> Have you taken water?
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 items-center justify-end">
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(glass => (
+                          <button
+                            key={glass}
+                            type="button"
+                            onClick={() => setWaterGlasses(glass)}
+                            className={`w-7 h-9 text-[10px] font-black rounded-lg flex flex-col items-center justify-between py-1 cursor-pointer transition-all border ${
+                              waterGlasses >= glass 
+                                ? 'bg-gradient-to-b from-blue-400 to-blue-600 text-white border-transparent shadow-[0_4px_12px_rgba(59,130,246,0.3)] scale-105' 
+                                : 'bg-slate-50 border-slate-200/40 text-slate-400 hover:bg-blue-50 hover:text-blue-500 hover:border-blue-200/40'
+                            }`}
+                            title={`${glass} Glass`}
+                          >
+                            <span className="text-[10px] select-none leading-none">💧</span>
+                            <span className="text-[8px] font-extrabold tracking-tighter leading-none">{glass}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-md shrink-0 select-none">
+                        {waterGlasses}/8
+                      </span>
+                    </div>
+                  </div>
 
-            {/* Expandable Accordion System */}
-            <div className="space-y-3">
-              {sections.map((sect, idx) => {
-                const Icon = sect.icon;
-                const isOpen = activeSection === idx;
-                return (
-                  <Card 
-                    key={idx} 
-                    className={`border border-slate-100 overflow-hidden transition-all shadow-sm ${
-                      isOpen ? 'ring-2 ring-[#0F4C81]/10 border-[#0F4C81]/25 bg-slate-50/20' : 'bg-white hover:bg-slate-50/50'
-                    }`}
-                  >
-                    <button
-                      onClick={() => setActiveSection(isOpen ? null : idx)}
-                      className="w-full px-5 py-4 flex items-center justify-between font-bold text-slate-800 text-sm"
+                  {/* Meals & Calories Tracker */}
+                  <div className="flex items-center justify-between py-2 border-t border-slate-100/60">
+                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Coffee size={14} className="text-amber-600" /> Taken nutrient meals today?
+                    </span>
+                    <div className="flex gap-2">
+                      {[
+                        { val: true, label: 'Yes', icon: CheckCircle2, activeClass: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)] border-transparent' },
+                        { val: false, label: 'No', icon: X, activeClass: 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[0_4px_12px_rgba(244,63,94,0.25)] border-transparent' }
+                      ].map(opt => (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => {
+                            setMealEaten(opt.val);
+                            if (opt.val) setStreak(p => p + 1);
+                          }}
+                          className={`py-1.5 px-4 text-[10px] font-black uppercase rounded-xl border flex items-center gap-1 cursor-pointer transition-all ${
+                            mealEaten === opt.val
+                              ? opt.activeClass
+                              : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                          }`}
+                        >
+                          <opt.icon size={11} />
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Prescribed supplements */}
+                  <div className="flex items-center justify-between py-2 border-t border-slate-100/60">
+                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Pill size={14} className="text-purple-600" /> Prescribed vitamins / meds taken?
+                    </span>
+                    <div className="flex gap-2">
+                      {[
+                        { val: true, label: 'Yes', icon: CheckCircle2, activeClass: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)] border-transparent' },
+                        { val: false, label: 'No', icon: X, activeClass: 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[0_4px_12px_rgba(244,63,94,0.25)] border-transparent' }
+                      ].map(opt => (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => setMedTaken(opt.val)}
+                          className={`py-1.5 px-4 text-[10px] font-black uppercase rounded-xl border flex items-center gap-1 cursor-pointer transition-all ${
+                            medTaken === opt.val
+                              ? opt.activeClass
+                              : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                          }`}
+                        >
+                          <opt.icon size={11} />
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dynamic Advice/Tips Section based on AI Assessment */}
+                <div className="mt-3 p-4 bg-slate-50/80 rounded-[1.75rem] border border-slate-100/80 space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-slate-700 font-extrabold text-[10.5px] uppercase tracking-wider">
+                    <Sparkles size={13} className="text-secondary" />
+                    AI Recovery Advice & Tips
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                    {getDynamicTips().map((tip, idx) => (
+                      <div key={idx} className="p-3 bg-white rounded-xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-sm hover:scale-[1.01] transition-all">
+                        <span className="block font-black text-slate-800 text-[10px] uppercase tracking-wider mb-1">{tip.title}</span>
+                        <span className="block text-[10px] text-slate-500 leading-relaxed font-medium">{tip.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* Inline Recovery Triage Wizard & Results Panel */}
+          <Card className="p-6 border border-slate-100/80 rounded-[2.5rem] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.025)] space-y-5">
+            {!assessmentResult ? (
+              // Questionnaire Wizard
+              modalStep === 'intro' ? (
+                <div className="space-y-5 text-center py-4">
+                  <div className="w-14 h-14 bg-[#0F4C81]/10 rounded-2xl flex items-center justify-center text-[#0F4C81] mx-auto shadow-inner">
+                    <HeartPulse size={30} className="animate-pulse" />
+                  </div>
+                  
+                  <div className="space-y-1.5 max-w-sm mx-auto">
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Recovery Symptom Triage Test</h3>
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                      Screen potential warning signs (hemorrhaging, pain, infection risks) and get real-time clinical guidance and emergency contacts.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-2 max-w-xs mx-auto">
+                    <Button 
+                      type="button"
+                      onClick={() => {
+                        setModalStep(0);
+                        speakText("Starting guided health check. Step 1: Gestational age status.");
+                      }}
+                      className="w-full h-11 bg-gradient-to-r from-secondary to-[#1762a0] hover:opacity-95 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10.5px] cursor-pointer"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isOpen ? 'bg-[#0F4C81] text-white' : 'bg-slate-100 text-slate-500'}`}>
-                          <Icon size={16} />
-                        </div>
-                        <span className="font-extrabold">{sect.title}</span>
-                      </div>
-                      <ChevronRight size={16} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-90 text-[#0F4C81]' : ''}`} />
-                    </button>
+                      Begin Guided Screening
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        runRiskAssessment(true);
+                      }}
+                      variant="outline"
+                      className="w-full h-11 border-slate-200 text-[#0F4C81] hover:bg-slate-50 font-extrabold rounded-xl uppercase tracking-wider text-[10.5px] cursor-pointer"
+                    >
+                      Direct AI Assessment
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Progress Indicator */}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Step {modalStep + 1} of {sections.length}</span>
+                      <h4 className="text-sm font-black text-[#0F4C81]">{sections[modalStep].title}</h4>
+                    </div>
                     
-                    {isOpen && (
-                      <div className="px-5 pb-5 pt-2 border-t border-slate-50 space-y-4">
-                        {/* Voice Access Panel */}
-                        <div className="flex gap-2 justify-end mb-2 border-b border-slate-100/50 pb-2">
-                          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mr-auto flex items-center gap-1.5">
-                            <Volume2 size={10} /> Voice Guidance Active
-                          </span>
-                          <button 
-                            onClick={() => playVoiceGuideForSection(idx)}
-                            className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
-                            title="Read instructions out loud"
-                          >
-                            <Volume2 size={12} />
-                          </button>
-                          <button 
-                            onClick={() => startSpeechRecognitionForSection(idx)}
-                            className={`p-1 rounded-md transition-colors ${isListening ? 'bg-primary/20 text-primary animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-500'}`}
-                            title="Answer by voice"
-                          >
-                            <Mic size={12} />
-                          </button>
-                        </div>
+                    {/* Voice Assistant Buttons inside card */}
+                    <div className="flex gap-1.5 items-center">
+                      <button 
+                        type="button"
+                        onClick={() => playVoiceGuideForSection(modalStep)}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all text-slate-500 hover:text-[#0F4C81] cursor-pointer ${
+                          isSpeaking ? 'bg-[#0F4C81]/5 border-[#0F4C81]/15 text-[#0F4C81]' : 'bg-slate-50 border-slate-200/50'
+                        }`}
+                        title="Read instructions out loud"
+                      >
+                        <Volume2 size={13} className={isSpeaking ? 'animate-pulse' : ''} />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => startSpeechRecognitionForSection(modalStep)}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all cursor-pointer ${
+                          isListening ? 'bg-rose-50 border-rose-200 text-rose-500 animate-pulse' : 'bg-slate-50 border-slate-200/50 text-slate-500'
+                        }`}
+                        title="Answer by voice"
+                      >
+                        <Mic size={13} />
+                      </button>
+                    </div>
+                  </div>
 
-                        {sect.content}
-                        
-                        <div className="flex justify-end pt-2">
-                          <Button
-                            onClick={() => setActiveSection(idx === sections.length - 1 ? null : idx + 1)}
-                            className="bg-[#0F4C81] text-white hover:bg-[#0F4C81]/90 font-bold text-[10px] h-8 rounded-xl px-3 uppercase tracking-wider"
-                          >
-                            {idx === sections.length - 1 ? 'Finish Section' : 'Next Section'}
-                          </Button>
-                        </div>
-                      </div>
+                  {/* Progressive bar indicator */}
+                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/20">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-300" 
+                      style={{ width: `${((modalStep + 1) / sections.length) * 100}%` }}
+                    />
+                  </div>
+
+                  {/* Section Questions Content */}
+                  <div className="p-4.5 bg-slate-50/70 rounded-2xl border border-slate-100/80 min-h-[140px] flex flex-col justify-center">
+                    {sections[modalStep].content}
+                  </div>
+
+                  {/* Navigation Buttons */}
+                  <div className="flex gap-2 pt-1">
+                    {modalStep > 0 ? (
+                      <Button
+                        type="button"
+                        onClick={() => setModalStep(modalStep - 1)}
+                        variant="outline"
+                        className="flex-1 h-10 border-slate-200 text-slate-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] cursor-pointer"
+                      >
+                        Back
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={() => setModalStep('intro')}
+                        variant="outline"
+                        className="flex-1 h-10 border-slate-200 text-slate-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] cursor-pointer"
+                      >
+                        Cancel
+                      </Button>
                     )}
-                  </Card>
-                );
-              })}
-            </div>
+                    {modalStep < sections.length - 1 ? (
+                      <Button
+                        type="button"
+                        onClick={() => setModalStep(modalStep + 1)}
+                        className="flex-1 h-10 bg-[#0F4C81] hover:bg-[#0F4C81]/95 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px] cursor-pointer"
+                      >
+                        Next Step
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          runRiskAssessment(false);
+                          setModalStep('intro');
+                        }}
+                        className="flex-1 h-10 bg-secondary hover:bg-secondary/90 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px] shadow-lg shadow-secondary/20 cursor-pointer"
+                      >
+                        Submit Test
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )
+            ) : (
+              // Completed Diagnostics Dashboard inside card!
+              <div className="space-y-4 py-2">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                      ✓
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">Triage Check-in Result</h4>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase">Dynamic Diagnostic</p>
+                    </div>
+                  </div>
+                  <Badge className={`uppercase text-[8.5px] font-black tracking-wider px-2.5 py-0.5 rounded-full border-none shadow-xs ${
+                    assessmentResult.risk === 'high' 
+                      ? 'bg-rose-600 text-white' 
+                      : (assessmentResult.risk === 'moderate' 
+                          ? 'bg-amber-500 text-white' 
+                          : 'bg-emerald-600 text-white')
+                  }`}>
+                    {assessmentResult.risk} RISK STATUS
+                  </Badge>
+                </div>
 
-            {/* Submit Assessment trigger */}
-            <div className="pt-2">
-              <Button
-                onClick={() => runRiskAssessment(false)}
-                className="w-full h-12 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-extrabold tracking-wider uppercase text-xs shadow-lg shadow-secondary/20"
-              >
-                {assessing ? 'AI Reassessing Recovery Risk...' : 'Run AI Health Check Assessment'}
-              </Button>
-            </div>
-          </div>
+                <div className="space-y-3 text-slate-700">
+                  <p className="text-[11px] leading-relaxed font-bold text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                    {assessmentResult.text}
+                  </p>
+
+                  {/* Immediate Action Notice */}
+                  {assessmentResult.action && (
+                    <div className="p-3 bg-slate-900 text-white rounded-xl border border-slate-800 space-y-1 shadow-sm">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Clinical Action Required</span>
+                      <p className="text-[10px] font-medium leading-relaxed text-slate-200">{assessmentResult.action}</p>
+                    </div>
+                  )}
+
+                  {/* Care Gaps or Mental Health Flags summary */}
+                  {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
+                    <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl space-y-1">
+                      <span className="text-[8.5px] font-black text-amber-800 uppercase tracking-wider block">⚠️ Care Gaps Detected</span>
+                      <p className="text-[10px] text-amber-900 font-semibold leading-tight">
+                        {assessmentResult.careGaps[0]} (and {assessmentResult.careGaps.length - 1} more)
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-1.5">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setAssessmentResult(null);
+                        setAssignedCHW(null);
+                        setModalStep('intro');
+                      }}
+                      variant="outline"
+                      className="flex-1 h-9 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-black uppercase text-[9px] tracking-wider rounded-xl cursor-pointer"
+                    >
+                      Retake Health Test
+                    </Button>
+                    {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
+                      <Button
+                        type="button"
+                        onClick={() => alert("Dialing maternal specialist contact...")}
+                        className="flex-1 h-9 bg-rose-600 hover:bg-rose-700 text-white font-black uppercase text-[9px] tracking-wider rounded-xl shadow-md shadow-rose-100 cursor-pointer"
+                      >
+                        Call Specialist
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
 
         {/* Right Column: Reflections, AI Results, Emergency & Support */}
@@ -1506,13 +1644,14 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                animate={{ opacity: 1, y: 0 }}
                className="space-y-8"
             >
-              <Card className="p-5 sm:p-10 border-none bg-slate-900 text-white rounded-[2.25rem] sm:rounded-[3rem] shadow-[0_32px_64px_-15px_rgba(15,76,129,0.3)] relative overflow-hidden group">
+              <Card className="p-6 sm:p-10 border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white rounded-[2.5rem] sm:rounded-[3rem] shadow-[0_20px_50px_rgba(15,76,129,0.35)] relative overflow-hidden group">
                  <div className="relative z-10">
                     <div className="flex justify-between items-center mb-6">
                       <h3 className="text-2xl font-black tracking-tight">Daily Symptom Log</h3>
                       <button 
+                        type="button"
                         onClick={simulateVoiceSpeak}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isSpeaking ? 'bg-secondary text-white' : 'bg-white/10 text-white/40'}`}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${isSpeaking ? 'bg-secondary text-white shadow-lg' : 'bg-white/10 text-white/40 hover:bg-white/20'}`}
                       >
                         <Volume2 size={20} className={isSpeaking ? 'animate-pulse' : ''} />
                       </button>
@@ -1521,27 +1660,28 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                     
                     <div className="flex justify-between items-center mb-10">
                       {[
-                        { v: 1, icon: Frown },
-                        { v: 2, icon: Meh },
-                        { v: 3, icon: Smile },
-                        { v: 4, icon: Heart },
-                        { v: 5, icon: Sparkles }
+                        { v: 1, icon: Frown, activeClass: 'bg-gradient-to-b from-rose-500 to-rose-600 text-white ring-4 ring-rose-500/20 shadow-[0_8px_20px_rgba(244,63,94,0.4)]' },
+                        { v: 2, icon: Meh, activeClass: 'bg-gradient-to-b from-amber-500 to-amber-600 text-white ring-4 ring-amber-500/20 shadow-[0_8px_20px_rgba(245,158,11,0.4)]' },
+                        { v: 3, icon: Smile, activeClass: 'bg-gradient-to-b from-teal-500 to-teal-600 text-white ring-4 ring-teal-500/20 shadow-[0_8px_20px_rgba(20,184,166,0.4)]' },
+                        { v: 4, icon: Heart, activeClass: 'bg-gradient-to-b from-pink-500 to-pink-600 text-white ring-4 ring-pink-500/20 shadow-[0_8px_20px_rgba(236,72,153,0.4)]' },
+                        { v: 5, icon: Sparkles, activeClass: 'bg-gradient-to-b from-yellow-400 to-yellow-500 text-slate-950 ring-4 ring-yellow-400/20 shadow-[0_8px_20px_rgba(234,179,8,0.45)]' }
                       ].map(m => (
                         <button
                           key={m.v}
+                          type="button"
                           onClick={() => setMood(m.v)}
-                          className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center transition-all shadow-lg ${
+                          className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center transition-all cursor-pointer ${
                             mood === m.v 
-                              ? 'bg-secondary text-white scale-110 shadow-secondary/40 ring-4 ring-secondary/20' 
-                              : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
+                              ? m.activeClass + ' scale-110' 
+                              : 'bg-white/5 border border-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 hover:scale-105'
                           }`}
                         >
-                          <m.icon size={28} />
+                          <m.icon size={26} />
                         </button>
                       ))}
                     </div>
 
-                    <div className="bg-white/5 rounded-[2rem] p-6 mb-6 border border-white/10 focus-within:border-secondary/40 transition-colors">
+                    <div className="bg-slate-950/40 rounded-[2rem] p-6 mb-6 border border-white/5 focus-within:border-secondary/40 focus-within:ring-2 focus-within:ring-secondary/15 transition-all">
                       <p className="text-[10px] uppercase font-black tracking-[0.2em] text-secondary mb-4">Daily Symptoms & Reflections</p>
                       <textarea
                         placeholder="Describe physical symptoms (e.g. bleeding, pelvic pain, headache, fever) or how you feel today..."
@@ -1550,7 +1690,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                           setNote(e.target.value);
                           handleNoteChange(e.target.value);
                         }}
-                        className="w-full bg-transparent text-sm focus:outline-none placeholder:text-white/20 min-h-[120px] font-medium resize-none"
+                        className="w-full bg-transparent text-sm focus:outline-none placeholder:text-white/20 min-h-[120px] font-medium resize-none text-slate-200"
                       />
                     </div>
 
@@ -1565,12 +1705,13 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                               key={tag}
                               type="button"
                               onClick={() => toggleTag(tag)}
-                              className={`py-1.5 px-3.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                              className={`py-1.5 px-3.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border flex items-center gap-1 cursor-pointer select-none ${
                                 isSelected 
-                                  ? 'bg-secondary text-white border-secondary shadow-md shadow-secondary/20' 
-                                  : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/70'
+                                  ? 'bg-[#0F4C81] border-[#0F4C81] text-white shadow-md shadow-[#0F4C81]/25' 
+                                  : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:border-white/70 hover:scale-102'
                               }`}
                             >
+                              {isSelected && <Check size={10} className="stroke-[3]" />}
                               {tag}
                             </button>
                           );
@@ -1581,7 +1722,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                     <Button 
                       onClick={handleLog}
                       disabled={mood === null || loading}
-                      className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 font-black transition-all shadow-xl shadow-black/20 text-base uppercase tracking-wider"
+                      className="w-full bg-gradient-to-r from-secondary to-[#1762a0] text-white hover:opacity-95 rounded-2xl h-12 font-black transition-all shadow-xl shadow-black/20 text-sm uppercase tracking-wider hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                     >
                       {loading ? 'Processing...' : 'Log Daily Symptoms'}
                     </Button>
@@ -1663,132 +1804,6 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         </div>
       </div>
 
-      {/* Onboarding Dialog / Modal Assessment Flow */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop blur */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowModal(false)}
-              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-            />
-
-            {/* Modal Box */}
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="relative bg-white rounded-[2.5rem] p-6 max-w-md w-full shadow-2xl border border-slate-100 z-10 overflow-hidden flex flex-col gap-6"
-            >
-              <button 
-                onClick={() => setShowModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100"
-              >
-                <X size={18} />
-              </button>
-
-              {modalStep === 'intro' ? (
-                <div className="space-y-6 text-center pt-4">
-                  <div className="w-16 h-16 bg-[#0F4C81]/10 rounded-[1.5rem] flex items-center justify-center text-[#0F4C81] mx-auto shadow-inner">
-                    <HeartPulse size={36} className="animate-pulse" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Recovery Symptom Screening</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                      CareBridge AI recommends running a recovery health test to verify post-loss healing, screen warning signs, and activate emergency clinical care coordinates if needed.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2.5 pt-2">
-                    <Button 
-                      onClick={() => setModalStep(0)}
-                      className="w-full h-11 bg-[#0F4C81] hover:bg-[#0F4C81]/95 text-white font-extrabold rounded-2xl uppercase tracking-wider text-[11px]"
-                    >
-                      Start Recovery Test
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        runRiskAssessment(true);
-                        setShowModal(false);
-                      }}
-                      variant="outline"
-                      className="w-full h-11 border-slate-200 text-[#0F4C81] font-extrabold rounded-2xl uppercase tracking-wider text-[11px]"
-                    >
-                      Direct AI Assessment
-                    </Button>
-                    <button
-                      onClick={() => setShowModal(false)}
-                      className="text-slate-400 hover:text-slate-600 font-bold text-xs uppercase tracking-wider mt-1 transition-colors"
-                    >
-                      Take Test Later
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6 pt-2">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Step {modalStep + 1} of {sections.length}</span>
-                      <h4 className="text-base font-black text-[#0F4C81]">{sections[modalStep].title}</h4>
-                    </div>
-                    <Badge variant="outline" className="border-slate-200 text-slate-500 font-bold uppercase text-[9px]">
-                      Health Test
-                    </Badge>
-                  </div>
-
-                  {/* Progressive indicator */}
-                  <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-1 bg-[#0F4C81] rounded-full transition-all duration-300" 
-                      style={{ width: `${((modalStep + 1) / sections.length) * 100}%` }}
-                    />
-                  </div>
-
-                  {/* Section questions */}
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100/50 min-h-[160px] flex flex-col justify-center">
-                    {sections[modalStep].content}
-                  </div>
-
-                  {/* Navigation Buttons */}
-                  <div className="flex gap-2">
-                    {modalStep > 0 && (
-                      <Button
-                        onClick={() => setModalStep(modalStep - 1)}
-                        variant="outline"
-                        className="flex-1 h-10 border-slate-200 text-slate-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px]"
-                      >
-                        Back
-                      </Button>
-                    )}
-                    {modalStep < sections.length - 1 ? (
-                      <Button
-                        onClick={() => setModalStep(modalStep + 1)}
-                        className="flex-1 h-10 bg-[#0F4C81] hover:bg-[#0F4C81]/95 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px]"
-                      >
-                        Next Step
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => {
-                          runRiskAssessment(false);
-                          setShowModal(false);
-                        }}
-                        className="flex-1 h-10 bg-secondary hover:bg-secondary/90 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px] shadow-lg shadow-secondary/20"
-                      >
-                        Submit Test
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
