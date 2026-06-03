@@ -433,12 +433,13 @@ export function PatientDashboard({
                   </div>
                   <button 
                     onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                      prefs.voiceGuided ? 'bg-secondary text-white' : 'bg-white/10 text-white/60'
-                    }`}
+                    className="flex items-center gap-2.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 border border-white/15 transition-all duration-300 cursor-pointer text-white shadow-inner active:scale-95 hover:scale-105"
                   >
-                    <Mic size={12} className={prefs.voiceGuided ? 'animate-pulse' : ''} />
-                    {t.voiceAssistant || 'Voice Guide'}
+                    <Mic size={12} className={prefs.voiceGuided ? 'animate-pulse text-emerald-300' : 'text-white/60'} />
+                    <span>Voice Guide</span>
+                    <div className={`w-6 h-3.5 rounded-full relative transition-colors duration-300 ${prefs.voiceGuided ? 'bg-emerald-500' : 'bg-white/20'}`}>
+                      <div className={`absolute top-0.5 w-2.5 h-2.5 bg-white rounded-full transition-all duration-300 ${prefs.voiceGuided ? 'right-0.5' : 'left-0.5'}`} />
+                    </div>
                   </button>
                 </div>
                 <h3 className="text-2xl font-black mb-2 tracking-tight">Post-Loss Recovery Triage</h3>
@@ -470,34 +471,61 @@ export function PatientDashboard({
                       setWaterGlasses(p => Math.min(10, p + 1));
                       if (waterGlasses === 7) setStreak(s => s + 1);
                     }}
-                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-300/30 text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer text-white"
+                    className={`relative pt-7 pb-3 px-2 rounded-2xl bg-white/5 border text-center flex flex-col items-center gap-1 transition-all duration-300 cursor-pointer text-white hover:-translate-y-1 hover:shadow-xl active:scale-95 ${
+                      waterGlasses >= 8 ? 'bg-blue-500/20 border-blue-400/40' : 'border-white/10 hover:border-blue-300/30'
+                    }`}
                   >
-                    <Droplets className="text-blue-300" size={18} />
-                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Hydrate</span>
+                    <div className="absolute top-2 right-2">
+                      {waterGlasses >= 8 ? (
+                        <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white text-[8px] font-black shadow-sm shadow-emerald-500/30">✓</div>
+                      ) : (
+                        <div className="w-4 h-4 bg-white/15 border border-white/20 rounded-full flex items-center justify-center text-white text-[9px] font-black hover:bg-white/30 transition-colors">+</div>
+                      )}
+                    </div>
+                    <Droplets className={waterGlasses >= 8 ? 'text-blue-400 animate-bounce' : 'text-blue-300'} size={18} />
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase tracking-wider">Hydrate</span>
                     <span className="text-[10px] font-black text-white">{waterGlasses}/8 Gl.</span>
                   </button>
 
                   {/* Meal Eaten */}
                   <button 
                     onClick={() => setMealEaten(p => !p)}
-                    className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                      mealEaten ? 'bg-emerald-400/20 border-emerald-400/30 text-white' : 'bg-white/5 border-white/10 hover:border-emerald-300/30 text-white'
+                    className={`relative pt-7 pb-3 px-2 rounded-2xl border text-center flex flex-col items-center gap-1 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-xl active:scale-95 ${
+                      mealEaten 
+                        ? 'bg-emerald-500/20 border-emerald-400/40 text-white' 
+                        : 'bg-white/5 border-white/10 hover:border-emerald-300/30 text-white'
                     }`}
                   >
+                    <div className="absolute top-2 right-2">
+                      {mealEaten ? (
+                        <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white text-[8px] font-black shadow-sm shadow-emerald-500/30">✓</div>
+                      ) : (
+                        <div className="w-4 h-4 bg-white/10 border border-white/15 rounded-full flex items-center justify-center text-white/50 text-[9px] font-black">○</div>
+                      )}
+                    </div>
                     <ClipboardList className={mealEaten ? 'text-emerald-300' : 'text-blue-100/50'} size={18} />
-                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Nutrition</span>
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase tracking-wider">Nutrition</span>
                     <span className="text-[10px] font-black text-white">{mealEaten ? 'Done' : 'Log'}</span>
                   </button>
 
                   {/* Med Tracker */}
                   <button 
                     onClick={() => setMedTaken(p => !p)}
-                    className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                      medTaken ? 'bg-rose-400/20 border-rose-400/30 text-white' : 'bg-white/5 border-white/10 hover:border-rose-300/30 text-white'
+                    className={`relative pt-7 pb-3 px-2 rounded-2xl border text-center flex flex-col items-center gap-1 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-xl active:scale-95 ${
+                      medTaken 
+                        ? 'bg-rose-500/20 border-rose-400/40 text-white' 
+                        : 'bg-white/5 border-white/10 hover:border-rose-300/30 text-white'
                     }`}
                   >
+                    <div className="absolute top-2 right-2">
+                      {medTaken ? (
+                        <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white text-[8px] font-black shadow-sm shadow-emerald-500/30">✓</div>
+                      ) : (
+                        <div className="w-4 h-4 bg-white/10 border border-white/15 rounded-full flex items-center justify-center text-white/50 text-[9px] font-black">○</div>
+                      )}
+                    </div>
                     <Heart className={medTaken ? 'text-rose-300' : 'text-blue-100/50'} size={18} />
-                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Medicine</span>
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase tracking-wider">Medicine</span>
                     <span className="text-[10px] font-black text-white">{medTaken ? 'Taken' : 'Log'}</span>
                   </button>
                 </div>
