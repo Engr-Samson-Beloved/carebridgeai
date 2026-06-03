@@ -970,6 +970,326 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         </Badge>
       </div>
 
+      {/* Dynamic Triage & Health Check Assessment Results (Full Width at Top) */}
+      <AnimatePresence>
+        {assessmentResult && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.98 }}
+            transition={{ duration: 0.4 }}
+            className="mb-8 w-full"
+          >
+            <Card className={`p-6 sm:p-8 rounded-[2.5rem] border shadow-md relative overflow-hidden ${
+              assessmentResult.risk === 'high' 
+                ? 'bg-rose-50/70 border-rose-200 text-rose-955' 
+                : (assessmentResult.risk === 'moderate' 
+                    ? 'bg-amber-50/70 border-amber-200 text-amber-955' 
+                    : 'bg-emerald-50/70 border-emerald-200 text-emerald-950')
+            }`}>
+              
+              <div className="relative z-10 flex flex-col gap-6">
+                
+                {/* Header of results */}
+                <div className="flex justify-between items-center border-b pb-4 border-slate-200/50">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
+                      assessmentResult.risk === 'high' ? 'bg-rose-500/20 text-rose-600' :
+                      assessmentResult.risk === 'moderate' ? 'bg-amber-500/20 text-amber-600' :
+                      'bg-emerald-500/20 text-emerald-600'
+                    }`}>
+                      <HeartPulse className={assessmentResult.risk === 'high' ? 'animate-pulse' : ''} size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider">CareBridge AI Clinical Insight</h3>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Triage Diagnosis & Action Routing</p>
+                    </div>
+                  </div>
+                  
+                  <Badge className={`uppercase text-[9px] font-black tracking-widest px-3.5 py-1 rounded-full border-none shadow-xs ${
+                    assessmentResult.risk === 'high' 
+                      ? 'bg-rose-600 text-white' 
+                      : (assessmentResult.risk === 'moderate' 
+                          ? 'bg-amber-500 text-white' 
+                          : 'bg-emerald-600 text-white')
+                  }`}>
+                    {assessmentResult.risk} RISK
+                  </Badge>
+                </div>
+
+                {/* Grid for desktop layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-slate-800">
+                  
+                  {/* Left Column: Insight & Progress (lg:col-span-5) */}
+                  <div className="lg:col-span-5 flex flex-col gap-4">
+                    <div className="p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/40 space-y-2">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">AI Diagnosis Summary</span>
+                      <p className="text-[11.5px] leading-relaxed font-bold text-slate-700">
+                        {assessmentResult.text}
+                      </p>
+                    </div>
+
+                    {/* Follow-up Likelihood Indicator */}
+                    {assessmentResult.prediction !== undefined && assessmentResult.probability !== undefined && (
+                      <div className="p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/40 space-y-2">
+                        <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                          <span>Follow-up Recommendation</span>
+                          <span className={assessmentResult.prediction === 1 ? "text-emerald-600" : "text-amber-600"}>
+                            {assessmentResult.prediction === 1 ? 'Required' : 'Optional'} ({Math.round(assessmentResult.probability * 100)}%)
+                          </span>
+                        </div>
+                        <div className="h-2 w-full bg-slate-200/50 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${assessmentResult.prediction === 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                            style={{ width: `${assessmentResult.probability * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* WhatsApp follow-up checkbox */}
+                    <div className="p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30 flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id="whatsappOptIn"
+                        checked={whatsappOptIn}
+                        onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer border-slate-300"
+                      />
+                      <label htmlFor="whatsappOptIn" className="text-[10px] font-bold text-slate-500 cursor-pointer leading-tight">
+                        Opt into follow-ups & wellness check-ins on WhatsApp
+                      </label>
+                    </div>
+
+                    <Button
+                      onClick={() => {
+                        setAssessmentResult(null);
+                        setAssignedCHW(null);
+                      }}
+                      variant="outline"
+                      className="w-full h-10 border-slate-200/80 text-slate-500 hover:text-slate-800 hover:bg-white/80 font-black uppercase text-[10px] tracking-wider rounded-xl transition-all cursor-pointer"
+                    >
+                      Clear Report & Start New Test
+                    </Button>
+                  </div>
+
+                  {/* Right Column: Actions & Services (lg:col-span-7) */}
+                  <div className="lg:col-span-7 flex flex-col gap-4">
+                    
+                    {/* Clinical Action Notice */}
+                    {assessmentResult.action && (
+                      <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-1 shadow-md">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Immediate Action Required</span>
+                        <p className="text-[11px] font-semibold leading-relaxed text-slate-200">{assessmentResult.action}</p>
+                      </div>
+                    )}
+
+                    {/* Care Gaps */}
+                    {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
+                      <div className="p-4 bg-amber-100/40 border border-amber-200/30 rounded-2xl space-y-2">
+                        <span className="text-[9px] font-black text-amber-800 uppercase tracking-widest block">⚠️ Identified Care Gaps ({assessmentResult.careGaps.length})</span>
+                        <ul className="space-y-1">
+                          {assessmentResult.careGaps.map((gap: string, i: number) => (
+                            <li key={i} className="text-[10px] font-extrabold text-amber-900 leading-normal flex items-start gap-2">
+                              <span className="shrink-0 text-amber-500">•</span>
+                              <span>{gap}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Equity Barriers */}
+                    {assessmentResult.equityFlags && assessmentResult.equityFlags.length > 0 && (
+                      <div className="p-4 bg-blue-100/40 border border-blue-200/30 rounded-2xl space-y-2">
+                        <span className="text-[9px] font-black text-[#0F4C81] uppercase tracking-widest block">📍 Equity Barriers Detected</span>
+                        <ul className="space-y-1">
+                          {assessmentResult.equityFlags.map((flag: string, i: number) => (
+                            <li key={i} className="text-[10px] font-extrabold text-slate-600 leading-normal flex items-start gap-2">
+                              <span className="shrink-0 text-primary">•</span>
+                              <span>{flag}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Mental Health Flag */}
+                    {assessmentResult.mentalHealthFlag && (
+                      <div className="p-4 bg-purple-100/40 border border-purple-200/30 rounded-2xl space-y-1.5">
+                        <span className="text-[9px] font-black text-purple-800 uppercase tracking-widest block">🧠 Mental Health Flagged</span>
+                        <p className="text-[10px] font-extrabold text-purple-900 leading-normal">{assessmentResult.mentalHealthNote}</p>
+                        <button 
+                          onClick={() => alert("Connecting to CareBridge counseling support services...")}
+                          className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-colors shadow-sm cursor-pointer border-none"
+                        >
+                          Connect to Counselor
+                        </button>
+                      </div>
+                    )}
+
+                    {/* CHW Connect Panel */}
+                    {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
+                      <div className="p-4 bg-white/70 border border-slate-100/80 rounded-2xl flex flex-col gap-3 text-slate-800 shadow-xs">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400">Available Support Workers</h4>
+                            <p className="text-[8px] text-slate-400 font-bold">Connect with a professional counselor</p>
+                          </div>
+                          <Badge className="bg-[#0F4C81] text-white text-[8px] font-black uppercase tracking-wider rounded-full px-2.5 py-0.5 border-none">
+                            {assignedCHW ? "Assigned" : "PAC Ready"}
+                          </Badge>
+                        </div>
+
+                        {assignedCHW ? (
+                          <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2.5 text-emerald-800">
+                            <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+                            <div>
+                              <span className="font-extrabold text-[11px] block">Specialist Assigned</span>
+                              <p className="text-[10px] opacity-90 leading-tight">{assignedCHW} has been notified and will contact you for clinical support.</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              {[
+                                { id: 'chw_tomi', name: 'Nurse Tomi', location: 'Lagos PAC Dept', avatar: 'https://images.unsplash.com/photo-1590642916589-592bca10dfbf?auto=format&fit=crop&q=80&w=100&h=100' },
+                                { id: 'chw_amina', name: 'Sister Amina', location: 'Ikeja Center', avatar: 'https://images.unsplash.com/photo-1594824813573-246434e33963?auto=format&fit=crop&q=80&w=100&h=100' },
+                                { id: 'chw_kelechi', name: 'Dr. Kelechi', location: 'Surulere Center', avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=100&h=100' }
+                              ].map((chw) => (
+                                <div 
+                                  key={chw.id}
+                                  onClick={() => assignCHW(chw.id, chw.name)}
+                                  className="p-2 border border-slate-100 rounded-xl hover:border-blue-200 transition-all flex flex-col gap-1 items-center justify-center text-center cursor-pointer bg-slate-50/50 hover:bg-white"
+                                >
+                                  <img src={chw.avatar} alt={chw.name} className="w-8 h-8 rounded-full object-cover border border-slate-200" />
+                                  <div>
+                                    <span className="font-extrabold text-[10px] text-slate-800 block leading-none">{chw.name}</span>
+                                    <span className="text-[7.5px] text-slate-400 font-bold uppercase mt-0.5 block leading-none">{chw.location}</span>
+                                  </div>
+                                  <span className="text-[8.5px] font-black text-primary px-2 py-0.5 rounded bg-blue-50/50 w-full">Select</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button 
+                                onClick={() => {
+                                  const chws = [
+                                    { id: 'chw_tomi', name: 'Nurse Tomi' },
+                                    { id: 'chw_amina', name: 'Sister Amina' },
+                                    { id: 'chw_kelechi', name: 'Dr. Kelechi' }
+                                  ];
+                                  const randomCHW = chws[Math.floor(Math.random() * chws.length)];
+                                  assignCHW(randomCHW.id, randomCHW.name);
+                                }}
+                                className="w-full h-8.5 bg-[#0F4C81] text-white hover:opacity-95 rounded-xl font-black uppercase tracking-wider text-[9px] border-none transition-opacity cursor-pointer"
+                              >
+                                AI Auto-Match CHW
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Emergency Escalation Panel for High Risk */}
+                    {assessmentResult.risk === 'high' && (
+                      <div className="p-4 border-none bg-rose-600 text-white rounded-2xl shadow-md relative overflow-hidden group">
+                        <div className="relative z-10 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0 animate-pulse">
+                              <AlertTriangle size={18} />
+                            </div>
+                            <h4 className="font-black text-sm tracking-tight">Emergency Care Route Active</h4>
+                          </div>
+                          
+                          <p className="text-[11px] text-rose-100 leading-relaxed font-medium">
+                            Critical danger indicators are present. CareBridge AI has simulated an urgent clinical notification dispatch to Lagos Maternal Center. Please call our clinical coordinator immediately.
+                          </p>
+
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => { setShowEmergencyCall(true); alert("Connecting with Lagos Maternal Center Emergency Desk..."); }}
+                              className="flex-1 h-9 bg-white hover:bg-rose-50 text-rose-600 font-extrabold rounded-xl uppercase tracking-wider text-[9px] gap-1.5 shadow-md shadow-rose-900/20 border-none transition-all cursor-pointer"
+                            >
+                              <Phone size={12} /> Call Coordinator
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              onClick={() => alert("Clinic notified: Patient has marked intent to arrive within 15 minutes.")}
+                              className="h-9 border border-white/30 hover:bg-white/10 text-white font-extrabold rounded-xl uppercase tracking-wider text-[9px] transition-all cursor-pointer"
+                            >
+                              Map Route
+                            </Button>
+                          </div>
+
+                          {/* Hospital Suggestions */}
+                          <div className="border-t border-rose-500/40 pt-3 space-y-2">
+                            <span className="text-[9px] font-black uppercase text-rose-100 tracking-wider block">
+                              Suggested Facilities (Urgency Level 2-3)
+                            </span>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {[
+                                {
+                                  name: "City Maternal Care",
+                                  distance: "2.4 km",
+                                  urgency: "Level 3",
+                                  address: "12 Medical Road, Ikeja",
+                                  specialty: "EPAU, OBGYN"
+                                },
+                                {
+                                  name: "St. Jude Women’s Hosp.",
+                                  distance: "5.1 km",
+                                  urgency: "Level 2",
+                                  address: "45 Unity Street, Surulere",
+                                  specialty: "OBGYN, Post-loss Care"
+                                }
+                              ].map(hosp => (
+                                <div key={hosp.name} className="p-2.5 bg-white/10 rounded-xl border border-white/5 flex flex-col gap-1 text-white">
+                                  <div className="flex justify-between items-center">
+                                    <h5 className="font-extrabold text-[10.5px] truncate">{hosp.name}</h5>
+                                    <span className="text-[7.5px] font-black px-1 py-0.25 bg-rose-700 border border-rose-600 rounded uppercase">
+                                      {hosp.urgency}
+                                    </span>
+                                  </div>
+                                  <p className="text-[8.5px] text-rose-100 font-bold uppercase tracking-wider">{hosp.distance} • {hosp.specialty}</p>
+                                  <div className="flex gap-1.5 mt-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => alert(`Calling ${hosp.name}...`)}
+                                      className="flex-1 py-1 text-[8px] font-black bg-white text-rose-600 rounded-lg hover:bg-rose-50 transition-colors uppercase tracking-wider cursor-pointer border-none"
+                                    >
+                                      Call
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => alert(`Mapping route to ${hosp.name} (${hosp.address})...`)}
+                                      className="flex-1 py-1 text-[8px] font-black bg-white/25 hover:bg-white/35 text-white rounded-lg transition-colors border border-white/15 uppercase tracking-wider cursor-pointer border-none"
+                                    >
+                                      Route
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Daily Care & Symptoms */}
         <div className="lg:col-span-7 space-y-6">
@@ -1324,293 +1644,6 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
               </Card>
             </motion.div>
           )}
-
-          {/* AI Output Result Card */}
-          {assessmentResult && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="space-y-4"
-            >
-              <Card className={`p-5 rounded-[2rem] border relative overflow-hidden ${
-                assessmentResult.risk === 'high' 
-                  ? 'bg-rose-50/70 border-rose-200 text-rose-950' 
-                  : (assessmentResult.risk === 'moderate' 
-                      ? 'bg-amber-50/70 border-amber-200 text-amber-950' 
-                      : 'bg-emerald-50/70 border-emerald-200 text-emerald-950')
-              }`}>
-                <div className="relative z-10">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">AI Recovery Risk Assessment</span>
-                    <Badge className={`uppercase text-[9px] font-black tracking-wider px-3.5 py-0.5 rounded-full ${
-                      assessmentResult.risk === 'high' 
-                        ? 'bg-rose-600 text-white' 
-                        : (assessmentResult.risk === 'moderate' 
-                            ? 'bg-amber-500 text-white' 
-                            : 'bg-emerald-600 text-white')
-                    }`}>
-                      {assessmentResult.risk} RISK
-                    </Badge>
-                  </div>
-                  
-                  <h4 className="font-extrabold text-sm mb-2 flex items-center gap-2">
-                    <HeartPulse size={16} />
-                    CareBridge AI Clinical Insight
-                  </h4>
-                  <p className="text-xs leading-relaxed mb-4 font-bold text-slate-800">
-                    {assessmentResult.text}
-                  </p>
-
-                  {/* Follow-up Likelihood Indicator */}
-                  {assessmentResult.prediction !== undefined && assessmentResult.probability !== undefined && (
-                    <div className="mt-4 p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 space-y-1">
-                      <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                        <span>Follow-up Likelihood</span>
-                        <span className={assessmentResult.prediction === 1 ? "text-emerald-600" : "text-amber-600"}>
-                          {assessmentResult.prediction === 1 ? 'Likely' : 'Unlikely'} ({Math.round(assessmentResult.probability * 100)}%)
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full bg-slate-200/50 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-500 ${assessmentResult.prediction === 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                          style={{ width: `${assessmentResult.probability * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Clinical Action Notice */}
-                  {assessmentResult.action && (
-                    <div className="mt-3 p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-1.5 shadow-sm">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Clinical Action Required</span>
-                      <p className="text-[11px] font-medium leading-normal">{assessmentResult.action}</p>
-                    </div>
-                  )}
-
-                  {/* Care Gaps */}
-                  {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
-                    <div className="mt-3 p-4 bg-amber-50 border border-amber-200/40 rounded-2xl space-y-2">
-                      <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider block">⚠️ Identified Care Gaps ({assessmentResult.careGaps.length})</span>
-                      <ul className="space-y-1.5">
-                        {assessmentResult.careGaps.map((gap: string, i: number) => (
-                          <li key={i} className="text-[10.5px] font-bold text-amber-900 leading-normal flex items-start gap-2">
-                            <span className="shrink-0 text-amber-500">•</span>
-                            <span>{gap}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Equity Barriers */}
-                  {assessmentResult.equityFlags && assessmentResult.equityFlags.length > 0 && (
-                    <div className="mt-3 p-4 bg-blue-50 border border-blue-200/40 rounded-2xl space-y-2">
-                      <span className="text-[10px] font-black text-[#0F4C81] uppercase tracking-wider block">📍 Equity Barriers Detected</span>
-                      <ul className="space-y-1.5">
-                        {assessmentResult.equityFlags.map((flag: string, i: number) => (
-                          <li key={i} className="text-[10.5px] font-bold text-slate-700 leading-normal flex items-start gap-2">
-                            <span className="shrink-0 text-primary">•</span>
-                            <span>{flag}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Mental Health Flag */}
-                  {assessmentResult.mentalHealthFlag && (
-                    <div className="mt-3 p-4 bg-purple-50 border border-purple-200/40 rounded-2xl space-y-2 mb-4">
-                      <span className="text-[10px] font-black text-purple-800 uppercase tracking-wider block">🧠 Mental Health Support Flagged</span>
-                      <p className="text-[11px] font-bold text-purple-900 leading-normal">{assessmentResult.mentalHealthNote}</p>
-                      <button 
-                        onClick={() => alert("Connecting to CareBridge counseling support services...")}
-                        className="mt-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-colors shadow-sm"
-                      >
-                        Connect to Counselor
-                      </button>
-                    </div>
-                  )}
-
-                  {/* WhatsApp follow-up checkbox */}
-                  <div className="p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-white/50 flex items-center gap-3 mt-4">
-                    <input
-                      type="checkbox"
-                      id="whatsappOptIn"
-                      checked={whatsappOptIn}
-                      onChange={(e) => setWhatsappOptIn(e.target.checked)}
-                      className="w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer"
-                    />
-                    <label htmlFor="whatsappOptIn" className="text-[10.5px] font-medium text-slate-600 cursor-pointer leading-tight">
-                      Opt into symptom follow-ups, daily reminders & wellness check-ins on WhatsApp
-                    </label>
-                  </div>
-
-                  {/* CHW Connect Panel */}
-                  {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
-                    <div className="mt-4 p-4 bg-white/80 border border-slate-100 rounded-2xl flex flex-col gap-3 text-slate-800 shadow-sm">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Available Support Workers</h4>
-                          <p className="text-[9px] text-slate-400 font-bold">Connect with a professional counselor</p>
-                        </div>
-                        <Badge className="bg-[#0F4C81] text-white text-[8px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border-none">
-                          {assignedCHW ? "Assigned" : "PAC Ready"}
-                        </Badge>
-                      </div>
-
-                      {assignedCHW ? (
-                        <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2.5 text-emerald-800">
-                          <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
-                          <div>
-                            <span className="font-extrabold text-[11px] block">Specialist Assigned</span>
-                            <p className="text-[10px] opacity-90 leading-tight">{assignedCHW} has been notified and will contact you for clinical support.</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-1 gap-2">
-                            {[
-                              { id: 'chw_tomi', name: 'Nurse Tomi', location: 'Lagos Mainland PAC Dept', avatar: 'https://images.unsplash.com/photo-1590642916589-592bca10dfbf?auto=format&fit=crop&q=80&w=100&h=100' },
-                              { id: 'chw_amina', name: 'Sister Amina', location: 'Ikeja Health Center', avatar: 'https://images.unsplash.com/photo-1594824813573-246434e33963?auto=format&fit=crop&q=80&w=100&h=100' },
-                              { id: 'chw_kelechi', name: 'Dr. Kelechi', location: 'Surulere PAC Outreach', avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=100&h=100' }
-                            ].map((chw) => (
-                              <div 
-                                key={chw.id}
-                                onClick={() => assignCHW(chw.id, chw.name)}
-                                className="p-2 border border-slate-100 rounded-xl hover:border-blue-200 transition-all flex items-center justify-between cursor-pointer bg-slate-50/50 hover:bg-white"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <img src={chw.avatar} alt={chw.name} className="w-7 h-7 rounded-full object-cover border border-slate-200" />
-                                  <div>
-                                    <span className="font-extrabold text-[11px] text-slate-800 block leading-none">{chw.name}</span>
-                                    <span className="text-[8px] text-slate-400 font-bold uppercase">{chw.location}</span>
-                                  </div>
-                                </div>
-                                <span className="text-[9px] font-black text-primary px-2 py-0.5 rounded bg-blue-50/50 hover:bg-blue-50">Select</span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="flex gap-2 mt-1">
-                            <Button 
-                              onClick={() => {
-                                const chws = [
-                                  { id: 'chw_tomi', name: 'Nurse Tomi' },
-                                  { id: 'chw_amina', name: 'Sister Amina' },
-                                  { id: 'chw_kelechi', name: 'Dr. Kelechi' }
-                                ];
-                                const randomCHW = chws[Math.floor(Math.random() * chws.length)];
-                                assignCHW(randomCHW.id, randomCHW.name);
-                              }}
-                              className="w-full h-9 bg-[#0F4C81] text-white hover:opacity-95 rounded-xl font-black uppercase tracking-wider text-[9px] border-none"
-                            >
-                              AI Auto-Match CHW
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </Card>
-
-              {/* Emergency Escalation Panel for High Risk */}
-              {assessmentResult.risk === 'high' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <Card className="p-5 border-none bg-rose-600 text-white rounded-[2rem] shadow-xl relative overflow-hidden group">
-                    <div className="relative z-10 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0 animate-pulse">
-                          <AlertTriangle size={20} />
-                        </div>
-                        <h4 className="font-black text-base tracking-tight">Emergency Care Route Active</h4>
-                      </div>
-                      
-                      <p className="text-xs text-rose-100 leading-relaxed font-medium">
-                        Critical danger indicators are present. CareBridge AI has simulated an urgent clinical notification dispatch to Lagos Maternal Center. Please call our clinical coordinator immediately.
-                      </p>
-
-                       <div className="flex gap-2">
-                        <Button 
-                          onClick={() => { setShowEmergencyCall(true); alert("Connecting with Lagos Maternal Center Emergency Desk..."); }}
-                          className="flex-1 h-10 bg-white hover:bg-rose-50 text-rose-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] gap-2 shadow-lg shadow-rose-900/20"
-                        >
-                          <Phone size={14} /> Call Coordinator
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => alert("Clinic notified: Patient has marked intent to arrive within 15 minutes.")}
-                          className="h-10 border border-white/30 hover:bg-white/10 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px]"
-                        >
-                          Map Route
-                        </Button>
-                      </div>
-
-                      {/* Hospital Suggestions */}
-                      <div className="border-t border-rose-500/40 pt-3.5 space-y-2.5">
-                        <span className="text-[10px] font-black uppercase text-rose-100 tracking-wider block">
-                          Suggested Facilities (Urgency Level 2-3)
-                        </span>
-                        
-                        <div className="space-y-2">
-                          {[
-                            {
-                              name: "City Maternal Care",
-                              distance: "2.4 km",
-                              urgency: "Level 3",
-                              address: "12 Medical Road, Ikeja",
-                              specialty: "EPAU, Emergency OBGYN"
-                            },
-                            {
-                              name: "St. Jude Women’s Hosp.",
-                              distance: "5.1 km",
-                              urgency: "Level 2",
-                              address: "45 Unity Street, Surulere",
-                              specialty: "General OBGYN, Post-loss Care"
-                            }
-                          ].map(hosp => (
-                            <div key={hosp.name} className="p-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-all border border-white/5 flex flex-col gap-1.5 text-white">
-                              <div className="flex justify-between items-center">
-                                <h5 className="font-extrabold text-xs">{hosp.name}</h5>
-                                <span className="text-[8px] font-black px-1.5 py-0.5 bg-rose-700 border border-rose-600 rounded-md uppercase">
-                                  {hosp.urgency}
-                                </span>
-                              </div>
-                              <p className="text-[9.5px] text-rose-100 font-bold uppercase tracking-wider">{hosp.distance} • {hosp.specialty}</p>
-                              <div className="flex gap-2 mt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => alert(`Calling ${hosp.name}...`)}
-                                  className="flex-1 py-1.5 text-[9px] font-black bg-white text-rose-600 rounded-xl hover:bg-rose-50 transition-colors uppercase tracking-wider cursor-pointer border-none"
-                                >
-                                  Call Hospital
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => alert(`Mapping route to ${hosp.name} (${hosp.address})...`)}
-                                  className="flex-1 py-1.5 text-[9px] font-black bg-white/25 hover:bg-white/35 text-white rounded-xl transition-colors border border-white/15 uppercase tracking-wider cursor-pointer border-none"
-                                >
-                                  Directions
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    {/* Watermark */}
-                    <div className="absolute -bottom-6 -right-6 opacity-10 pointer-events-none">
-                      <ShieldAlert size={120} />
-                    </div>
-                  </Card>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-
           {/* Community Support */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">Community Support</h4>
