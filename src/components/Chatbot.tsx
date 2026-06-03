@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
+  Bot,
   MessageSquare, 
   X, 
   Send, 
@@ -404,7 +405,7 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
               exit={{ rotate: -90, opacity: 0 }}
               className="relative"
             >
-              <MessageSquare size={24} />
+              <Bot size={24} />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0F4C81] animate-ping" />
             </motion.div>
           )}

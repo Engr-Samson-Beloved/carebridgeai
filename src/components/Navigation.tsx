@@ -109,13 +109,7 @@ export function Sidebar({
         { id: 'referral', label: 'Care Options', icon: HeartPulse },
       ];
 
-  const languages: { code: Language; label: string }[] = [
-    { code: 'en', label: 'English' },
-    { code: 'fr', label: 'Français' },
-    { code: 'sw', label: 'Swahili' },
-    { code: 'yo', label: 'Yoruba' },
-    { code: 'ha', label: 'Hausa' },
-  ];
+
 
   if (!session) return null;
 
@@ -156,25 +150,7 @@ export function Sidebar({
 
       <div className="border-t border-slate-100/60 my-4" />
 
-      {/* Language Selector (Moved down) */}
-      <div className="mb-6">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Select Language</p>
-        <div className="grid grid-cols-2 gap-2">
-          {languages.map((lang) => (
-            <button
-              key={lang.code}
-              onClick={() => setLanguage(lang.code)}
-              className={`px-3 py-2 rounded-xl text-[10px] font-bold transition-all border ${
-                language === lang.code 
-                  ? 'bg-primary/5 border-primary/20 text-primary' 
-                  : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
-              }`}
-            >
-              {lang.label}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* Control Center (Toggles and Emergency SOS - Moved down) */}
       <div className="mb-6 space-y-2.5 flex-1 flex flex-col justify-end">

@@ -18,6 +18,7 @@ import {
   Volume2, 
   Droplets,
   LogOut,
+  Globe,
   ClipboardList,
   Calendar,
   Clock
@@ -240,6 +241,15 @@ export function PatientDashboard({
   const sortedAppointments = [...appointments].sort((a, b) => getApptPriority(b) - getApptPriority(a));
   const visibleAppointments = isApptsExpanded ? sortedAppointments : sortedAppointments.slice(0, 1);
 
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const languages: { code: Language; label: string }[] = [
+    { code: 'en', label: 'English' },
+    { code: 'fr', label: 'Français' },
+    { code: 'sw', label: 'Swahili' },
+    { code: 'yo', label: 'Yoruba' },
+    { code: 'ha', label: 'Hausa' },
+  ];
+
   return (
     <div className="flex flex-col gap-8 pb-40 px-4 sm:px-6 w-full max-w-7xl mx-auto">
       {/* Patient Greeting & Sign-Out (Full Width Header) */}
@@ -258,69 +268,72 @@ export function PatientDashboard({
           </div>
         </div>
 
-        <button 
-          onClick={onSignOut}
-          className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-rose-500 hover:bg-rose-50/50 transition-all cursor-pointer"
-          title="Sign Out"
-        >
-          <LogOut size={16} />
-        </button>
+        <div className="flex items-center gap-2 relative">
+          {/* Language Selector Button */}
+          <button 
+            onClick={() => setShowLangMenu(!showLangMenu)}
+            className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-slate-500 hover:text-primary hover:bg-slate-100 transition-all cursor-pointer flex items-center gap-1.5"
+            title="Change Language"
+          >
+            <Globe size={16} />
+            <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline-block">
+              {languages.find(l => l.code === language)?.label || 'Language'}
+            </span>
+          </button>
+
+          {/* Language Dropdown Menu */}
+          <AnimatePresence>
+            {showLangMenu && (
+              <>
+                {/* Backdrop overlay to close dropdown */}
+                <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)} />
+                
+                <motion.div 
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 top-12 bg-white rounded-2xl border border-slate-100 p-2 shadow-xl z-50 min-w-[120px]"
+                >
+                  <div className="flex flex-col gap-1">
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          onPrefsChange({ language: lang.code });
+                          setShowLangMenu(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border-none ${
+                          language === lang.code 
+                            ? 'bg-primary/5 text-primary' 
+                            : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {lang.label}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+
+          {/* Sign Out Button */}
+          <button 
+            onClick={onSignOut}
+            className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-rose-500 hover:bg-rose-50/50 transition-all cursor-pointer"
+            title="Sign Out"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </section>
 
       {/* Responsive Grid System for Desktop layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start w-full">
         
-        {/* COLUMN 1: Vitals checklists & Appointments */}
-        <div className="flex flex-col gap-6">
-          {/* Recovery Streak & Vitals Tracker */}
-          <Card className="p-6 border-slate-100 rounded-[2rem] bg-white shadow-sm flex flex-col gap-5 border">
-            <div className="flex justify-between items-center">
-              <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Recovery Checklist</h4>
-              <Badge className="bg-emerald-50 text-emerald-600 text-[9px] font-black px-2.5 py-0.5 rounded-full border border-emerald-100 uppercase">
-                Streak: {streak} Days
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2.5">
-              {/* Water Tracker */}
-              <button 
-                onClick={() => {
-                  setWaterGlasses(p => Math.min(10, p + 1));
-                  if (waterGlasses === 7) setStreak(s => s + 1);
-                }}
-                className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-blue-200 text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Droplets className="text-blue-500" size={18} />
-                <span className="text-[8px] font-black text-slate-400 uppercase">Hydrate</span>
-                <span className="text-[10px] font-black text-slate-800">{waterGlasses}/8 Gl.</span>
-              </button>
-
-              {/* Meal Eaten */}
-              <button 
-                onClick={() => setMealEaten(p => !p)}
-                className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                  mealEaten ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-100 hover:border-emerald-200'
-                }`}
-              >
-                <ClipboardList className={mealEaten ? 'text-emerald-500' : 'text-slate-400'} size={18} />
-                <span className="text-[8px] font-black text-slate-400 uppercase">Nutrition</span>
-                <span className="text-[10px] font-black text-slate-800">{mealEaten ? 'Done' : 'Log'}</span>
-              </button>
-
-              {/* Med Tracker */}
-              <button 
-                onClick={() => setMedTaken(p => !p)}
-                className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                  medTaken ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-100 hover:border-emerald-200'
-                }`}
-              >
-                <Heart className={medTaken ? 'text-rose-500' : 'text-slate-400'} size={18} />
-                <span className="text-[8px] font-black text-slate-400 uppercase">Medicine</span>
-                <span className="text-[10px] font-black text-slate-800">{medTaken ? 'Taken' : 'Log'}</span>
-              </button>
-            </div>
-          </Card>
-
+        {/* COLUMN 1 (Left on desktop, 2nd on mobile): Appointments & Reminders */}
+        <div className="flex flex-col gap-6 order-2 lg:order-1 w-full">
           {/* Appointments & Reminders Card */}
           <Card className="p-5 border-slate-100 rounded-[2rem] bg-white border flex flex-col gap-4 shadow-sm">
             <div className="flex justify-between items-center border-b border-slate-50 pb-2">
@@ -407,7 +420,7 @@ export function PatientDashboard({
                   </div>
                 ) : (
                   <div>
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-1">Select Date</label>
+                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-1">Date</label>
                     <input 
                       type="date" 
                       value={newDate}
@@ -417,7 +430,7 @@ export function PatientDashboard({
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-1">Time</label>
                     <input 
@@ -428,7 +441,7 @@ export function PatientDashboard({
                     />
                   </div>
                   <div>
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-1">Preparation Note</label>
+                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-1">Notes</label>
                     <input 
                       type="text" 
                       placeholder="e.g. pack card, bring water"
@@ -459,8 +472,8 @@ export function PatientDashboard({
                           <div 
                             key={appt.id} 
                             className={`p-3.5 rounded-2xl border transition-all flex flex-col gap-2 relative group overflow-hidden ${
-                              reminder?.status === 'today' ? 'bg-rose-50/70 border-rose-100 text-rose-950 ring-2 ring-rose-500/10' :
-                              reminder?.status === 'tomorrow' ? 'bg-amber-50/70 border-amber-100 text-amber-950' :
+                              reminder?.status === 'today' ? 'bg-rose-50/70 border-rose-100 text-rose-955 ring-2 ring-rose-500/10' :
+                              reminder?.status === 'tomorrow' ? 'bg-amber-50/70 border-amber-100 text-amber-955' :
                               'bg-slate-50/40 border-slate-100 text-slate-700 hover:border-slate-200'
                             }`}
                           >
@@ -497,8 +510,8 @@ export function PatientDashboard({
 
                             {reminder && (
                               <div className={`p-2.5 rounded-xl text-[10px] font-bold leading-normal flex items-start gap-2 ${
-                                reminder.status === 'today' ? 'bg-white/60 text-rose-950 border border-rose-200/30' :
-                                reminder.status === 'tomorrow' ? 'bg-white/60 text-amber-950 border border-amber-200/30' :
+                                reminder.status === 'today' ? 'bg-white/60 text-rose-955 border border-rose-200/30' :
+                                reminder.status === 'tomorrow' ? 'bg-white/60 text-amber-955 border border-amber-200/30' :
                                 'bg-slate-50/50 text-slate-600 border border-slate-100'
                               }`}>
                                 <span className="shrink-0">📅</span>
@@ -530,49 +543,8 @@ export function PatientDashboard({
           </Card>
         </div>
 
-        {/* COLUMN 2: Main AI Assessment Card & Danger Chips */}
-        <div className="flex flex-col gap-6">
-          {/* Main AI Assessment Card */}
-          <Card id="tour-start-triage" className="p-6 border-none bg-gradient-to-tr from-[#0F4C81] to-[#1e619c] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/15">
-                  <Brain className="text-white animate-pulse" size={24} />
-                </div>
-                <button 
-                  onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                    prefs.voiceGuided ? 'bg-secondary text-white' : 'bg-white/10 text-white/60'
-                  }`}
-                >
-                  <Mic size={12} className={prefs.voiceGuided ? 'animate-pulse' : ''} />
-                  {t.voiceAssistant || 'Voice Guide'}
-                </button>
-              </div>
-              <h3 className="text-2xl font-black mb-2 tracking-tight">Post-Loss Recovery Triage</h3>
-              <p className="text-blue-100/70 text-xs mb-6 leading-relaxed font-medium">
-                Start our clinically audited AI assessment to analyze recovery risk levels, identify immediate care gaps, and secure clinical guidance.
-              </p>
-              <div className="flex flex-col gap-2">
-                <Button 
-                  onClick={onStart}
-                  className="w-full h-12 rounded-2xl bg-white text-[#0F4C81] hover:bg-blue-50 font-black uppercase tracking-wider text-xs shadow-xl shadow-blue-900/20 gap-2 cursor-pointer"
-                >
-                  Start Recovery Test
-                  <ChevronRight size={16} />
-                </Button>
-              </div>
-            </div>
-            {/* Decorative background pulse */}
-            <div className="absolute -bottom-6 -right-6 p-8 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none text-white">
-              <HeartPulse size={160} strokeWidth={1} />
-            </div>
-          </Card>
-
-        </div>
-
-        {/* COLUMN 3: Nearby Support Clinics & Emergency Quick Actions */}
-        <div className="flex flex-col gap-6">
+        {/* COLUMN 2 (Right on desktop, 3rd on mobile): Support & Emergency */}
+        <div className="flex flex-col gap-6 order-3 lg:order-2 w-full">
           {/* Nearby Support & Counseling Resources */}
           <Card className="p-5 border-slate-100 rounded-[2rem] bg-white border shadow-sm flex flex-col gap-4">
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Support & Clinical Guidance</h4>
@@ -641,6 +613,97 @@ export function PatientDashboard({
             </div>
             <ChevronRight size={20} />
           </Button>
+        </div>
+
+        {/* COLUMN 3 (Spans 2 cols on desktop, 1st on mobile): Combined Post-Loss Triage & Tracker Card */}
+        <div className="lg:col-span-2 order-1 lg:order-3 w-full">
+          <Card id="tour-start-triage" className="p-6 sm:p-8 border-none bg-gradient-to-tr from-[#0F4C81] to-[#1e619c] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              
+              {/* Combined Left Column: Post-Loss Recovery Triage */}
+              <div className="space-y-4 font-sans">
+                <div className="flex justify-between items-start">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/15">
+                    <Brain className="text-white animate-pulse" size={24} />
+                  </div>
+                  <button 
+                    onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                      prefs.voiceGuided ? 'bg-secondary text-white' : 'bg-white/10 text-white/60'
+                    }`}
+                  >
+                    <Mic size={12} className={prefs.voiceGuided ? 'animate-pulse' : ''} />
+                    {t.voiceAssistant || 'Voice Guide'}
+                  </button>
+                </div>
+                <h3 className="text-2xl font-black mb-2 tracking-tight">Post-Loss Recovery Triage</h3>
+                <p className="text-blue-100/70 text-xs mb-6 leading-relaxed font-medium">
+                  Start our clinically audited AI assessment to analyze recovery risk levels, identify immediate care gaps, and secure clinical guidance.
+                </p>
+                <Button 
+                  onClick={onStart}
+                  className="w-full h-12 rounded-2xl bg-white text-[#0F4C81] hover:bg-blue-50 font-black uppercase tracking-wider text-xs shadow-xl shadow-blue-900/20 gap-2 cursor-pointer border-none"
+                >
+                  Start Recovery Test
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+
+              {/* Combined Right Column: Recovery Checklist (Vitals Tracker) */}
+              <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] flex flex-col gap-5 backdrop-blur-md">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Recovery Checklist</h4>
+                  <Badge className="bg-emerald-400/20 text-emerald-300 text-[9px] font-black px-2.5 py-0.5 rounded-full border border-emerald-400/30 uppercase">
+                    Streak: {streak} Days
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  {/* Water Tracker */}
+                  <button 
+                    onClick={() => {
+                      setWaterGlasses(p => Math.min(10, p + 1));
+                      if (waterGlasses === 7) setStreak(s => s + 1);
+                    }}
+                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-300/30 text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer text-white"
+                  >
+                    <Droplets className="text-blue-300" size={18} />
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Hydrate</span>
+                    <span className="text-[10px] font-black text-white">{waterGlasses}/8 Gl.</span>
+                  </button>
+
+                  {/* Meal Eaten */}
+                  <button 
+                    onClick={() => setMealEaten(p => !p)}
+                    className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                      mealEaten ? 'bg-emerald-400/20 border-emerald-400/30 text-white' : 'bg-white/5 border-white/10 hover:border-emerald-300/30 text-white'
+                    }`}
+                  >
+                    <ClipboardList className={mealEaten ? 'text-emerald-300' : 'text-blue-100/50'} size={18} />
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Nutrition</span>
+                    <span className="text-[10px] font-black text-white">{mealEaten ? 'Done' : 'Log'}</span>
+                  </button>
+
+                  {/* Med Tracker */}
+                  <button 
+                    onClick={() => setMedTaken(p => !p)}
+                    className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                      medTaken ? 'bg-rose-400/20 border-rose-400/30 text-white' : 'bg-white/5 border-white/10 hover:border-rose-300/30 text-white'
+                    }`}
+                  >
+                    <Heart className={medTaken ? 'text-rose-300' : 'text-blue-100/50'} size={18} />
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Medicine</span>
+                    <span className="text-[10px] font-black text-white">{medTaken ? 'Taken' : 'Log'}</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+            {/* Decorative background pulse */}
+            <div className="absolute -bottom-6 -right-6 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none text-white">
+              <HeartPulse size={200} strokeWidth={1} />
+            </div>
+          </Card>
         </div>
 
       </div>
