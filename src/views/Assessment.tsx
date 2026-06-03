@@ -34,7 +34,7 @@ interface AssessmentProps {
 }
 
 export function Assessment({ onBack, onComplete, language, prefs }: AssessmentProps) {
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);

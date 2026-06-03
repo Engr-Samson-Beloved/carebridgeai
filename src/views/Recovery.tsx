@@ -49,7 +49,7 @@ interface RecoveryProps {
 }
 
 export function Recovery({ language, prefs, onPrefsChange, session, onBack }: RecoveryProps) {
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
   const [mood, setMood] = useState<number | null>(null);
   const [note, setNote] = useState('');
   const [supportMessage, setSupportMessage] = useState<string | null>(null);

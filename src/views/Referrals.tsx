@@ -24,7 +24,7 @@ interface ReferralsProps {
 }
 
 export function Referrals({ language, onBack }: ReferralsProps) {
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
   const [notifiedClinics, setNotifiedClinics] = React.useState<string[]>([]);
   
   const notifyClinic = (name: string) => {

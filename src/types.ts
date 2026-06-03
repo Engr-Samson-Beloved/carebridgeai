@@ -47,7 +47,30 @@ export interface RecoveryLog {
 
 export type AppView = "login" | "patient-dashboard" | "patient-assessment" | "patient-referrals" | "chw-dashboard" | "landing" | "assessment" | "referral" | "recovery" | "dashboard";
 
-export type Language = 'en' | 'fr' | 'sw' | 'yo' | 'ha';
+export type Language = 'en' | 'fr' | 'sw' | 'yo' | 'ha' | string;
+
+export const ALL_LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'fr', label: 'Français' },
+  { code: 'sw', label: 'Swahili' },
+  { code: 'yo', label: 'Yoruba' },
+  { code: 'ha', label: 'Hausa' },
+  { code: 'ig', label: 'Igbo' },
+  { code: 'zu', label: 'Zulu' },
+  { code: 'xh', label: 'Xhosa' },
+  { code: 'am', label: 'Amharic' },
+  { code: 'om', label: 'Oromo' },
+  { code: 'ar', label: 'Arabic' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'so', label: 'Somali' },
+  { code: 'sn', label: 'Shona' },
+  { code: 'rw', label: 'Kinyarwanda' },
+  { code: 'ny', label: 'Chichewa' },
+  { code: 'ln', label: 'Lingala' },
+  { code: 'mg', label: 'Malagasy' },
+  { code: 'ti', label: 'Tigrinya' }
+];
 
 export interface UserPreferences {
   language: Language;

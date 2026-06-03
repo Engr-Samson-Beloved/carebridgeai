@@ -16,7 +16,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { AppView, Language, UserPreferences, UserSession } from '../types';
+import { AppView, Language, UserPreferences, UserSession, ALL_LANGUAGES } from '../types';
 import { translations } from '../translations';
 
 interface NavigationProps {
@@ -29,7 +29,7 @@ interface NavigationProps {
 }
 
 export function Navigation({ currentView, onViewChange, language, session }: NavigationProps) {
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
 
   // Dynamic nav items based on role
   const isCHW = session?.role === 'chw';
@@ -95,7 +95,7 @@ export function Sidebar({
   session, 
   onSignOut 
 }: SidebarProps) {
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
 
   // Dynamic nav items based on role
   const isCHW = session?.role === 'chw';
@@ -224,7 +224,24 @@ interface HeaderProps {
 
 export function Header({ language, setLanguage, prefs, onPrefsChange, session, onSignOut }: HeaderProps) {
   const [showLangs, setShowLangs] = React.useState(false);
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
+
+  const [activeLangs, setActiveLangs] = React.useState<string[]>(() => {
+    const saved = localStorage.getItem('carebridge_active_langs');
+    return saved ? JSON.parse(saved) : ['en', 'fr', 'sw', 'yo', 'ha'];
+  });
+  const [langQuery, setLangQuery] = React.useState('');
+
+  const handleAddLanguage = (code: string) => {
+    if (!activeLangs.includes(code)) {
+      const updated = [...activeLangs, code];
+      setActiveLangs(updated);
+      localStorage.setItem('carebridge_active_langs', JSON.stringify(updated));
+    }
+    setLanguage(code as Language);
+    setShowLangs(false);
+    setLangQuery('');
+  };
 
   if (!session) return null;
 
@@ -252,27 +269,112 @@ export function Header({ language, setLanguage, prefs, onPrefsChange, session, o
           
           <AnimatePresence>
             {showLangs && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute right-0 mt-3 w-40 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-2 z-50"
-              >
-                {['en', 'fr', 'sw', 'yo', 'ha'].map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => {
-                      setLanguage(lang as Language);
-                      setShowLangs(false);
-                    }}
-                    className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-colors ${
-                      language === lang ? 'bg-primary/5 text-primary' : 'text-slate-500 hover:bg-slate-50'
-                    }`}
-                  >
-                    {lang === 'en' ? 'English' : lang === 'fr' ? 'Français' : lang === 'sw' ? 'Swahili' : lang === 'yo' ? 'Yoruba' : 'Hausa'}
-                  </button>
-                ))}
-              </motion.div>
+              <>
+                {/* Backdrop overlay to close dropdown */}
+                <div className="fixed inset-0 z-40" onClick={() => setShowLangs(false)} />
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-3 w-64 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-3.5 z-50 flex flex-col gap-2.5"
+                >
+                  {/* Search Input */}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl">
+                    <Globe size={14} className="text-slate-400 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search language..."
+                      value={langQuery}
+                      onChange={e => setLangQuery(e.target.value)}
+                      className="w-full text-xs font-bold bg-transparent border-none outline-none placeholder:text-slate-400 focus:ring-0 p-0 text-slate-700"
+                    />
+                    {langQuery && (
+                      <button 
+                        type="button"
+                        onClick={() => setLangQuery('')}
+                        className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-1 cursor-pointer border-none bg-transparent"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto pr-1 flex flex-col gap-2 scrollbar-thin">
+                    {/* Filtered list based on search query */}
+                    {(() => {
+                      const query = langQuery.trim().toLowerCase();
+                      const filtered = ALL_LANGUAGES.filter(lang => 
+                        lang.label.toLowerCase().includes(query) || 
+                        lang.code.toLowerCase().includes(query)
+                      );
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="text-center py-4 text-[10px] text-slate-400 font-bold">
+                            No languages found
+                          </div>
+                        );
+                      }
+
+                      const matchingActive = filtered.filter(l => activeLangs.includes(l.code));
+                      const matchingOthers = filtered.filter(l => !activeLangs.includes(l.code));
+
+                      return (
+                        <>
+                          {matchingActive.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1">
+                                {query ? 'Matching Active' : 'My Languages'}
+                              </span>
+                              {matchingActive.map((lang) => (
+                                <button
+                                  key={lang.code}
+                                  type="button"
+                                  onClick={() => {
+                                    setLanguage(lang.code as Language);
+                                    setShowLangs(false);
+                                    setLangQuery('');
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border-none flex items-center justify-between ${
+                                    language === lang.code 
+                                      ? 'bg-primary/5 text-primary' 
+                                      : 'text-slate-600 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <span>{lang.label}</span>
+                                  {language === lang.code && <span className="text-[10px]">✓</span>}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {matchingOthers.length > 0 && (
+                            <div className="flex flex-col gap-1 border-t border-slate-50 pt-2">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1">
+                                {query ? 'Search Results' : 'Add Languages'}
+                              </span>
+                              {matchingOthers.map((lang) => (
+                                <button
+                                  key={lang.code}
+                                  type="button"
+                                  onClick={() => handleAddLanguage(lang.code)}
+                                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-primary hover:bg-primary/5 transition-all border-none flex items-center justify-between"
+                                >
+                                  <span>{lang.label}</span>
+                                  <span className="text-[9px] font-black uppercase text-primary/80 bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded-md">
+                                    + Add
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </motion.div>
+              </>
             )}
           </AnimatePresence>
         </div>

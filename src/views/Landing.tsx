@@ -38,7 +38,7 @@ interface LandingProps {
 }
 
 export function Landing({ onStart, onClinicSearch, language, prefs, onPrefsChange }: LandingProps) {
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
   const [showEmergency, setShowEmergency] = React.useState(false);
   const [patients, setPatients] = React.useState<any[]>([]);
   const [syncing, setSyncing] = React.useState(false);

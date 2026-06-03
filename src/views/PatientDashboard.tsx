@@ -23,7 +23,7 @@ import {
   Calendar,
   Clock
 } from 'lucide-react';
-import { Language, UserPreferences, UserSession } from '../types';
+import { Language, UserPreferences, UserSession, ALL_LANGUAGES } from '../types';
 import { translations } from '../translations';
 
 interface PatientDashboardProps {
@@ -45,12 +45,29 @@ export function PatientDashboard({
   session, 
   onSignOut 
 }: PatientDashboardProps) {
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
   const [showEmergency, setShowEmergency] = useState(false);
   const [waterGlasses, setWaterGlasses] = useState(3);
   const [mealEaten, setMealEaten] = useState(false);
   const [medTaken, setMedTaken] = useState(false);
   const [streak, setStreak] = useState(4);
+
+  const [activeLangs, setActiveLangs] = useState<string[]>(() => {
+    const saved = localStorage.getItem('carebridge_active_langs');
+    return saved ? JSON.parse(saved) : ['en', 'fr', 'sw', 'yo', 'ha'];
+  });
+  const [langQuery, setLangQuery] = useState('');
+
+  const handleAddLanguage = (code: string) => {
+    if (!activeLangs.includes(code)) {
+      const updated = [...activeLangs, code];
+      setActiveLangs(updated);
+      localStorage.setItem('carebridge_active_langs', JSON.stringify(updated));
+    }
+    onPrefsChange({ language: code });
+    setShowLangMenu(false);
+    setLangQuery('');
+  };
 
   React.useEffect(() => {
     const handleCareBridgeAction = (e: Event) => {
@@ -242,13 +259,6 @@ export function PatientDashboard({
   const visibleAppointments = isApptsExpanded ? sortedAppointments : sortedAppointments.slice(0, 1);
 
   const [showLangMenu, setShowLangMenu] = useState(false);
-  const languages: { code: Language; label: string }[] = [
-    { code: 'en', label: 'English' },
-    { code: 'fr', label: 'Français' },
-    { code: 'sw', label: 'Swahili' },
-    { code: 'yo', label: 'Yoruba' },
-    { code: 'ha', label: 'Hausa' },
-  ];
 
   return (
     <div className="flex flex-col gap-8 pb-40 px-4 sm:px-6 w-full max-w-7xl mx-auto">
@@ -277,7 +287,7 @@ export function PatientDashboard({
           >
             <Globe size={16} />
             <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline-block">
-              {languages.find(l => l.code === language)?.label || 'Language'}
+              {ALL_LANGUAGES.find(l => l.code === language)?.label || 'Language'}
             </span>
           </button>
 
@@ -286,32 +296,110 @@ export function PatientDashboard({
             {showLangMenu && (
               <>
                 {/* Backdrop overlay to close dropdown */}
-                <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)} />
+                <div className="fixed inset-0 z-40" onClick={() => {
+                  setShowLangMenu(false);
+                  setLangQuery('');
+                }} />
                 
                 <motion.div 
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 top-12 bg-white rounded-2xl border border-slate-100 p-2 shadow-xl z-50 min-w-[120px]"
+                  className="absolute right-0 top-12 bg-white rounded-[2rem] border border-slate-100 p-3.5 shadow-xl z-50 w-64 flex flex-col gap-2.5"
                 >
-                  <div className="flex flex-col gap-1">
-                    {languages.map((lang) => (
-                      <button
-                        key={lang.code}
+                  {/* Search Input */}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl">
+                    <Globe size={14} className="text-slate-400 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search language..."
+                      value={langQuery}
+                      onChange={e => setLangQuery(e.target.value)}
+                      className="w-full text-xs font-bold bg-transparent border-none outline-none placeholder:text-slate-400 focus:ring-0 p-0 text-slate-700"
+                    />
+                    {langQuery && (
+                      <button 
                         type="button"
-                        onClick={() => {
-                          onPrefsChange({ language: lang.code });
-                          setShowLangMenu(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border-none ${
-                          language === lang.code 
-                            ? 'bg-primary/5 text-primary' 
-                            : 'text-slate-600 hover:bg-slate-50'
-                        }`}
+                        onClick={() => setLangQuery('')}
+                        className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-1 cursor-pointer border-none bg-transparent"
                       >
-                        {lang.label}
+                        ✕
                       </button>
-                    ))}
+                    )}
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto pr-1 flex flex-col gap-2 scrollbar-thin">
+                    {/* Filtered list based on search query */}
+                    {(() => {
+                      const query = langQuery.trim().toLowerCase();
+                      const filtered = ALL_LANGUAGES.filter(lang => 
+                        lang.label.toLowerCase().includes(query) || 
+                        lang.code.toLowerCase().includes(query)
+                      );
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="text-center py-4 text-[10px] text-slate-400 font-bold">
+                            No languages found
+                          </div>
+                        );
+                      }
+
+                      const matchingActive = filtered.filter(l => activeLangs.includes(l.code));
+                      const matchingOthers = filtered.filter(l => !activeLangs.includes(l.code));
+
+                      return (
+                        <>
+                          {matchingActive.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1">
+                                {query ? 'Matching Active' : 'My Languages'}
+                              </span>
+                              {matchingActive.map((lang) => (
+                                <button
+                                  key={lang.code}
+                                  type="button"
+                                  onClick={() => {
+                                    onPrefsChange({ language: lang.code });
+                                    setShowLangMenu(false);
+                                    setLangQuery('');
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border-none flex items-center justify-between ${
+                                    language === lang.code 
+                                      ? 'bg-primary/5 text-primary' 
+                                      : 'text-slate-600 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <span>{lang.label}</span>
+                                  {language === lang.code && <span className="text-[10px]">✓</span>}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {matchingOthers.length > 0 && (
+                            <div className="flex flex-col gap-1 border-t border-slate-50 pt-2">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1">
+                                {query ? 'Search Results' : 'Add Languages'}
+                              </span>
+                              {matchingOthers.map((lang) => (
+                                <button
+                                  key={lang.code}
+                                  type="button"
+                                  onClick={() => handleAddLanguage(lang.code)}
+                                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-primary hover:bg-primary/5 transition-all border-none flex items-center justify-between"
+                                >
+                                  <span>{lang.label}</span>
+                                  <span className="text-[9px] font-black uppercase text-primary/80 bg-primary/5 hover:bg-primary/10 px-2 py-0.5 rounded-md">
+                                    + Add
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </motion.div>
               </>
@@ -332,8 +420,99 @@ export function PatientDashboard({
       {/* Responsive Grid System for Desktop layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start w-full">
         
-        {/* COLUMN 1 (Left on desktop, 2nd on mobile): Appointments & Reminders */}
-        <div className="flex flex-col gap-6 order-2 lg:order-1 w-full">
+        {/* COLUMN 1 (Spans 2 cols on desktop, 1st on mobile): Combined Post-Loss Triage & Tracker Card */}
+        <div className="lg:col-span-2 w-full">
+          <Card id="tour-start-triage" className="p-6 sm:p-8 border-none bg-gradient-to-tr from-[#0F4C81] to-[#1e619c] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              
+              {/* Combined Left Column: Post-Loss Recovery Triage */}
+              <div className="space-y-4 font-sans">
+                <div className="flex justify-between items-start">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/15">
+                    <Brain className="text-white animate-pulse" size={24} />
+                  </div>
+                  <button 
+                    onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                      prefs.voiceGuided ? 'bg-secondary text-white' : 'bg-white/10 text-white/60'
+                    }`}
+                  >
+                    <Mic size={12} className={prefs.voiceGuided ? 'animate-pulse' : ''} />
+                    {t.voiceAssistant || 'Voice Guide'}
+                  </button>
+                </div>
+                <h3 className="text-2xl font-black mb-2 tracking-tight">Post-Loss Recovery Triage</h3>
+                <p className="text-blue-100/70 text-xs mb-6 leading-relaxed font-medium">
+                  Start our clinically audited AI assessment to analyze recovery risk levels, identify immediate care gaps, and secure clinical guidance.
+                </p>
+                <Button 
+                  onClick={onStart}
+                  className="w-full h-12 rounded-2xl bg-white text-[#0F4C81] hover:bg-blue-50 font-black uppercase tracking-wider text-xs shadow-xl shadow-blue-900/20 gap-2 cursor-pointer border-none"
+                >
+                  Start Recovery Test
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+
+              {/* Combined Right Column: Recovery Checklist (Vitals Tracker) */}
+              <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] flex flex-col gap-5 backdrop-blur-md">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Recovery Checklist</h4>
+                  <Badge className="bg-emerald-400/20 text-emerald-300 text-[9px] font-black px-2.5 py-0.5 rounded-full border border-emerald-400/30 uppercase">
+                    Streak: {streak} Days
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  {/* Water Tracker */}
+                  <button 
+                    onClick={() => {
+                      setWaterGlasses(p => Math.min(10, p + 1));
+                      if (waterGlasses === 7) setStreak(s => s + 1);
+                    }}
+                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-300/30 text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer text-white"
+                  >
+                    <Droplets className="text-blue-300" size={18} />
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Hydrate</span>
+                    <span className="text-[10px] font-black text-white">{waterGlasses}/8 Gl.</span>
+                  </button>
+
+                  {/* Meal Eaten */}
+                  <button 
+                    onClick={() => setMealEaten(p => !p)}
+                    className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                      mealEaten ? 'bg-emerald-400/20 border-emerald-400/30 text-white' : 'bg-white/5 border-white/10 hover:border-emerald-300/30 text-white'
+                    }`}
+                  >
+                    <ClipboardList className={mealEaten ? 'text-emerald-300' : 'text-blue-100/50'} size={18} />
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Nutrition</span>
+                    <span className="text-[10px] font-black text-white">{mealEaten ? 'Done' : 'Log'}</span>
+                  </button>
+
+                  {/* Med Tracker */}
+                  <button 
+                    onClick={() => setMedTaken(p => !p)}
+                    className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                      medTaken ? 'bg-rose-400/20 border-rose-400/30 text-white' : 'bg-white/5 border-white/10 hover:border-rose-300/30 text-white'
+                    }`}
+                  >
+                    <Heart className={medTaken ? 'text-rose-300' : 'text-blue-100/50'} size={18} />
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Medicine</span>
+                    <span className="text-[10px] font-black text-white">{medTaken ? 'Taken' : 'Log'}</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+            {/* Decorative background pulse */}
+            <div className="absolute -bottom-6 -right-6 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none text-white">
+              <HeartPulse size={200} strokeWidth={1} />
+            </div>
+          </Card>
+        </div>
+
+        {/* COLUMN 2 (Left on desktop, 2nd on mobile): Appointments & Reminders */}
+        <div className="flex flex-col gap-6 w-full">
           {/* Appointments & Reminders Card */}
           <Card className="p-5 border-slate-100 rounded-[2rem] bg-white border flex flex-col gap-4 shadow-sm">
             <div className="flex justify-between items-center border-b border-slate-50 pb-2">
@@ -543,8 +722,8 @@ export function PatientDashboard({
           </Card>
         </div>
 
-        {/* COLUMN 2 (Right on desktop, 3rd on mobile): Support & Emergency */}
-        <div className="flex flex-col gap-6 order-3 lg:order-2 w-full">
+        {/* COLUMN 3 (Right on desktop, 3rd on mobile): Support & Emergency */}
+        <div className="flex flex-col gap-6 w-full">
           {/* Nearby Support & Counseling Resources */}
           <Card className="p-5 border-slate-100 rounded-[2rem] bg-white border shadow-sm flex flex-col gap-4">
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Support & Clinical Guidance</h4>
@@ -613,97 +792,6 @@ export function PatientDashboard({
             </div>
             <ChevronRight size={20} />
           </Button>
-        </div>
-
-        {/* COLUMN 3 (Spans 2 cols on desktop, 1st on mobile): Combined Post-Loss Triage & Tracker Card */}
-        <div className="lg:col-span-2 order-1 lg:order-3 w-full">
-          <Card id="tour-start-triage" className="p-6 sm:p-8 border-none bg-gradient-to-tr from-[#0F4C81] to-[#1e619c] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              
-              {/* Combined Left Column: Post-Loss Recovery Triage */}
-              <div className="space-y-4 font-sans">
-                <div className="flex justify-between items-start">
-                  <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/15">
-                    <Brain className="text-white animate-pulse" size={24} />
-                  </div>
-                  <button 
-                    onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                      prefs.voiceGuided ? 'bg-secondary text-white' : 'bg-white/10 text-white/60'
-                    }`}
-                  >
-                    <Mic size={12} className={prefs.voiceGuided ? 'animate-pulse' : ''} />
-                    {t.voiceAssistant || 'Voice Guide'}
-                  </button>
-                </div>
-                <h3 className="text-2xl font-black mb-2 tracking-tight">Post-Loss Recovery Triage</h3>
-                <p className="text-blue-100/70 text-xs mb-6 leading-relaxed font-medium">
-                  Start our clinically audited AI assessment to analyze recovery risk levels, identify immediate care gaps, and secure clinical guidance.
-                </p>
-                <Button 
-                  onClick={onStart}
-                  className="w-full h-12 rounded-2xl bg-white text-[#0F4C81] hover:bg-blue-50 font-black uppercase tracking-wider text-xs shadow-xl shadow-blue-900/20 gap-2 cursor-pointer border-none"
-                >
-                  Start Recovery Test
-                  <ChevronRight size={16} />
-                </Button>
-              </div>
-
-              {/* Combined Right Column: Recovery Checklist (Vitals Tracker) */}
-              <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] flex flex-col gap-5 backdrop-blur-md">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Recovery Checklist</h4>
-                  <Badge className="bg-emerald-400/20 text-emerald-300 text-[9px] font-black px-2.5 py-0.5 rounded-full border border-emerald-400/30 uppercase">
-                    Streak: {streak} Days
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2.5">
-                  {/* Water Tracker */}
-                  <button 
-                    onClick={() => {
-                      setWaterGlasses(p => Math.min(10, p + 1));
-                      if (waterGlasses === 7) setStreak(s => s + 1);
-                    }}
-                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-300/30 text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer text-white"
-                  >
-                    <Droplets className="text-blue-300" size={18} />
-                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Hydrate</span>
-                    <span className="text-[10px] font-black text-white">{waterGlasses}/8 Gl.</span>
-                  </button>
-
-                  {/* Meal Eaten */}
-                  <button 
-                    onClick={() => setMealEaten(p => !p)}
-                    className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                      mealEaten ? 'bg-emerald-400/20 border-emerald-400/30 text-white' : 'bg-white/5 border-white/10 hover:border-emerald-300/30 text-white'
-                    }`}
-                  >
-                    <ClipboardList className={mealEaten ? 'text-emerald-300' : 'text-blue-100/50'} size={18} />
-                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Nutrition</span>
-                    <span className="text-[10px] font-black text-white">{mealEaten ? 'Done' : 'Log'}</span>
-                  </button>
-
-                  {/* Med Tracker */}
-                  <button 
-                    onClick={() => setMedTaken(p => !p)}
-                    className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                      medTaken ? 'bg-rose-400/20 border-rose-400/30 text-white' : 'bg-white/5 border-white/10 hover:border-rose-300/30 text-white'
-                    }`}
-                  >
-                    <Heart className={medTaken ? 'text-rose-300' : 'text-blue-100/50'} size={18} />
-                    <span className="text-[8px] font-black text-blue-200/60 uppercase">Medicine</span>
-                    <span className="text-[10px] font-black text-white">{medTaken ? 'Taken' : 'Log'}</span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-            {/* Decorative background pulse */}
-            <div className="absolute -bottom-6 -right-6 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none text-white">
-              <HeartPulse size={200} strokeWidth={1} />
-            </div>
-          </Card>
         </div>
 
       </div>
