@@ -125,8 +125,8 @@ export function Sidebar({
         </h1>
       </div>
 
-      {/* Navigation tabs (Moved to top) */}
-      <nav className="space-y-1 mb-6">
+      {/* Navigation tabs - Centered Vertically */}
+      <nav className="space-y-1.5 flex-1 flex flex-col justify-center">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -147,57 +147,6 @@ export function Sidebar({
           );
         })}
       </nav>
-
-      <div className="border-t border-slate-100/60 my-4" />
-
-
-
-      {/* Control Center (Toggles and Emergency SOS - Moved down) */}
-      <div className="mb-6 space-y-2.5 flex-1 flex flex-col justify-end">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-2">Control Center</p>
-
-        {/* Voice Guide Toggle */}
-        <div 
-          onClick={() => onPrefsChange({ voiceGuided: !prefs.voiceGuided })}
-          className="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/70 rounded-2xl cursor-pointer select-none transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${prefs.voiceGuided ? 'bg-[#0F4C81] text-white' : 'bg-white text-slate-400'}`}>
-              <Mic size={16} />
-            </div>
-            <span className="text-[9.5px] font-black uppercase text-slate-500">Voice Guide</span>
-          </div>
-          <div className={`w-8 h-4.5 rounded-full relative transition-colors ${prefs.voiceGuided ? 'bg-[#0F4C81]' : 'bg-slate-200'}`}>
-            <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${prefs.voiceGuided ? 'right-1' : 'left-1'}`} />
-          </div>
-        </div>
-
-        {/* WhatsApp Follow-up Toggle */}
-        <div 
-          onClick={() => onPrefsChange({ whatsappEnabled: !prefs.whatsappEnabled })}
-          className="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/70 rounded-2xl cursor-pointer select-none transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${prefs.whatsappEnabled ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400'}`}>
-              <MessageSquare size={16} />
-            </div>
-            <span className="text-[9.5px] font-black uppercase text-slate-500">WhatsApp Alert</span>
-          </div>
-          <div className={`w-8 h-4.5 rounded-full relative transition-colors ${prefs.whatsappEnabled ? 'bg-emerald-500' : 'bg-slate-200'}`}>
-            <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${prefs.whatsappEnabled ? 'right-1' : 'left-1'}`} />
-          </div>
-        </div>
-
-        {/* SOS Emergency button */}
-        <Button 
-          variant="destructive" 
-          className="w-full h-12 rounded-2xl font-black uppercase tracking-widest text-[9.5px] gap-2.5 shadow-md shadow-red-100 border-none"
-          onClick={() => alert("Connecting to emergency clinical support...")}
-        >
-          SOS EMERGENCY
-          <AlertCircle size={16} />
-        </Button>
-      </div>
 
       {/* Sign Out Section */}
       <div className="pt-4 border-t border-slate-100 mt-auto">
