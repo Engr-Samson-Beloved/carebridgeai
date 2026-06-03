@@ -94,6 +94,14 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
   // Modal Assessment Wizard States
   const [showModal, setShowModal] = useState(true);
   const [modalStep, setModalStep] = useState<number | 'intro'>('intro');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
+  const [passcode, setPasscode] = useState('');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [securityPin, setSecurityPin] = useState(() => localStorage.getItem('carebridge_privacy_pin') || '1234');
+  const [newPin, setNewPin] = useState('');
+  const [isChangingPin, setIsChangingPin] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pinSuccess, setPinSuccess] = useState('');
 
   // Daily Streak & Vitals States
   const [streak, setStreak] = useState(5);
@@ -103,6 +111,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
   const [healthCheck, setHealthCheck] = useState({
     pregnancyWeek: 8,
+    location: 'Lagos Mainland',
     bleedingSeverity: 'none',
     soakingPads: false,
     bloodClots: false,
@@ -246,6 +255,23 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       window.removeEventListener('carebridge-action', handleCareBridgeAction);
     };
   }, [lastAssessmentId, assessmentResult]);
+
+  const [transitStep, setTransitStep] = useState(0);
+  const [isTransitExpanded, setIsTransitExpanded] = useState(true);
+
+  React.useEffect(() => {
+    if (assessmentResult && (assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate')) {
+      setTransitStep(0);
+      const t1 = setTimeout(() => setTransitStep(1), 3000);
+      const t2 = setTimeout(() => setTransitStep(2), 7000);
+      const t3 = setTimeout(() => setTransitStep(3), 11000);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    }
+  }, [assessmentResult]);
 
   const simulatePostToWhatsapp = () => {
     alert("Simulation: Your recovery message has been synced to your private WhatsApp follow-up line.");
@@ -530,6 +556,27 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
     setAssessmentResult(updatedResult);
 
+    // Save locally for password-protected history log
+    const histRecord = {
+      id: `Local-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      riskLevel: riskLevel === 'high' ? 'High' : (riskLevel === 'moderate' ? 'Medium' : 'Low'),
+      text: updatedResult.text,
+      action: apiData.action,
+      careGaps: apiData.careGaps,
+      equityFlags: apiData.equityFlags,
+      mentalHealthFlag: apiData.mentalHealthFlag,
+      mentalHealthNote: apiData.mentalHealthNote,
+      followUpRecommendation: apiData.followUpRecommendation
+    };
+    try {
+      const localHist = JSON.parse(localStorage.getItem('carebridge_assessments_history') || '[]');
+      localHist.unshift(histRecord);
+      localStorage.setItem('carebridge_assessments_history', JSON.stringify(localHist));
+    } catch (err) {
+      console.warn("Failed to save local history log copy:", err);
+    }
+
     // Save to Firestore assessments collection
     try {
       setAssignedCHW(null);
@@ -641,7 +688,23 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                 +
               </button>
             </div>
-            <p className="text-[10px] text-slate-400 font-bold leading-normal mt-1">
+            
+            <div className="flex flex-col gap-1 mt-2.5">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Select LGA/District</span>
+              <select
+                value={healthCheck.location || 'Lagos Mainland'}
+                onChange={(e) => setHealthCheck(prev => ({ ...prev, location: e.target.value }))}
+                className="w-full h-10 px-3 bg-white rounded-xl border border-slate-200 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0F4C81]/40 text-xs"
+              >
+                <option value="Lagos Mainland">Lagos Mainland</option>
+                <option value="Ikeja">Ikeja</option>
+                <option value="Lagos Island">Lagos Island</option>
+                <option value="Surulere">Surulere</option>
+                <option value="Ikorodu">Ikorodu</option>
+              </select>
+            </div>
+
+            <p className="text-[10px] text-slate-400 font-bold leading-normal mt-2.5">
               * Note: First-trimester pregnancy loss is typically defined as occurring before 12 completed weeks, and second-trimester loss between 12 and 24 weeks. This parameter directly affects EPL Care clinical risk predictions.
             </p>
           </div>
@@ -970,840 +1033,1111 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         </Badge>
       </div>
 
-      {/* Dynamic Triage & Health Check Assessment Results (Full Width at Top) */}
-      <AnimatePresence>
-        {assessmentResult && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.98 }}
-            transition={{ duration: 0.4 }}
-            className="mb-8 w-full"
-          >
-            <Card className={`p-6 sm:p-8 rounded-[2.5rem] border shadow-md relative overflow-hidden ${
-              assessmentResult.risk === 'high' 
-                ? 'bg-rose-50/70 border-rose-200 text-rose-955' 
-                : (assessmentResult.risk === 'moderate' 
-                    ? 'bg-amber-50/70 border-amber-200 text-amber-955' 
-                    : 'bg-emerald-50/70 border-emerald-200 text-emerald-950')
-            }`}>
-              
-              <div className="relative z-10 flex flex-col gap-6">
-                
-                {/* Header of results */}
-                <div className="flex justify-between items-center border-b pb-4 border-slate-200/50">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
-                      assessmentResult.risk === 'high' ? 'bg-rose-500/20 text-rose-600' :
-                      assessmentResult.risk === 'moderate' ? 'bg-amber-500/20 text-amber-600' :
-                      'bg-emerald-500/20 text-emerald-600'
-                    }`}>
-                      <HeartPulse className={assessmentResult.risk === 'high' ? 'animate-pulse' : ''} size={20} />
-                    </div>
-                    <div>
-                      <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider">CareBridge AI Clinical Insight</h3>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Triage Diagnosis & Action Routing</p>
-                    </div>
-                  </div>
-                  
-                  <Badge className={`uppercase text-[9px] font-black tracking-widest px-3.5 py-1 rounded-full border-none shadow-xs ${
-                    assessmentResult.risk === 'high' 
-                      ? 'bg-rose-600 text-white' 
-                      : (assessmentResult.risk === 'moderate' 
-                          ? 'bg-amber-500 text-white' 
-                          : 'bg-emerald-600 text-white')
-                  }`}>
-                    {assessmentResult.risk} RISK
-                  </Badge>
-                </div>
-
-                {/* Grid for desktop layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-slate-800">
-                  
-                  {/* Left Column: Insight & Progress (lg:col-span-5) */}
-                  <div className="lg:col-span-5 flex flex-col gap-4">
-                    <div className="p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/40 space-y-2">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">AI Diagnosis Summary</span>
-                      <p className="text-[11.5px] leading-relaxed font-bold text-slate-700">
-                        {assessmentResult.text}
-                      </p>
-                    </div>
-
-                    {/* Follow-up Likelihood Indicator */}
-                    {assessmentResult.prediction !== undefined && assessmentResult.probability !== undefined && (
-                      <div className="p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/40 space-y-2">
-                        <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                          <span>Follow-up Recommendation</span>
-                          <span className={assessmentResult.prediction === 1 ? "text-emerald-600" : "text-amber-600"}>
-                            {assessmentResult.prediction === 1 ? 'Required' : 'Optional'} ({Math.round(assessmentResult.probability * 100)}%)
-                          </span>
-                        </div>
-                        <div className="h-2 w-full bg-slate-200/50 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-500 ${assessmentResult.prediction === 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                            style={{ width: `${assessmentResult.probability * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* WhatsApp follow-up checkbox */}
-                    <div className="p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30 flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="whatsappOptIn"
-                        checked={whatsappOptIn}
-                        onChange={(e) => setWhatsappOptIn(e.target.checked)}
-                        className="w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer border-slate-300"
-                      />
-                      <label htmlFor="whatsappOptIn" className="text-[10px] font-bold text-slate-500 cursor-pointer leading-tight">
-                        Opt into follow-ups & wellness check-ins on WhatsApp
-                      </label>
-                    </div>
-
-                    <Button
-                      onClick={() => {
-                        setAssessmentResult(null);
-                        setAssignedCHW(null);
-                      }}
-                      variant="outline"
-                      className="w-full h-10 border-slate-200/80 text-slate-500 hover:text-slate-800 hover:bg-white/80 font-black uppercase text-[10px] tracking-wider rounded-xl transition-all cursor-pointer"
-                    >
-                      Clear Report & Start New Test
-                    </Button>
-                  </div>
-
-                  {/* Right Column: Actions & Services (lg:col-span-7) */}
-                  <div className="lg:col-span-7 flex flex-col gap-4">
-                    
-                    {/* Clinical Action Notice */}
-                    {assessmentResult.action && (
-                      <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-1 shadow-md">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Immediate Action Required</span>
-                        <p className="text-[11px] font-semibold leading-relaxed text-slate-200">{assessmentResult.action}</p>
-                      </div>
-                    )}
-
-                    {/* Care Gaps */}
-                    {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
-                      <div className="p-4 bg-amber-100/40 border border-amber-200/30 rounded-2xl space-y-2">
-                        <span className="text-[9px] font-black text-amber-800 uppercase tracking-widest block">⚠️ Identified Care Gaps ({assessmentResult.careGaps.length})</span>
-                        <ul className="space-y-1">
-                          {assessmentResult.careGaps.map((gap: string, i: number) => (
-                            <li key={i} className="text-[10px] font-extrabold text-amber-900 leading-normal flex items-start gap-2">
-                              <span className="shrink-0 text-amber-500">•</span>
-                              <span>{gap}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Equity Barriers */}
-                    {assessmentResult.equityFlags && assessmentResult.equityFlags.length > 0 && (
-                      <div className="p-4 bg-blue-100/40 border border-blue-200/30 rounded-2xl space-y-2">
-                        <span className="text-[9px] font-black text-[#0F4C81] uppercase tracking-widest block">📍 Equity Barriers Detected</span>
-                        <ul className="space-y-1">
-                          {assessmentResult.equityFlags.map((flag: string, i: number) => (
-                            <li key={i} className="text-[10px] font-extrabold text-slate-600 leading-normal flex items-start gap-2">
-                              <span className="shrink-0 text-primary">•</span>
-                              <span>{flag}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Mental Health Flag */}
-                    {assessmentResult.mentalHealthFlag && (
-                      <div className="p-4 bg-purple-100/40 border border-purple-200/30 rounded-2xl space-y-1.5">
-                        <span className="text-[9px] font-black text-purple-800 uppercase tracking-widest block">🧠 Mental Health Flagged</span>
-                        <p className="text-[10px] font-extrabold text-purple-900 leading-normal">{assessmentResult.mentalHealthNote}</p>
-                        <button 
-                          onClick={() => alert("Connecting to CareBridge counseling support services...")}
-                          className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-colors shadow-sm cursor-pointer border-none"
-                        >
-                          Connect to Counselor
-                        </button>
-                      </div>
-                    )}
-
-                    {/* CHW Connect Panel */}
-                    {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
-                      <div className="p-4 bg-white/70 border border-slate-100/80 rounded-2xl flex flex-col gap-3 text-slate-800 shadow-xs">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400">Available Support Workers</h4>
-                            <p className="text-[8px] text-slate-400 font-bold">Connect with a professional counselor</p>
-                          </div>
-                          <Badge className="bg-[#0F4C81] text-white text-[8px] font-black uppercase tracking-wider rounded-full px-2.5 py-0.5 border-none">
-                            {assignedCHW ? "Assigned" : "PAC Ready"}
-                          </Badge>
-                        </div>
-
-                        {assignedCHW ? (
-                          <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2.5 text-emerald-800">
-                            <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
-                            <div>
-                              <span className="font-extrabold text-[11px] block">Specialist Assigned</span>
-                              <p className="text-[10px] opacity-90 leading-tight">{assignedCHW} has been notified and will contact you for clinical support.</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                              {[
-                                { id: 'chw_tomi', name: 'Nurse Tomi', location: 'Lagos PAC Dept', avatar: 'https://images.unsplash.com/photo-1590642916589-592bca10dfbf?auto=format&fit=crop&q=80&w=100&h=100' },
-                                { id: 'chw_amina', name: 'Sister Amina', location: 'Ikeja Center', avatar: 'https://images.unsplash.com/photo-1594824813573-246434e33963?auto=format&fit=crop&q=80&w=100&h=100' },
-                                { id: 'chw_kelechi', name: 'Dr. Kelechi', location: 'Surulere Center', avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=100&h=100' }
-                              ].map((chw) => (
-                                <div 
-                                  key={chw.id}
-                                  onClick={() => assignCHW(chw.id, chw.name)}
-                                  className="p-2 border border-slate-100 rounded-xl hover:border-blue-200 transition-all flex flex-col gap-1 items-center justify-center text-center cursor-pointer bg-slate-50/50 hover:bg-white"
-                                >
-                                  <img src={chw.avatar} alt={chw.name} className="w-8 h-8 rounded-full object-cover border border-slate-200" />
-                                  <div>
-                                    <span className="font-extrabold text-[10px] text-slate-800 block leading-none">{chw.name}</span>
-                                    <span className="text-[7.5px] text-slate-400 font-bold uppercase mt-0.5 block leading-none">{chw.location}</span>
-                                  </div>
-                                  <span className="text-[8.5px] font-black text-primary px-2 py-0.5 rounded bg-blue-50/50 w-full">Select</span>
-                                </div>
-                              ))}
-                            </div>
-
-                            <div className="flex gap-2">
-                              <Button 
-                                onClick={() => {
-                                  const chws = [
-                                    { id: 'chw_tomi', name: 'Nurse Tomi' },
-                                    { id: 'chw_amina', name: 'Sister Amina' },
-                                    { id: 'chw_kelechi', name: 'Dr. Kelechi' }
-                                  ];
-                                  const randomCHW = chws[Math.floor(Math.random() * chws.length)];
-                                  assignCHW(randomCHW.id, randomCHW.name);
-                                }}
-                                className="w-full h-8.5 bg-[#0F4C81] text-white hover:opacity-95 rounded-xl font-black uppercase tracking-wider text-[9px] border-none transition-opacity cursor-pointer"
-                              >
-                                AI Auto-Match CHW
-                              </Button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Emergency Escalation Panel for High Risk */}
-                    {assessmentResult.risk === 'high' && (
-                      <div className="p-4 border-none bg-rose-600 text-white rounded-2xl shadow-md relative overflow-hidden group">
-                        <div className="relative z-10 space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0 animate-pulse">
-                              <AlertTriangle size={18} />
-                            </div>
-                            <h4 className="font-black text-sm tracking-tight">Emergency Care Route Active</h4>
-                          </div>
-                          
-                          <p className="text-[11px] text-rose-100 leading-relaxed font-medium">
-                            Critical danger indicators are present. CareBridge AI has simulated an urgent clinical notification dispatch to Lagos Maternal Center. Please call our clinical coordinator immediately.
-                          </p>
-
-                          <div className="flex gap-2">
-                            <Button 
-                              onClick={() => { setShowEmergencyCall(true); alert("Connecting with Lagos Maternal Center Emergency Desk..."); }}
-                              className="flex-1 h-9 bg-white hover:bg-rose-50 text-rose-600 font-extrabold rounded-xl uppercase tracking-wider text-[9px] gap-1.5 shadow-md shadow-rose-900/20 border-none transition-all cursor-pointer"
-                            >
-                              <Phone size={12} /> Call Coordinator
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => alert("Clinic notified: Patient has marked intent to arrive within 15 minutes.")}
-                              className="h-9 border border-white/30 hover:bg-white/10 text-white font-extrabold rounded-xl uppercase tracking-wider text-[9px] transition-all cursor-pointer"
-                            >
-                              Map Route
-                            </Button>
-                          </div>
-
-                          {/* Hospital Suggestions */}
-                          <div className="border-t border-rose-500/40 pt-3 space-y-2">
-                            <span className="text-[9px] font-black uppercase text-rose-100 tracking-wider block">
-                              Suggested Facilities (Urgency Level 2-3)
-                            </span>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {[
-                                {
-                                  name: "City Maternal Care",
-                                  distance: "2.4 km",
-                                  urgency: "Level 3",
-                                  address: "12 Medical Road, Ikeja",
-                                  specialty: "EPAU, OBGYN"
-                                },
-                                {
-                                  name: "St. Jude Women’s Hosp.",
-                                  distance: "5.1 km",
-                                  urgency: "Level 2",
-                                  address: "45 Unity Street, Surulere",
-                                  specialty: "OBGYN, Post-loss Care"
-                                }
-                              ].map(hosp => (
-                                <div key={hosp.name} className="p-2.5 bg-white/10 rounded-xl border border-white/5 flex flex-col gap-1 text-white">
-                                  <div className="flex justify-between items-center">
-                                    <h5 className="font-extrabold text-[10.5px] truncate">{hosp.name}</h5>
-                                    <span className="text-[7.5px] font-black px-1 py-0.25 bg-rose-700 border border-rose-600 rounded uppercase">
-                                      {hosp.urgency}
-                                    </span>
-                                  </div>
-                                  <p className="text-[8.5px] text-rose-100 font-bold uppercase tracking-wider">{hosp.distance} • {hosp.specialty}</p>
-                                  <div className="flex gap-1.5 mt-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => alert(`Calling ${hosp.name}...`)}
-                                      className="flex-1 py-1 text-[8px] font-black bg-white text-rose-600 rounded-lg hover:bg-rose-50 transition-colors uppercase tracking-wider cursor-pointer border-none"
-                                    >
-                                      Call
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => alert(`Mapping route to ${hosp.name} (${hosp.address})...`)}
-                                      className="flex-1 py-1 text-[8px] font-black bg-white/25 hover:bg-white/35 text-white rounded-lg transition-colors border border-white/15 uppercase tracking-wider cursor-pointer border-none"
-                                    >
-                                      Route
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Daily Care & Symptoms */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Responsive Streak & Daily Vitals check-in Panel */}
-          {(() => {
-            const vitalsLoggedCount = (waterGlasses >= 8 ? 1 : waterGlasses / 8) + (mealEaten ? 1 : 0) + (medTaken ? 1 : 0);
-            const completionPercent = Math.round((vitalsLoggedCount / 3) * 100);
-            return (
-              <Card className="p-6 border border-slate-100/80 rounded-[2.5rem] bg-gradient-to-tr from-white via-slate-50/50 to-blue-50/20 shadow-[0_8px_30px_rgba(0,0,0,0.02)] space-y-5">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-1.5">
-                    <CheckCircle2 size={15} className="text-emerald-500" />
-                    Daily Care & Vitals Check-in
-                  </h4>
-                  <span className="text-[10px] text-slate-400 font-extrabold uppercase">Today's Vitals</span>
-                </div>
-
-                {/* Vitals Completion Progress Bar */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                    <span>Logging Progress</span>
-                    <span className="text-emerald-500 font-extrabold">{completionPercent}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-slate-100/70 rounded-full overflow-hidden border border-slate-200/20">
-                    <div 
-                      className="h-full bg-gradient-to-r from-emerald-400 via-teal-500 to-blue-500 rounded-full transition-all duration-500" 
-                      style={{ width: `${completionPercent}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Water Tracker */}
-                  <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between py-1">
-                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 shrink-0">
-                      <Droplets size={14} className="text-blue-500" /> Have you taken water?
-                    </span>
-                    <div className="flex flex-wrap gap-1.5 items-center justify-end">
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map(glass => (
-                          <button
-                            key={glass}
-                            type="button"
-                            onClick={() => setWaterGlasses(glass)}
-                            className={`w-7 h-9 text-[10px] font-black rounded-lg flex flex-col items-center justify-between py-1 cursor-pointer transition-all border ${
-                              waterGlasses >= glass 
-                                ? 'bg-gradient-to-b from-blue-400 to-blue-600 text-white border-transparent shadow-[0_4px_12px_rgba(59,130,246,0.3)] scale-105' 
-                                : 'bg-slate-50 border-slate-200/40 text-slate-400 hover:bg-blue-50 hover:text-blue-500 hover:border-blue-200/40'
-                            }`}
-                            title={`${glass} Glass`}
-                          >
-                            <span className="text-[10px] select-none leading-none">💧</span>
-                            <span className="text-[8px] font-extrabold tracking-tighter leading-none">{glass}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-md shrink-0 select-none">
-                        {waterGlasses}/8
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Meals & Calories Tracker */}
-                  <div className="flex items-center justify-between py-2 border-t border-slate-100/60">
-                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                      <Coffee size={14} className="text-amber-600" /> Taken nutrient meals today?
-                    </span>
-                    <div className="flex gap-2">
-                      {[
-                        { val: true, label: 'Yes', icon: CheckCircle2, activeClass: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)] border-transparent' },
-                        { val: false, label: 'No', icon: X, activeClass: 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[0_4px_12px_rgba(244,63,94,0.25)] border-transparent' }
-                      ].map(opt => (
-                        <button
-                          key={opt.label}
-                          type="button"
-                          onClick={() => {
-                            setMealEaten(opt.val);
-                            if (opt.val) setStreak(p => p + 1);
-                          }}
-                          className={`py-1.5 px-4 text-[10px] font-black uppercase rounded-xl border flex items-center gap-1 cursor-pointer transition-all ${
-                            mealEaten === opt.val
-                              ? opt.activeClass
-                              : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                          }`}
-                        >
-                          <opt.icon size={11} />
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Prescribed supplements */}
-                  <div className="flex items-center justify-between py-2 border-t border-slate-100/60">
-                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                      <Pill size={14} className="text-purple-600" /> Prescribed vitamins / meds taken?
-                    </span>
-                    <div className="flex gap-2">
-                      {[
-                        { val: true, label: 'Yes', icon: CheckCircle2, activeClass: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)] border-transparent' },
-                        { val: false, label: 'No', icon: X, activeClass: 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[0_4px_12px_rgba(244,63,94,0.25)] border-transparent' }
-                      ].map(opt => (
-                        <button
-                          key={opt.label}
-                          type="button"
-                          onClick={() => setMedTaken(opt.val)}
-                          className={`py-1.5 px-4 text-[10px] font-black uppercase rounded-xl border flex items-center gap-1 cursor-pointer transition-all ${
-                            medTaken === opt.val
-                              ? opt.activeClass
-                              : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                          }`}
-                        >
-                          <opt.icon size={11} />
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dynamic Advice/Tips Section based on AI Assessment */}
-                <div className="mt-3 p-4 bg-slate-50/80 rounded-[1.75rem] border border-slate-100/80 space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-slate-700 font-extrabold text-[10.5px] uppercase tracking-wider">
-                    <Sparkles size={13} className="text-secondary" />
-                    AI Recovery Advice & Tips
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                    {getDynamicTips().map((tip, idx) => (
-                      <div key={idx} className="p-3 bg-white rounded-xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-sm hover:scale-[1.01] transition-all">
-                        <span className="block font-black text-slate-800 text-[10px] uppercase tracking-wider mb-1">{tip.title}</span>
-                        <span className="block text-[10px] text-slate-500 leading-relaxed font-medium">{tip.text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            );
-          })()}
-
-          {/* Inline Recovery Triage Wizard & Results Panel */}
-          <Card className="p-6 border border-slate-100/80 rounded-[2.5rem] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.025)] space-y-5">
-            {!assessmentResult ? (
-              // Questionnaire Wizard
-              modalStep === 'intro' ? (
-                <div className="space-y-5 text-center py-4">
-                  <div className="w-14 h-14 bg-[#0F4C81]/10 rounded-2xl flex items-center justify-center text-[#0F4C81] mx-auto shadow-inner">
-                    <HeartPulse size={30} className="animate-pulse" />
-                  </div>
-                  
-                  <div className="space-y-1.5 max-w-sm mx-auto">
-                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Recovery Symptom Triage Test</h3>
-                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                      Screen potential warning signs (hemorrhaging, pain, infection risks) and get real-time clinical guidance and emergency contacts.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2 pt-2 max-w-xs mx-auto">
-                    <Button 
-                      type="button"
-                      onClick={() => {
-                        setModalStep(0);
-                        speakText("Starting guided health check. Step 1: Gestational age status.");
-                      }}
-                      className="w-full h-11 bg-gradient-to-r from-secondary to-[#1762a0] hover:opacity-95 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10.5px] cursor-pointer"
-                    >
-                      Begin Guided Screening
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        runRiskAssessment(true);
-                      }}
-                      variant="outline"
-                      className="w-full h-11 border-slate-200 text-[#0F4C81] hover:bg-slate-50 font-extrabold rounded-xl uppercase tracking-wider text-[10.5px] cursor-pointer"
-                    >
-                      Direct AI Assessment
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Progress Indicator */}
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Step {modalStep + 1} of {sections.length}</span>
-                      <h4 className="text-sm font-black text-[#0F4C81]">{sections[modalStep].title}</h4>
-                    </div>
-                    
-                    {/* Voice Assistant Buttons inside card */}
-                    <div className="flex gap-1.5 items-center">
-                      <button 
-                        type="button"
-                        onClick={() => playVoiceGuideForSection(modalStep)}
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all text-slate-500 hover:text-[#0F4C81] cursor-pointer ${
-                          isSpeaking ? 'bg-[#0F4C81]/5 border-[#0F4C81]/15 text-[#0F4C81]' : 'bg-slate-50 border-slate-200/50'
-                        }`}
-                        title="Read instructions out loud"
-                      >
-                        <Volume2 size={13} className={isSpeaking ? 'animate-pulse' : ''} />
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => startSpeechRecognitionForSection(modalStep)}
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all cursor-pointer ${
-                          isListening ? 'bg-rose-50 border-rose-200 text-rose-500 animate-pulse' : 'bg-slate-50 border-slate-200/50 text-slate-500'
-                        }`}
-                        title="Answer by voice"
-                      >
-                        <Mic size={13} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Progressive bar indicator */}
-                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/20">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-300" 
-                      style={{ width: `${((modalStep + 1) / sections.length) * 100}%` }}
-                    />
-                  </div>
-
-                  {/* Section Questions Content */}
-                  <div className="p-4.5 bg-slate-50/70 rounded-2xl border border-slate-100/80 min-h-[140px] flex flex-col justify-center">
-                    {sections[modalStep].content}
-                  </div>
-
-                  {/* Navigation Buttons */}
-                  <div className="flex gap-2 pt-1">
-                    {modalStep > 0 ? (
-                      <Button
-                        type="button"
-                        onClick={() => setModalStep(modalStep - 1)}
-                        variant="outline"
-                        className="flex-1 h-10 border-slate-200 text-slate-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] cursor-pointer"
-                      >
-                        Back
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={() => setModalStep('intro')}
-                        variant="outline"
-                        className="flex-1 h-10 border-slate-200 text-slate-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] cursor-pointer"
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                    {modalStep < sections.length - 1 ? (
-                      <Button
-                        type="button"
-                        onClick={() => setModalStep(modalStep + 1)}
-                        className="flex-1 h-10 bg-[#0F4C81] hover:bg-[#0F4C81]/95 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px] cursor-pointer"
-                      >
-                        Next Step
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          runRiskAssessment(false);
-                          setModalStep('intro');
-                        }}
-                        className="flex-1 h-10 bg-secondary hover:bg-secondary/90 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px] shadow-lg shadow-secondary/20 cursor-pointer"
-                      >
-                        Submit Test
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )
-            ) : (
-              // Completed Diagnostics Dashboard inside card!
-              <div className="space-y-4 py-2">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                      ✓
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">Triage Check-in Result</h4>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase">Dynamic Diagnostic</p>
-                    </div>
-                  </div>
-                  <Badge className={`uppercase text-[8.5px] font-black tracking-wider px-2.5 py-0.5 rounded-full border-none shadow-xs ${
-                    assessmentResult.risk === 'high' 
-                      ? 'bg-rose-600 text-white' 
-                      : (assessmentResult.risk === 'moderate' 
-                          ? 'bg-amber-500 text-white' 
-                          : 'bg-emerald-600 text-white')
-                  }`}>
-                    {assessmentResult.risk} RISK STATUS
-                  </Badge>
-                </div>
-
-                <div className="space-y-3 text-slate-700">
-                  <p className="text-[11px] leading-relaxed font-bold text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                    {assessmentResult.text}
-                  </p>
-
-                  {/* Immediate Action Notice */}
-                  {assessmentResult.action && (
-                    <div className="p-3 bg-slate-900 text-white rounded-xl border border-slate-800 space-y-1 shadow-sm">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Clinical Action Required</span>
-                      <p className="text-[10px] font-medium leading-relaxed text-slate-200">{assessmentResult.action}</p>
-                    </div>
-                  )}
-
-                  {/* Care Gaps or Mental Health Flags summary */}
-                  {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
-                    <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl space-y-1">
-                      <span className="text-[8.5px] font-black text-amber-800 uppercase tracking-wider block">⚠️ Care Gaps Detected</span>
-                      <p className="text-[10px] text-amber-900 font-semibold leading-tight">
-                        {assessmentResult.careGaps[0]} (and {assessmentResult.careGaps.length - 1} more)
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-1.5">
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        setAssessmentResult(null);
-                        setAssignedCHW(null);
-                        setModalStep('intro');
-                      }}
-                      variant="outline"
-                      className="flex-1 h-9 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-black uppercase text-[9px] tracking-wider rounded-xl cursor-pointer"
-                    >
-                      Retake Health Test
-                    </Button>
-                    {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
-                      <Button
-                        type="button"
-                        onClick={() => alert("Dialing maternal specialist contact...")}
-                        className="flex-1 h-9 bg-rose-600 hover:bg-rose-700 text-white font-black uppercase text-[9px] tracking-wider rounded-xl shadow-md shadow-rose-100 cursor-pointer"
-                      >
-                        Call Specialist
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Right Column: Reflections, AI Results, Emergency & Support */}
-        <div className="lg:col-span-5 space-y-6">
-          {!supportMessage ? (
-            <motion.div
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               className="space-y-8"
-            >
-              <Card className="p-6 sm:p-10 border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white rounded-[2.5rem] sm:rounded-[3rem] shadow-[0_20px_50px_rgba(15,76,129,0.35)] relative overflow-hidden group">
-                 <div className="relative z-10">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-2xl font-black tracking-tight">Daily Symptom Log</h3>
-                      <button 
-                        type="button"
-                        onClick={simulateVoiceSpeak}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${isSpeaking ? 'bg-secondary text-white shadow-lg' : 'bg-white/10 text-white/40 hover:bg-white/20'}`}
-                      >
-                        <Volume2 size={20} className={isSpeaking ? 'animate-pulse' : ''} />
-                      </button>
-                    </div>
-                    <p className="text-slate-400 text-sm font-medium mb-10 leading-relaxed italic">"Log your physical symptoms and mood daily. Type freely; our clinical keyword scanner will automatically highlight tags."</p>
-                    
-                    <div className="flex justify-between items-center mb-10">
-                      {[
-                        { v: 1, icon: Frown, activeClass: 'bg-gradient-to-b from-rose-500 to-rose-600 text-white ring-4 ring-rose-500/20 shadow-[0_8px_20px_rgba(244,63,94,0.4)]' },
-                        { v: 2, icon: Meh, activeClass: 'bg-gradient-to-b from-amber-500 to-amber-600 text-white ring-4 ring-amber-500/20 shadow-[0_8px_20px_rgba(245,158,11,0.4)]' },
-                        { v: 3, icon: Smile, activeClass: 'bg-gradient-to-b from-teal-500 to-teal-600 text-white ring-4 ring-teal-500/20 shadow-[0_8px_20px_rgba(20,184,166,0.4)]' },
-                        { v: 4, icon: Heart, activeClass: 'bg-gradient-to-b from-pink-500 to-pink-600 text-white ring-4 ring-pink-500/20 shadow-[0_8px_20px_rgba(236,72,153,0.4)]' },
-                        { v: 5, icon: Sparkles, activeClass: 'bg-gradient-to-b from-yellow-400 to-yellow-500 text-slate-950 ring-4 ring-yellow-400/20 shadow-[0_8px_20px_rgba(234,179,8,0.45)]' }
-                      ].map(m => (
-                        <button
-                          key={m.v}
-                          type="button"
-                          onClick={() => setMood(m.v)}
-                          className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center transition-all cursor-pointer ${
-                            mood === m.v 
-                              ? m.activeClass + ' scale-110' 
-                              : 'bg-white/5 border border-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 hover:scale-105'
-                          }`}
-                        >
-                          <m.icon size={26} />
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="bg-slate-950/40 rounded-[2rem] p-6 mb-6 border border-white/5 focus-within:border-secondary/40 focus-within:ring-2 focus-within:ring-secondary/15 transition-all">
-                      <p className="text-[10px] uppercase font-black tracking-[0.2em] text-secondary mb-4">Daily Symptoms & Reflections</p>
-                      <textarea
-                        placeholder="Describe physical symptoms (e.g. bleeding, pelvic pain, headache, fever) or how you feel today..."
-                        value={note}
-                        onChange={(e) => {
-                          setNote(e.target.value);
-                          handleNoteChange(e.target.value);
-                        }}
-                        className="w-full bg-transparent text-sm focus:outline-none placeholder:text-white/20 min-h-[120px] font-medium resize-none text-slate-200"
-                      />
-                    </div>
-
-                    {/* Clickable and Suggested Symptom Tags */}
-                    <div className="mb-8 space-y-2.5">
-                      <span className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 block">Symptom Tags (Click to toggle)</span>
-                      <div className="flex flex-wrap gap-2">
-                        {availableTags.map(tag => {
-                          const isSelected = selectedTags.includes(tag);
-                          return (
-                            <button
-                              key={tag}
-                              type="button"
-                              onClick={() => toggleTag(tag)}
-                              className={`py-1.5 px-3.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border flex items-center gap-1 cursor-pointer select-none ${
-                                isSelected 
-                                  ? 'bg-[#0F4C81] border-[#0F4C81] text-white shadow-md shadow-[#0F4C81]/25' 
-                                  : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:border-white/70 hover:scale-102'
-                              }`}
-                            >
-                              {isSelected && <Check size={10} className="stroke-[3]" />}
-                              {tag}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <Button 
-                      onClick={handleLog}
-                      disabled={mood === null || loading}
-                      className="w-full bg-gradient-to-r from-secondary to-[#1762a0] text-white hover:opacity-95 rounded-2xl h-12 font-black transition-all shadow-xl shadow-black/20 text-sm uppercase tracking-wider hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                    >
-                      {loading ? 'Processing...' : 'Log Daily Symptoms'}
-                    </Button>
-                 </div>
-                 
-                 <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
-                    <Wind size={180} strokeWidth={1} />
-                 </div>
-              </Card>
-
-              <div className="grid grid-cols-2 gap-4 sm:gap-6">
-                <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-                   <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
-                      <Bird size={24} />
-                   </div>
-                   <span className="text-xs font-black text-slate-800 uppercase tracking-widest leading-tight">Coping<br/>Resources</span>
-                </button>
-                <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-                   <div className="w-12 h-12 bg-secondary/10 rounded-2xl flex items-center justify-center text-secondary shadow-inner">
-                      <Cloud size={24} />
-                   </div>
-                   <span className="text-xs font-black text-slate-800 uppercase tracking-widest leading-tight">Healing<br/>Meditation</span>
-                </button>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col gap-6"
-            >
-              <Card className="p-5 sm:p-10 border-none bg-emerald-50 rounded-[2.25rem] sm:rounded-[3rem] relative shadow-lg overflow-hidden">
-                 <div className="relative z-10">
-                    <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center text-emerald-500 mb-8 shadow-xl shadow-emerald-900/10">
-                       <Sparkles size={32} />
-                    </div>
-                    <h3 className="text-2xl font-black text-emerald-900 mb-6 tracking-tight">CareBridge Support</h3>
-                    <p className="text-emerald-800/80 leading-relaxed italic text-xl mb-12 font-medium">
-                      "{supportMessage}"
-                    </p>
-                    <div className="flex flex-col gap-3">
-                      <Button 
-                        className="rounded-2xl bg-emerald-600 text-white h-12 font-black hover:bg-emerald-700 transition-all uppercase tracking-widest text-sm shadow-xl shadow-emerald-200"
-                        onClick={() => { setSupportMessage(null); setMood(null); setNote(''); }}
-                      >
-                        Done for Today
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={simulatePostToWhatsapp}
-                        className="text-emerald-600/60 font-bold text-xs uppercase"
-                      >
-                        Share with Counselor
-                      </Button>
-                    </div>
-                 </div>
-                 
-                 {/* Abstract organic shape */}
-                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              </Card>
-            </motion.div>
-          )}
-          {/* Community Support */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">Community Support</h4>
-            <div className="p-6 bg-white border border-slate-100 rounded-3xl flex items-center justify-between shadow-sm">
-               <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500">
-                     <Heart size={24} />
-                  </div>
-                  <div>
-                     <h5 className="font-bold text-slate-900">Healing Together</h5>
-                     <p className="text-xs text-slate-500">Private African grief support group</p>
-                  </div>
-               </div>
-               <ChevronRight className="text-slate-300" />
-            </div>
-          </div>
-        </div>
+      {/* Sub-tab Navigation */}
+      <div className="flex gap-2 mb-6 border-b border-slate-100 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('dashboard')}
+          className={`pb-2 px-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+            activeTab === 'dashboard'
+              ? 'border-[#0F4C81] text-[#0F4C81] font-black'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          Recovery Dashboard
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('history');
+            setPasscode('');
+            setIsUnlocked(false);
+            setPinError('');
+            setPinSuccess('');
+          }}
+          className={`pb-2 px-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'history'
+              ? 'border-[#0F4C81] text-[#0F4C81] font-black'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <ShieldAlert size={12} />
+          Private History Log
+        </button>
       </div>
 
+      {activeTab === 'dashboard' ? (
+        <>
+          {/* Dynamic Triage & Health Check Assessment Results (Full Width at Top) */}
+          <AnimatePresence>
+            {assessmentResult && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.98 }}
+                transition={{ duration: 0.4 }}
+                className="mb-8 w-full"
+              >
+                <Card className={`p-6 sm:p-8 rounded-[2.5rem] border shadow-md relative overflow-hidden ${
+                  assessmentResult.risk === 'high' 
+                    ? 'bg-rose-50/70 border-rose-200 text-rose-955' 
+                    : (assessmentResult.risk === 'moderate' 
+                        ? 'bg-amber-50/70 border-amber-200 text-amber-955' 
+                        : 'bg-emerald-50/70 border-emerald-200 text-emerald-950')
+                }`}>
+                  
+                  <div className="relative z-10 flex flex-col gap-6">
+                    
+                    {/* Header of results */}
+                    <div className="flex justify-between items-center border-b pb-4 border-slate-200/50">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
+                          assessmentResult.risk === 'high' ? 'bg-rose-500/20 text-rose-600' :
+                          assessmentResult.risk === 'moderate' ? 'bg-amber-500/20 text-amber-600' :
+                          'bg-emerald-500/20 text-emerald-600'
+                        }`}>
+                          <HeartPulse className={assessmentResult.risk === 'high' ? 'animate-pulse' : ''} size={20} />
+                        </div>
+                        <div>
+                          <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider">CareBridge AI Clinical Insight</h3>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Triage Diagnosis & Action Routing</p>
+                        </div>
+                      </div>
+                      
+                      <Badge className={`uppercase text-[9px] font-black tracking-widest px-3.5 py-1 rounded-full border-none shadow-xs ${
+                        assessmentResult.risk === 'high' 
+                          ? 'bg-rose-600 text-white' 
+                          : (assessmentResult.risk === 'moderate' 
+                              ? 'bg-amber-500 text-white' 
+                              : 'bg-emerald-600 text-white')
+                      }`}>
+                        {assessmentResult.risk} RISK
+                      </Badge>
+                    </div>
+
+                    {/* Grid for desktop layout */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start text-slate-800">
+                      
+                      {/* Left Column: Insight & Progress (lg:col-span-5) */}
+                      <div className="lg:col-span-5 flex flex-col gap-4">
+                        <div className="p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/40 space-y-2">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">AI Diagnosis Summary</span>
+                          <p className="text-[11.5px] leading-relaxed font-bold text-slate-700">
+                            {assessmentResult.text}
+                          </p>
+                          <span className="text-[8.5px] text-slate-400 font-semibold block italic pt-1 border-t border-slate-100/50">
+                            🛡️ Aligned with WHO Post-Abortion Care (PAC) Clinical Guidelines.
+                          </span>
+                        </div>
+
+                        {/* Follow-up Likelihood Indicator */}
+                        {assessmentResult.prediction !== undefined && assessmentResult.probability !== undefined && (
+                          <div className="p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/40 space-y-2">
+                            <div className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                              <span>Follow-up Recommendation</span>
+                              <span className={assessmentResult.prediction === 1 ? "text-emerald-600" : "text-amber-600"}>
+                                {assessmentResult.prediction === 1 ? 'Required' : 'Optional'} ({Math.round(assessmentResult.probability * 100)}%)
+                              </span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-200/50 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all duration-500 ${assessmentResult.prediction === 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                style={{ width: `${assessmentResult.probability * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* WhatsApp follow-up checkbox */}
+                        <div className="p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30 flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            id="whatsappOptIn"
+                            checked={whatsappOptIn}
+                            onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                            className="w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer border-slate-300"
+                          />
+                          <label htmlFor="whatsappOptIn" className="text-[10px] font-bold text-slate-500 cursor-pointer leading-tight">
+                            Opt into follow-ups & wellness check-ins on WhatsApp
+                          </label>
+                        </div>
+
+                        <Button
+                          onClick={() => {
+                            setAssessmentResult(null);
+                            setAssignedCHW(null);
+                          }}
+                          variant="outline"
+                          className="w-full h-10 border-slate-200/80 text-slate-500 hover:text-slate-800 hover:bg-white/80 font-black uppercase text-[10px] tracking-wider rounded-xl transition-all cursor-pointer"
+                        >
+                          Clear Report & Start New Test
+                        </Button>
+                      </div>
+
+                      {/* Right Column: Actions & Services (lg:col-span-7) */}
+                      <div className="lg:col-span-7 flex flex-col gap-4">
+                        
+                        {/* Clinical Action Notice */}
+                        {assessmentResult.action && (
+                          <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-1 shadow-md">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Immediate Action Required</span>
+                            <p className="text-[11px] font-semibold leading-relaxed text-slate-200">{assessmentResult.action}</p>
+                          </div>
+                        )}
+
+                        {/* Care Gaps */}
+                        {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
+                          <div className="p-4 bg-amber-100/40 border border-amber-200/30 rounded-2xl space-y-2">
+                            <span className="text-[9px] font-black text-amber-800 uppercase tracking-widest block">⚠️ Identified Care Gaps ({assessmentResult.careGaps.length})</span>
+                            <ul className="space-y-1">
+                              {assessmentResult.careGaps.map((gap: string, i: number) => (
+                                <li key={i} className="text-[10px] font-extrabold text-amber-900 leading-normal flex items-start gap-2">
+                                  <span className="shrink-0 text-amber-500">•</span>
+                                  <span>{gap}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Equity Barriers */}
+                        {assessmentResult.equityFlags && assessmentResult.equityFlags.length > 0 && (
+                          <div className="p-4 bg-blue-100/40 border border-blue-200/30 rounded-2xl space-y-2">
+                            <span className="text-[9px] font-black text-[#0F4C81] uppercase tracking-widest block">📍 Equity Barriers Detected</span>
+                            <ul className="space-y-1">
+                              {assessmentResult.equityFlags.map((flag: string, i: number) => (
+                                <li key={i} className="text-[10px] font-extrabold text-slate-600 leading-normal flex items-start gap-2">
+                                  <span className="shrink-0 text-primary">•</span>
+                                  <span>{flag}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Mental Health Flag */}
+                        {assessmentResult.mentalHealthFlag && (
+                          <div className="p-4 bg-purple-100/40 border border-purple-200/30 rounded-2xl space-y-1.5">
+                            <span className="text-[9px] font-black text-purple-800 uppercase tracking-widest block">🧠 Mental Health Flagged</span>
+                            <p className="text-[10px] font-extrabold text-purple-900 leading-normal">{assessmentResult.mentalHealthNote}</p>
+                            <button 
+                              onClick={() => alert("Connecting to CareBridge counseling support services...")}
+                              className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-colors shadow-sm cursor-pointer border-none"
+                            >
+                              Connect to Counselor
+                            </button>
+                          </div>
+                        )}
+
+                        {/* CHW Connect Panel */}
+                        {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
+                          <div className="p-4 bg-white/70 border border-slate-100/80 rounded-2xl flex flex-col gap-3 text-slate-800 shadow-xs">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400">Available Support Workers</h4>
+                                <p className="text-[8px] text-slate-400 font-bold">Connect with a professional counselor</p>
+                              </div>
+                              <Badge className="bg-[#0F4C81] text-white text-[8px] font-black uppercase tracking-wider rounded-full px-2.5 py-0.5 border-none">
+                                {assignedCHW ? "Assigned" : "PAC Ready"}
+                              </Badge>
+                            </div>
+
+                            {assignedCHW ? (
+                              <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2.5 text-emerald-800">
+                                <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+                                <div>
+                                  <span className="font-extrabold text-[11px] block">Specialist Assigned</span>
+                                  <p className="text-[10px] opacity-90 leading-tight">{assignedCHW} has been notified and will contact you for clinical support.</p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {[
+                                  { id: 'chw-01', name: "Mary Adegoke", role: "Midwife Specialist", phone: "+234803001020" },
+                                  { id: 'chw-02', name: "Chioma Okoye", role: "Obstetrics Lead", phone: "+234803998877" }
+                                ].map(chw => (
+                                  <div key={chw.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1 text-[11px]">
+                                    <div className="flex justify-between">
+                                      <span className="font-extrabold text-slate-800 text-[10.5px]">{chw.name}</span>
+                                      <span className="text-[7.5px] font-black text-slate-400 uppercase">{chw.role}</span>
+                                    </div>
+                                    <p className="text-[9px] text-slate-400 leading-tight">Lagos Mainland Healthcare Center</p>
+                                    <div className="flex gap-1.5 mt-1.5">
+                                      <button 
+                                        onClick={() => assignCHW(chw.id, chw.name)}
+                                        className="flex-1 py-1 text-[8.5px] font-black bg-[#0F4C81] text-white rounded-lg hover:opacity-90 uppercase transition-all border-none cursor-pointer"
+                                      >
+                                        Assign
+                                      </button>
+                                      <button 
+                                        onClick={() => alert(`Calling ${chw.name} at ${chw.phone}...`)}
+                                        className="py-1 px-2 text-[8.5px] font-black bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg uppercase transition-all border border-slate-200 cursor-pointer"
+                                      >
+                                        Call
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Hospital Suggestions */}
+                            <div className="border-t border-rose-500/40 pt-3 space-y-2">
+                              <span className="text-[9px] font-black uppercase text-rose-100 tracking-wider block">
+                                Suggested Facilities (Urgency Level 2-3)
+                              </span>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {[
+                                  {
+                                    name: "City Maternal Care",
+                                    distance: "2.4 km",
+                                    urgency: "Level 3",
+                                    address: "12 Medical Road, Ikeja",
+                                    specialty: "EPAU, OBGYN"
+                                  },
+                                  {
+                                    name: "St. Jude Women’s Hosp.",
+                                    distance: "5.1 km",
+                                    urgency: "Level 2",
+                                    address: "45 Unity Street, Surulere",
+                                    specialty: "OBGYN, Post-loss Care"
+                                  }
+                                ].map(hosp => (
+                                  <div key={hosp.name} className="p-2.5 bg-white/10 rounded-xl border border-white/5 flex flex-col gap-1 text-white">
+                                    <div className="flex justify-between items-center">
+                                      <h5 className="font-extrabold text-[10.5px] truncate">{hosp.name}</h5>
+                                      <span className="text-[7.5px] font-black px-1 py-0.25 bg-rose-700 border border-rose-600 rounded uppercase">
+                                        {hosp.urgency}
+                                      </span>
+                                    </div>
+                                    <p className="text-[8.5px] text-rose-100 font-bold uppercase tracking-wider">{hosp.distance} • {hosp.specialty}</p>
+                                    <div className="flex gap-1.5 mt-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => alert(`Calling ${hosp.name}...`)}
+                                        className="flex-1 py-1 text-[8px] font-black bg-white text-rose-600 rounded-lg hover:bg-rose-50 transition-colors uppercase tracking-wider cursor-pointer border-none"
+                                      >
+                                        Call
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => alert(`Mapping route to ${hosp.name} (${hosp.address})...`)}
+                                        className="flex-1 py-1 text-[8px] font-black bg-white/25 hover:bg-white/35 text-white rounded-lg transition-colors border border-white/15 uppercase tracking-wider cursor-pointer border-none"
+                                      >
+                                        Route
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left Column: Daily Care & Symptoms */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Card 1: Inline Recovery Triage Wizard & Results Panel (Now comes first!) */}
+              <Card className="p-6 border border-slate-100/80 rounded-[2.5rem] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.025)] space-y-5">
+                {!assessmentResult ? (
+                  // Questionnaire Wizard
+                  modalStep === 'intro' ? (
+                    <div className="space-y-5 text-center py-4">
+                      <div className="w-14 h-14 bg-[#0F4C81]/10 rounded-2xl flex items-center justify-center text-[#0F4C81] mx-auto shadow-inner">
+                        <HeartPulse size={30} className="animate-pulse" />
+                      </div>
+                      
+                      <div className="space-y-1.5 max-w-sm mx-auto">
+                        <h3 className="text-lg font-black text-slate-900 tracking-tight">Recovery Symptom Triage Test</h3>
+                        <p className="text-[11.5px] text-slate-500 leading-relaxed font-medium">
+                          Screen potential warning signs (hemorrhaging, pain, infection risks) and get real-time clinical guidance and emergency contacts.
+                        </p>
+                        <div className="text-[9.5px] text-slate-400 bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-center italic mt-2.5 leading-normal">
+                          🛡️ Aligned with WHO Post-Abortion Care (PAC) Clinical Guidelines for Sub-Saharan Africa. The local rules engine cross-references secondary infection and hemorrhaging markers.
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 pt-2 max-w-xs mx-auto">
+                        <Button 
+                          type="button"
+                          onClick={() => {
+                            setModalStep(0);
+                            speakText("Starting guided health check. Step 1: Gestational age status.");
+                          }}
+                          className="w-full h-11 bg-gradient-to-r from-secondary to-[#1762a0] hover:opacity-95 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10.5px] cursor-pointer"
+                        >
+                          Begin Guided Screening
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            runRiskAssessment(true);
+                          }}
+                          variant="outline"
+                          className="w-full h-11 border-slate-200 text-[#0F4C81] hover:bg-slate-50 font-extrabold rounded-xl uppercase tracking-wider text-[10.5px] cursor-pointer"
+                        >
+                          Direct AI Assessment
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Progress Indicator */}
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Step {modalStep + 1} of {sections.length}</span>
+                          <h4 className="text-sm font-black text-[#0F4C81]">{sections[modalStep].title}</h4>
+                        </div>
+                        
+                        {/* Voice Assistant Buttons inside card */}
+                        <div className="flex gap-1.5 items-center">
+                          <button 
+                            type="button"
+                            onClick={() => playVoiceGuideForSection(modalStep)}
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all text-slate-500 hover:text-[#0F4C81] cursor-pointer ${
+                              isSpeaking ? 'bg-[#0F4C81]/5 border-[#0F4C81]/15 text-[#0F4C81]' : 'bg-slate-50 border-slate-200/50'
+                            }`}
+                            title="Read instructions out loud"
+                          >
+                            <Volume2 size={13} className={isSpeaking ? 'animate-pulse' : ''} />
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => startSpeechRecognitionForSection(modalStep)}
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all cursor-pointer ${
+                              isListening ? 'bg-rose-50 border-rose-200 text-rose-500 animate-pulse' : 'bg-slate-50 border-slate-200/50 text-slate-500'
+                            }`}
+                            title="Answer by voice"
+                          >
+                            <Mic size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Progressive bar indicator */}
+                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/20">
+                        <div 
+                          className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-300" 
+                          style={{ width: `${((modalStep + 1) / sections.length) * 100}%` }}
+                        />
+                      </div>
+
+                      {/* Section Questions Content */}
+                      <div className="p-4.5 bg-slate-50/70 rounded-2xl border border-slate-100/80 min-h-[140px] flex flex-col justify-center">
+                        {sections[modalStep].content}
+                      </div>
+
+                      {/* Navigation Buttons */}
+                      <div className="flex gap-2 pt-1">
+                        {modalStep > 0 ? (
+                          <Button
+                            type="button"
+                            onClick={() => setModalStep(modalStep - 1)}
+                            variant="outline"
+                            className="flex-1 h-10 border-slate-200 text-slate-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] cursor-pointer"
+                          >
+                            Back
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={() => setModalStep('intro')}
+                            variant="outline"
+                            className="flex-1 h-10 border-slate-200 text-slate-600 font-extrabold rounded-xl uppercase tracking-wider text-[10px] cursor-pointer"
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                        {modalStep < sections.length - 1 ? (
+                          <Button
+                            type="button"
+                            onClick={() => setModalStep(modalStep + 1)}
+                            className="flex-1 h-10 bg-[#0F4C81] hover:bg-[#0F4C81]/95 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px] cursor-pointer"
+                          >
+                            Next Step
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              runRiskAssessment(false);
+                              setModalStep('intro');
+                            }}
+                            className="flex-1 h-10 bg-secondary hover:bg-secondary/90 text-white font-extrabold rounded-xl uppercase tracking-wider text-[10px] shadow-lg shadow-secondary/20 cursor-pointer"
+                          >
+                            Submit Test
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  // Completed Diagnostics Dashboard inside card!
+                  <div className="space-y-4 py-2">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                          ✓
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">Triage Check-in Result</h4>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase">Dynamic Diagnostic</p>
+                        </div>
+                      </div>
+                      <Badge className={`uppercase text-[8.5px] font-black tracking-wider px-2.5 py-0.5 rounded-full border-none shadow-xs ${
+                        assessmentResult.risk === 'high' 
+                          ? 'bg-rose-600 text-white animate-pulse' 
+                          : (assessmentResult.risk === 'moderate' 
+                              ? 'bg-amber-500 text-white' 
+                              : 'bg-emerald-600 text-white')
+                      }`}>
+                        {assessmentResult.risk} RISK STATUS
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-3.5 text-slate-700">
+                      <p className="text-[11.5px] leading-relaxed font-bold text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                        {assessmentResult.text}
+                      </p>
+
+                      <div className="text-[9px] text-slate-400 bg-slate-50 border border-slate-100/60 p-2 rounded-xl text-center font-bold italic leading-normal">
+                        🛡️ Compliance: WHO Post-Abortion Care (PAC) Clinical Guidelines active.
+                      </div>
+
+                      {/* Expandable Obstetric Transport Dispatch Hub (simulated real-time tracking) */}
+                      {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
+                        <div className="border border-rose-100 bg-rose-50/20 rounded-2xl p-4 space-y-3 shadow-inner">
+                          <button
+                            type="button"
+                            onClick={() => setIsTransitExpanded(!isTransitExpanded)}
+                            className="w-full flex justify-between items-center text-left cursor-pointer border-none bg-transparent"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10.5px] font-black text-rose-800 uppercase tracking-wider block">
+                                🚨 Emergency Obstetric Transit Dispatch Hub
+                              </span>
+                            </div>
+                            <span className="text-xs text-rose-600 font-bold">{isTransitExpanded ? 'Collapse Feed' : 'Expand Feed'}</span>
+                          </button>
+
+                          {isTransitExpanded && (
+                            <div className="space-y-3 animate-fadeIn pt-1">
+                              <div className="text-[10px] text-slate-600 font-semibold bg-white p-2.5 rounded-xl border border-slate-100 flex justify-between items-center">
+                                <span>Nearest Facility: <strong className="text-slate-800">Mainland General Hospital</strong></span>
+                                <span className="text-rose-600 font-bold shrink-0 ml-2">3.8 km (9 mins)</span>
+                              </div>
+
+                              {/* Chat-thread dispatcher status log */}
+                              <div className="relative border-l-2 border-rose-200/60 pl-3.5 ml-2 text-[10px] space-y-3">
+                                {transitStep >= 0 && (
+                                  <div className="relative animate-fadeIn">
+                                    <div className="absolute -left-[18.5px] top-1 w-2 h-2 rounded-full bg-rose-600" />
+                                    <p className="font-bold text-slate-700 leading-relaxed">
+                                      <span className="text-slate-400 font-medium mr-1.5">[Triage Trigger]</span>
+                                      Emergency warning flags confirmed (Hemorrhage/Sepsis screening complete).
+                                    </p>
+                                  </div>
+                                )}
+                                {transitStep >= 1 && (
+                                  <div className="relative animate-fadeIn">
+                                    <div className="absolute -left-[18.5px] top-1 w-2 h-2 rounded-full bg-rose-600" />
+                                    <p className="font-bold text-slate-700 leading-relaxed">
+                                      <span className="text-slate-400 font-medium mr-1.5">[Alert Logged]</span>
+                                      Specialist supervisor alert routed to CHW Mary Adegoke.
+                                    </p>
+                                  </div>
+                                )}
+                                {transitStep >= 2 && (
+                                  <div className="relative animate-fadeIn">
+                                    <div className="absolute -left-[18.5px] top-1 w-2 h-2 rounded-full bg-rose-600" />
+                                    <p className="font-bold text-slate-700 leading-relaxed">
+                                      <span className="text-slate-400 font-medium mr-1.5">[Dispatch Sent]</span>
+                                      Moto-Ambulance dispatch requested via local Rider Emergency Link.
+                                    </p>
+                                  </div>
+                                )}
+                                {transitStep >= 3 && (
+                                  <div className="relative animate-fadeIn">
+                                    <div className="absolute -left-[19.5px] top-0.5 w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
+                                    <div className="absolute -left-[19.5px] top-0.5 w-3 h-3 rounded-full bg-emerald-500" />
+                                    <p className="font-black text-emerald-700 leading-relaxed">
+                                      <span className="text-slate-400 font-medium mr-1.5">[Active Transit]</span>
+                                      Joseph Bello assigned (Distance: 1.8km, Est. Arrival: 7 mins).
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {transitStep < 3 && (
+                                <div className="flex items-center gap-1.5 text-[8.5px] text-rose-500/80 font-black uppercase tracking-widest pl-1 animate-pulse">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                                  Connecting dispatch systems in real-time...
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Immediate Action Notice */}
+                      {assessmentResult.action && (
+                        <div className="p-3 bg-slate-900 text-white rounded-xl border border-slate-800 space-y-1 shadow-sm">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Clinical Action Required</span>
+                          <p className="text-[10px] font-medium leading-relaxed text-slate-200">{assessmentResult.action}</p>
+                        </div>
+                      )}
+
+                      {/* Care Gaps or Mental Health Flags summary */}
+                      {assessmentResult.careGaps && assessmentResult.careGaps.length > 0 && (
+                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl space-y-1">
+                          <span className="text-[8.5px] font-black text-amber-800 uppercase tracking-wider block">⚠️ Care Gaps Detected</span>
+                          <p className="text-[10px] text-amber-900 font-semibold leading-tight">
+                            {assessmentResult.careGaps[0]} (and {assessmentResult.careGaps.length - 1} more)
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 pt-1.5">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            setAssessmentResult(null);
+                            setAssignedCHW(null);
+                            setModalStep('intro');
+                          }}
+                          variant="outline"
+                          className="flex-1 h-9 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-black uppercase text-[9px] tracking-wider rounded-xl cursor-pointer"
+                        >
+                          Retake Health Test
+                        </Button>
+                        {(assessmentResult.risk === 'high' || assessmentResult.risk === 'moderate') && (
+                          <Button
+                            type="button"
+                            onClick={() => alert("Dialing maternal specialist contact...")}
+                            className="flex-1 h-9 bg-rose-600 hover:bg-rose-700 text-white font-black uppercase text-[9px] tracking-wider rounded-xl shadow-md shadow-rose-100 cursor-pointer"
+                          >
+                            Call Specialist
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+              {/* Card 2: Responsive Streak & Daily Vitals check-in Panel (Now comes second!) */}
+              {(() => {
+                const vitalsLoggedCount = (waterGlasses >= 8 ? 1 : waterGlasses / 8) + (mealEaten ? 1 : 0) + (medTaken ? 1 : 0);
+                const completionPercent = Math.round((vitalsLoggedCount / 3) * 100);
+                return (
+                  <Card className="p-6 border border-slate-100/80 rounded-[2.5rem] bg-gradient-to-tr from-white via-slate-50/50 to-blue-50/20 shadow-[0_8px_30px_rgba(0,0,0,0.02)] space-y-5">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-1.5">
+                        <CheckCircle2 size={15} className="text-emerald-500" />
+                        Daily Care & Vitals Check-in
+                      </h4>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase">Today's Vitals</span>
+                    </div>
+
+                    {/* Vitals Completion Progress Bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <span>Logging Progress</span>
+                        <span className="text-emerald-500 font-extrabold">{completionPercent}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-slate-100/70 rounded-full overflow-hidden border border-slate-200/20">
+                        <div 
+                          className="h-full bg-gradient-to-r from-emerald-400 via-teal-500 to-blue-500 rounded-full transition-all duration-500" 
+                          style={{ width: `${completionPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Water Tracker */}
+                      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between py-1">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 shrink-0">
+                          <Droplets size={14} className="text-blue-500" /> Have you taken water?
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 items-center justify-end">
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map(glass => (
+                              <button
+                                key={glass}
+                                type="button"
+                                onClick={() => setWaterGlasses(glass)}
+                                className={`w-7 h-9 text-[10px] font-black rounded-lg flex flex-col items-center justify-between py-1 cursor-pointer transition-all border ${
+                                  waterGlasses >= glass 
+                                    ? 'bg-gradient-to-b from-blue-400 to-blue-600 text-white border-transparent shadow-[0_4px_12px_rgba(59,130,246,0.3)] scale-105' 
+                                    : 'bg-slate-50 border-slate-200/40 text-slate-400 hover:bg-blue-50 hover:text-blue-500 hover:border-blue-200/40'
+                                }`}
+                                title={`${glass} Glass`}
+                              >
+                                <span className="text-[10px] select-none leading-none">💧</span>
+                                <span className="text-[8px] font-extrabold tracking-tighter leading-none">{glass}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-md shrink-0 select-none">
+                            {waterGlasses}/8
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Meals & Calories Tracker */}
+                      <div className="flex items-center justify-between py-2 border-t border-slate-100/60">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Coffee size={14} className="text-amber-600" /> Taken nutrient meals today?
+                        </span>
+                        <div className="flex gap-2">
+                          {[
+                            { val: true, label: 'Yes', icon: CheckCircle2, activeClass: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)] border-transparent' },
+                            { val: false, label: 'No', icon: X, activeClass: 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[0_4px_12px_rgba(244,63,94,0.25)] border-transparent' }
+                          ].map(opt => (
+                            <button
+                              key={opt.label}
+                              type="button"
+                              onClick={() => {
+                                setMealEaten(opt.val);
+                                if (opt.val) setStreak(p => p + 1);
+                              }}
+                              className={`py-1.5 px-4 text-[10px] font-black uppercase rounded-xl border flex items-center gap-1 cursor-pointer transition-all ${
+                                mealEaten === opt.val
+                                  ? opt.activeClass
+                                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                              }`}
+                            >
+                              <opt.icon size={11} />
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Prescribed supplements */}
+                      <div className="flex items-center justify-between py-2 border-t border-slate-100/60">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Pill size={14} className="text-purple-600" /> Prescribed vitamins / meds taken?
+                        </span>
+                        <div className="flex gap-2">
+                          {[
+                            { val: true, label: 'Yes', icon: CheckCircle2, activeClass: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)] border-transparent' },
+                            { val: false, label: 'No', icon: X, activeClass: 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[0_4px_12px_rgba(244,63,94,0.25)] border-transparent' }
+                          ].map(opt => (
+                            <button
+                              key={opt.label}
+                              type="button"
+                              onClick={() => setMedTaken(opt.val)}
+                              className={`py-1.5 px-4 text-[10px] font-black uppercase rounded-xl border flex items-center gap-1 cursor-pointer transition-all ${
+                                medTaken === opt.val
+                                  ? opt.activeClass
+                                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                              }`}
+                            >
+                              <opt.icon size={11} />
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dynamic Advice/Tips Section based on AI Assessment */}
+                    <div className="mt-3 p-4 bg-slate-50/80 rounded-[1.75rem] border border-slate-100/80 space-y-2.5">
+                      <div className="flex items-center gap-1.5 text-slate-700 font-extrabold text-[10.5px] uppercase tracking-wider">
+                        <Sparkles size={13} className="text-secondary" />
+                        AI Recovery Advice & Tips
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                        {getDynamicTips().map((tip, idx) => (
+                          <div key={idx} className="p-3 bg-white rounded-xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-sm hover:scale-[1.01] transition-all">
+                            <span className="block font-black text-slate-800 text-[10px] uppercase tracking-wider mb-1">{tip.title}</span>
+                            <span className="block text-[10px] text-slate-500 leading-relaxed font-medium">{tip.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })()}
+
+            </div>
+
+            {/* Right Column: Reflections, AI Results, Emergency & Support */}
+            <div className="lg:col-span-5 space-y-6">
+              {!supportMessage ? (
+                <motion.div
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="space-y-8"
+                >
+                  <Card className="p-6 sm:p-10 border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white rounded-[2.5rem] sm:rounded-[3rem] shadow-[0_20px_50px_rgba(15,76,129,0.35)] relative overflow-hidden group">
+                     <div className="relative z-10">
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-2xl font-black tracking-tight">Daily Symptom Log</h3>
+                          <button 
+                            type="button"
+                            onClick={simulateVoiceSpeak}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${isSpeaking ? 'bg-secondary text-white shadow-lg' : 'bg-white/10 text-white/40 hover:bg-white/20'}`}
+                          >
+                            <Volume2 size={20} className={isSpeaking ? 'animate-pulse' : ''} />
+                          </button>
+                        </div>
+                        <p className="text-slate-400 text-sm font-medium mb-10 leading-relaxed italic">"Log your physical symptoms and mood daily. Type freely; our clinical keyword scanner will automatically highlight tags."</p>
+                        
+                        <div className="flex justify-between items-center mb-10">
+                          {[
+                            { v: 1, icon: Frown, activeClass: 'bg-gradient-to-b from-rose-500 to-rose-600 text-white ring-4 ring-rose-500/20 shadow-[0_8px_20px_rgba(244,63,94,0.4)]' },
+                            { v: 2, icon: Meh, activeClass: 'bg-gradient-to-b from-amber-500 to-amber-600 text-white ring-4 ring-amber-500/20 shadow-[0_8px_20px_rgba(245,158,11,0.4)]' },
+                            { v: 3, icon: Smile, activeClass: 'bg-gradient-to-b from-teal-500 to-teal-600 text-white ring-4 ring-teal-500/20 shadow-[0_8px_20px_rgba(20,184,166,0.4)]' },
+                            { v: 4, icon: Heart, activeClass: 'bg-gradient-to-b from-pink-500 to-pink-600 text-white ring-4 ring-pink-500/20 shadow-[0_8px_20px_rgba(236,72,153,0.4)]' },
+                            { v: 5, icon: Sparkles, activeClass: 'bg-gradient-to-b from-yellow-400 to-yellow-500 text-slate-955 ring-4 ring-yellow-400/20 shadow-[0_8px_20px_rgba(234,179,8,0.45)]' }
+                          ].map(m => (
+                            <button
+                              key={m.v}
+                              type="button"
+                              onClick={() => setMood(m.v)}
+                              className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center transition-all cursor-pointer ${
+                                mood === m.v 
+                                  ? m.activeClass + ' scale-110' 
+                                  : 'bg-white/5 border border-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 hover:scale-105'
+                              }`}
+                            >
+                              <m.icon size={26} />
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="bg-slate-950/40 rounded-[2rem] p-6 mb-6 border border-white/5 focus-within:border-secondary/40 focus-within:ring-2 focus-within:ring-secondary/15 transition-all">
+                          <p className="text-[10px] uppercase font-black tracking-[0.2em] text-secondary mb-4">Daily Symptoms & Reflections</p>
+                          <textarea
+                            placeholder="Describe physical symptoms (e.g. bleeding, pelvic pain, headache, fever) or how you feel today..."
+                            value={note}
+                            onChange={(e) => {
+                              setNote(e.target.value);
+                              handleNoteChange(e.target.value);
+                            }}
+                            className="w-full bg-transparent text-sm focus:outline-none placeholder:text-white/20 min-h-[120px] font-medium resize-none text-slate-200"
+                          />
+                        </div>
+
+                        {/* Clickable and Suggested Symptom Tags */}
+                        <div className="mb-8 space-y-2.5">
+                          <span className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 block">Symptom Tags (Click to toggle)</span>
+                          <div className="flex flex-wrap gap-2">
+                            {availableTags.map(tag => {
+                              const isSelected = selectedTags.includes(tag);
+                              return (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  onClick={() => toggleTag(tag)}
+                                  className={`py-1.5 px-3.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border flex items-center gap-1 cursor-pointer select-none ${
+                                    isSelected 
+                                      ? 'bg-[#0F4C81] border-[#0F4C81] text-white shadow-md shadow-[#0F4C81]/25' 
+                                      : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/70 hover:scale-102'
+                                  }`}
+                                >
+                                  {isSelected && <Check size={10} className="stroke-[3]" />}
+                                  {tag}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <Button 
+                          onClick={handleLog}
+                          disabled={mood === null || loading}
+                          className="w-full bg-gradient-to-r from-secondary to-[#1762a0] text-white hover:opacity-95 rounded-2xl h-12 font-black transition-all shadow-xl shadow-black/20 text-sm uppercase tracking-wider hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                        >
+                          {loading ? 'Processing...' : 'Log Daily Symptoms'}
+                        </Button>
+                     </div>
+                     
+                     <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+                        <Wind size={180} strokeWidth={1} />
+                     </div>
+                  </Card>
+
+                  <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                    <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+                       <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
+                          <Bird size={24} />
+                       </div>
+                       <span className="text-xs font-black text-slate-800 uppercase tracking-widest leading-tight">Coping<br/>Resources</span>
+                    </button>
+                    <button className="p-4 sm:p-6 bg-white rounded-[1.75rem] sm:rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+                       <div className="w-12 h-12 bg-secondary/10 rounded-2xl flex items-center justify-center text-secondary shadow-inner">
+                          <Cloud size={24} />
+                       </div>
+                       <span className="text-xs font-black text-slate-800 uppercase tracking-widest leading-tight">Healing<br/>Meditation</span>
+                    </button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex flex-col gap-6"
+                >
+                  <Card className="p-5 sm:p-10 border-none bg-emerald-50 rounded-[2.25rem] sm:rounded-[3rem] relative shadow-lg overflow-hidden">
+                     <div className="relative z-10">
+                        <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center text-emerald-500 mb-8 shadow-xl shadow-emerald-900/10">
+                           <Sparkles size={32} />
+                        </div>
+                        <h3 className="text-2xl font-black text-emerald-900 mb-6 tracking-tight">CareBridge Support</h3>
+                        <p className="text-emerald-800/80 leading-relaxed italic text-xl mb-12 font-medium">
+                          "{supportMessage}"
+                        </p>
+                        <div className="flex flex-col gap-3">
+                          <Button 
+                            className="rounded-2xl bg-emerald-600 text-white h-12 font-black hover:bg-emerald-700 transition-all uppercase tracking-widest text-sm shadow-xl shadow-emerald-200"
+                            onClick={() => { setSupportMessage(null); setMood(null); setNote(''); }}
+                          >
+                            Done for Today
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={simulatePostToWhatsapp}
+                            className="text-emerald-600/60 font-bold text-xs uppercase"
+                          >
+                            Share with Counselor
+                          </Button>
+                        </div>
+                     </div>
+                     
+                     {/* Abstract organic shape */}
+                     <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                  </Card>
+                </motion.div>
+              )}
+              {/* Community Support */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">Community Support</h4>
+                <div className="p-6 bg-white border border-slate-100 rounded-3xl flex items-center justify-between shadow-sm">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500">
+                         <Heart size={24} />
+                      </div>
+                      <div>
+                         <h5 className="font-bold text-slate-900">Healing Together</h5>
+                         <p className="text-xs text-slate-500">Private African grief support group</p>
+                      </div>
+                   </div>
+                   <ChevronRight className="text-slate-300" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        /* Password-Protected History Log Panel */
+        <div className="space-y-6 max-w-2xl mx-auto">
+          {!isUnlocked ? (
+            /* PIN Gate Screen */
+            <Card className="p-8 border border-slate-100 rounded-[2.5rem] bg-white shadow-xl text-center space-y-6">
+              <div className="w-16 h-16 bg-[#0F4C81]/10 rounded-[1.5rem] flex items-center justify-center text-[#0F4C81] mx-auto shadow-inner">
+                <ShieldAlert size={36} className="animate-pulse" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Clinical Records Shield</h3>
+                <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+                  Enter your private 4-digit security PIN to view private diagnostics history and counselor referrals.
+                </p>
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase">Default PIN: 1234</p>
+              </div>
+
+              <div className="max-w-xs mx-auto space-y-4">
+                <input
+                  type="password"
+                  maxLength={4}
+                  value={passcode}
+                  onChange={(e) => {
+                    setPasscode(e.target.value);
+                    setPinError('');
+                  }}
+                  placeholder="••••"
+                  className="w-full text-center text-2xl font-bold tracking-[1em] py-3 bg-slate-50 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-secondary/20 placeholder:text-slate-300 text-slate-800"
+                />
+                
+                {pinError && (
+                  <p className="text-xs font-black text-rose-500 uppercase tracking-wide">
+                    ⚠️ {pinError}
+                  </p>
+                )}
+
+                <Button
+                  onClick={() => {
+                    if (passcode === securityPin) {
+                      setIsUnlocked(true);
+                      setPasscode('');
+                      setPinError('');
+                    } else {
+                      setPinError('Incorrect Passcode PIN');
+                    }
+                  }}
+                  className="w-full h-11 bg-gradient-to-r from-secondary to-[#1762a0] text-white font-extrabold rounded-xl uppercase tracking-wider text-[11px] cursor-pointer"
+                >
+                  Verify & Unlock
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            /* Unlocked History List Screen */
+            <div className="space-y-6">
+              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2.5xl border border-slate-100/80">
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">Triage Diagnostics Log</h3>
+                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">Passcode Unlocked</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsChangingPin(!isChangingPin);
+                      setNewPin('');
+                      setPinError('');
+                      setPinSuccess('');
+                    }}
+                    className="h-8 rounded-xl font-bold text-[9px] uppercase border-slate-200 text-slate-600 cursor-pointer"
+                  >
+                    {isChangingPin ? 'Cancel' : 'Change PIN'}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setIsUnlocked(false);
+                      setIsChangingPin(false);
+                    }}
+                    className="h-8 rounded-xl font-bold text-[9px] bg-slate-900 text-white uppercase tracking-wider hover:bg-slate-800 cursor-pointer"
+                  >
+                    Lock View
+                  </Button>
+                </div>
+              </div>
+
+              {/* Pin Change Form */}
+              {isChangingPin && (
+                <Card className="p-5 border border-slate-100 rounded-2.5xl bg-white shadow-sm space-y-4 max-w-md mx-auto">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Modify Privacy PIN</span>
+                  <div className="space-y-3">
+                    <input
+                      type="password"
+                      maxLength={4}
+                      placeholder="Enter New PIN"
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value)}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-center tracking-[0.5em] text-sm focus:outline-none placeholder:tracking-normal placeholder:text-xs text-slate-800"
+                    />
+                    {pinError && <p className="text-[10px] font-black text-rose-500 uppercase tracking-wide">{pinError}</p>}
+                    {pinSuccess && <p className="text-[10px] font-black text-emerald-600 uppercase tracking-wide">{pinSuccess}</p>}
+                    <Button
+                      onClick={() => {
+                        if (newPin.length !== 4 || isNaN(Number(newPin))) {
+                          setPinError('PIN must be 4 numbers');
+                          setPinSuccess('');
+                        } else {
+                          localStorage.setItem('carebridge_privacy_pin', newPin);
+                          setSecurityPin(newPin);
+                          setPinSuccess('PIN updated');
+                          setPinError('');
+                          setTimeout(() => {
+                            setIsChangingPin(false);
+                            setPinSuccess('');
+                          }, 1500);
+                        }
+                      }}
+                      className="w-full h-9 bg-secondary text-white font-extrabold rounded-lg uppercase text-[9px] tracking-wider cursor-pointer"
+                    >
+                      Save PIN
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
+              {/* History Lists */}
+              {(() => {
+                const historyRaw = localStorage.getItem('carebridge_assessments_history');
+                const historyList = historyRaw ? JSON.parse(historyRaw) : [];
+                
+                if (historyList.length === 0) {
+                  return (
+                    <Card className="p-8 border border-slate-100 rounded-2.5xl bg-white text-center space-y-3">
+                      <p className="text-sm font-extrabold text-slate-700">No History Found</p>
+                      <p className="text-xs text-slate-500">Run the triage check-in on the dashboard to log your first recovery report.</p>
+                      <Button
+                        onClick={() => setActiveTab('dashboard')}
+                        className="bg-secondary text-white font-extrabold text-[10px] px-4 py-2 rounded-xl uppercase tracking-wider cursor-pointer"
+                      >
+                        Return to Dashboard
+                      </Button>
+                    </Card>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {historyList.map((item: any, idx: number) => (
+                      <Card key={idx} className="p-5 border border-slate-100 rounded-[1.75rem] bg-white shadow-sm space-y-3 text-slate-700">
+                        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                          <span className="text-[9px] text-slate-400 font-extrabold uppercase">
+                            📅 {new Date(item.timestamp).toLocaleString()}
+                          </span>
+                          <Badge className={`uppercase text-[8px] font-black tracking-wider px-2 py-0.5 rounded-full border-none text-white ${
+                            item.riskLevel === 'High' 
+                              ? 'bg-rose-600' 
+                              : (item.riskLevel === 'Medium' 
+                                  ? 'bg-amber-500' 
+                                  : 'bg-emerald-600')
+                          }`}>
+                            {item.riskLevel} RISK
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2 text-xs">
+                          <p className="font-bold text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-100 leading-relaxed text-[11px]">
+                            {item.text}
+                          </p>
+
+                          {item.action && (
+                            <div className="p-3 bg-slate-900 text-white rounded-xl text-[10px] font-medium leading-relaxed">
+                              <span className="text-[7.5px] font-black text-slate-400 uppercase block mb-0.5">Clinical Action Required</span>
+                              {item.action}
+                            </div>
+                          )}
+
+                          {item.careGaps && item.careGaps.length > 0 && (
+                            <div className="text-[10px] font-extrabold text-slate-500">
+                              ⚠️ Gaps: {item.careGaps.join(', ')}
+                            </div>
+                          )}
+
+                          <div className="text-[8.5px] text-slate-400 font-semibold text-center pt-1 italic">
+                            🛡️ Aligned with WHO Post-Abortion Care (PAC) clinical guidelines compliance.
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
