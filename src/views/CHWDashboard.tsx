@@ -46,7 +46,7 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
   const [patients, setPatients] = useState<CHWPatient[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<CHWPatient | null>(null);
-  const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'pending'>('all');
+  const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'pending' | 'assigned'>('all');
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'patients' | 'analytics'>('patients');
 
@@ -66,7 +66,11 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
     fainting: false,
     foulDischarge: false,
     notes: '',
-    recommendations: ''
+    recommendations: '',
+    phone: '',
+    partnerName: '',
+    partnerPhone: '',
+    assignedCHWId: ''
   });
 
   // Query symptom_logs for the selected patient
@@ -123,6 +127,13 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
     if (newVisit.painLevel !== 'none') careGaps.push("Requires pelvic pain management check");
     if (newVisit.fever || newVisit.foulDischarge) careGaps.push("Flagged for potential systemic infection follow-up");
 
+    const chwNames: Record<string, string> = {
+      'chw_tomi': 'Nurse Tomi',
+      'chw_amina': 'Sister Amina',
+      'chw_kelechi': 'Dr. Kelechi'
+    };
+    const assignedCHWName = newVisit.assignedCHWId ? chwNames[newVisit.assignedCHWId] : 'Unassigned';
+
     const localRecord = {
       id: `local-assessment-${Date.now()}`,
       name: newVisit.patientName,
@@ -140,7 +151,12 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       mentalHealthFlag: false,
       mentalHealthNote: newVisit.notes || "Logged during rural Health Worker outreach field visit.",
       loggedByCHW: session.username || "Tomi",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      phone: newVisit.phone,
+      partnerName: newVisit.partnerName,
+      partnerPhone: newVisit.partnerPhone,
+      assignedCHWId: newVisit.assignedCHWId || null,
+      assignedCHWName: assignedCHWName || null
     };
 
     // Save locally immediately
@@ -167,7 +183,11 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       fainting: false,
       foulDischarge: false,
       notes: '',
-      recommendations: ''
+      recommendations: '',
+      phone: '',
+      partnerName: '',
+      partnerPhone: '',
+      assignedCHWId: ''
     });
 
     // Save to Firestore in background
@@ -188,7 +208,12 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
         mentalHealthFlag: localRecord.mentalHealthFlag,
         mentalHealthNote: localRecord.mentalHealthNote,
         loggedByCHW: localRecord.loggedByCHW,
-        timestamp: localRecord.timestamp
+        timestamp: localRecord.timestamp,
+        phone: localRecord.phone,
+        partnerName: localRecord.partnerName,
+        partnerPhone: localRecord.partnerPhone,
+        assignedCHWId: localRecord.assignedCHWId,
+        assignedCHWName: localRecord.assignedCHWName
       });
       alert(`Field visit record logged successfully for patient ${patientName}.`);
     } catch (err) {
@@ -219,7 +244,13 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
           equityFlags: d.equityFlags || [],
           mentalHealthFlag: d.mentalHealthFlag ?? false,
           mentalHealthNote: d.mentalHealthNote || "Standard care protocols apply.",
-          followUpRecommendation: d.follow_up_recommendation || d.followUpRecommendation || "Schedule regular checks."
+          followUpRecommendation: d.follow_up_recommendation || d.followUpRecommendation || "Schedule regular checks.",
+          phone: d.phone || "",
+          partnerName: d.partnerName || "",
+          partnerPhone: d.partnerPhone || "",
+          assignedCHWId: d.assignedCHWId || null,
+          assignedCHWName: d.assignedCHWName || null,
+          loggedByCHW: d.loggedByCHW || ""
         });
       });
 
@@ -287,6 +318,44 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
     if (filter === 'high') return p.riskLevel === 'High';
     if (filter === 'medium') return p.riskLevel === 'Medium' || p.riskLevel === 'Moderate';
     if (filter === 'pending') return p.prediction === 0; // Unlikely to follow up needs intervention
+    if (filter === 'assigned') {
+      const usernameLower = (session.username || "").toLowerCase().trim();
+      let activeCHWId = "";
+      let activeKeyword = usernameLower;
+      if (usernameLower.includes("tomi")) {
+        activeCHWId = "chw_tomi";
+        activeKeyword = "tomi";
+      } else if (usernameLower.includes("amina")) {
+        activeCHWId = "chw_amina";
+        activeKeyword = "amina";
+      } else if (usernameLower.includes("kelechi")) {
+        activeCHWId = "chw_kelechi";
+        activeKeyword = "kelechi";
+      }
+
+      // 1. Check assignedCHWId
+      if (p.assignedCHWId && activeCHWId && p.assignedCHWId.toLowerCase() === activeCHWId) {
+        return true;
+      }
+
+      // 2. Check assignedCHWName by keyword/username match
+      if (p.assignedCHWName) {
+        const assignedNameLower = p.assignedCHWName.toLowerCase();
+        if (assignedNameLower.includes(activeKeyword) || assignedNameLower.includes(usernameLower)) {
+          return true;
+        }
+      }
+
+      // 3. Fallback: loggedByCHW by keyword/username match
+      if (p.loggedByCHW) {
+        const loggedByLower = p.loggedByCHW.toLowerCase();
+        if (loggedByLower.includes(activeKeyword) || loggedByLower.includes(usernameLower)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
     return true;
   });
 
@@ -467,6 +536,7 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
             <div className="flex flex-wrap gap-1.5">
               {[
                 { id: 'all', label: 'All Cases' },
+                { id: 'assigned', label: 'Assigned to Me' },
                 { id: 'high', label: 'High Risk (Critical)' },
                 { id: 'medium', label: 'Medium Risk' },
                 { id: 'pending', label: 'Unlikely to Follow-up' },
@@ -660,6 +730,71 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
 
               {/* API Predictive Model Output */}
               <div className="space-y-4">
+                {/* Contact Information & Case Assignment */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-slate-100/60">
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-1.5">Contact Details</h4>
+                    <div className="p-2.5 bg-slate-50 rounded-xl space-y-1 text-[11px] text-slate-700">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-slate-400">Phone</span>
+                        <span className="font-extrabold">{selectedPatient.phone || 'Not collected'}</span>
+                      </div>
+                      {selectedPatient.partnerName && (
+                        <div className="flex justify-between items-center border-t border-slate-100/50 pt-1">
+                          <span className="font-bold text-slate-400 text-[9.5px]">Kin Name</span>
+                          <span className="font-extrabold truncate max-w-[80px]">{selectedPatient.partnerName}</span>
+                        </div>
+                      )}
+                      {selectedPatient.partnerPhone && (
+                        <div className="flex justify-between items-center border-t border-slate-100/50 pt-1">
+                          <span className="font-bold text-slate-400 text-[9.5px]">Kin Phone</span>
+                          <span className="font-extrabold">{selectedPatient.partnerPhone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-1.5">Case Assignment</h4>
+                    <div className="p-2.5 bg-slate-50 rounded-xl flex flex-col justify-center gap-1 text-[11px] h-[72px]">
+                      <span className="font-bold text-slate-400 block mb-0.5">Assign Specialist</span>
+                      <select
+                        value={selectedPatient.assignedCHWId || ''}
+                        onChange={async (e) => {
+                          const newCHWId = e.target.value;
+                          const chwNames: Record<string, string> = {
+                            'chw_tomi': 'Nurse Tomi',
+                            'chw_amina': 'Sister Amina',
+                            'chw_kelechi': 'Dr. Kelechi'
+                          };
+                          const newCHWName = newCHWId ? chwNames[newCHWId] : 'Unassigned';
+                          
+                          // Update locally first
+                          setPatients(prev => prev.map(p => p.id === selectedPatient.id ? { ...p, assignedCHWId: newCHWId || null, assignedCHWName: newCHWName || null } : p));
+                          setSelectedPatient(prev => prev ? { ...prev, assignedCHWId: newCHWId || null, assignedCHWName: newCHWName || null } : null);
+
+                          // Sync to Firestore
+                          try {
+                            const docRef = doc(db, 'assessments', selectedPatient.id);
+                            await updateDoc(docRef, {
+                              assignedCHWId: newCHWId || null,
+                              assignedCHWName: newCHWName || null
+                            });
+                          } catch (err) {
+                            console.warn("Failed to sync case assignment to Firestore:", err);
+                          }
+                        }}
+                        className="w-full bg-white border border-slate-200 text-xs font-bold text-slate-800 rounded-lg px-2 py-1 outline-none focus:border-[#0F4C81]"
+                      >
+                        <option value="">Unassigned</option>
+                        <option value="chw_tomi">Nurse Tomi</option>
+                        <option value="chw_amina">Sister Amina</option>
+                        <option value="chw_kelechi">Dr. Kelechi</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2">Predictive follow-up completion</h4>
                   <div className="p-3 bg-slate-50 rounded-2xl space-y-2.5">
@@ -882,6 +1017,56 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
                       placeholder="e.g. 8"
                       value={newVisit.pregnancyWeek}
                       onChange={e => setNewVisit(prev => ({ ...prev, pregnancyWeek: e.target.value }))}
+                      className="w-full bg-slate-50 border border-slate-100 focus:bg-white text-xs font-bold text-slate-800 rounded-xl px-3 py-2 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Patient Phone Number</label>
+                    <input 
+                      type="tel" 
+                      required
+                      placeholder="e.g. +234 803 123 4567"
+                      value={newVisit.phone}
+                      onChange={e => setNewVisit(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full bg-slate-50 border border-slate-100 focus:bg-white text-xs font-bold text-slate-800 rounded-xl px-3 py-2 outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Assigned Health Worker</label>
+                    <select 
+                      value={newVisit.assignedCHWId}
+                      onChange={e => setNewVisit(prev => ({ ...prev, assignedCHWId: e.target.value }))}
+                      className="w-full bg-slate-50 border border-slate-100 text-xs font-bold text-slate-800 rounded-xl px-3 py-2 outline-none"
+                    >
+                      <option value="">Unassigned</option>
+                      <option value="chw_tomi">Nurse Tomi</option>
+                      <option value="chw_amina">Sister Amina</option>
+                      <option value="chw_kelechi">Dr. Kelechi</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Partner / Next-of-Kin Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Samuel Ojo"
+                      value={newVisit.partnerName}
+                      onChange={e => setNewVisit(prev => ({ ...prev, partnerName: e.target.value }))}
+                      className="w-full bg-slate-50 border border-slate-100 focus:bg-white text-xs font-bold text-slate-800 rounded-xl px-3 py-2 outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Partner Phone Number</label>
+                    <input 
+                      type="tel" 
+                      placeholder="e.g. +234 802 987 6543"
+                      value={newVisit.partnerPhone}
+                      onChange={e => setNewVisit(prev => ({ ...prev, partnerPhone: e.target.value }))}
                       className="w-full bg-slate-50 border border-slate-100 focus:bg-white text-xs font-bold text-slate-800 rounded-xl px-3 py-2 outline-none"
                     />
                   </div>

@@ -119,6 +119,12 @@ export interface CHWPatient {
   mentalHealthFlag: boolean;
   mentalHealthNote: string;
   followUpRecommendation: string;
+  phone?: string;
+  partnerName?: string;
+  partnerPhone?: string;
+  assignedCHWId?: string | null;
+  assignedCHWName?: string | null;
+  loggedByCHW?: string;
 }
 
 
