@@ -368,7 +368,7 @@ export function PatientDashboard({
                       placeholder="Search language..."
                       value={langQuery}
                       onChange={e => setLangQuery(e.target.value)}
-                      className="w-full text-xs font-bold bg-transparent border-none outline-none placeholder:text-slate-400 focus:ring-0 p-0 text-slate-700"
+                      className="w-full text-[16px] sm:text-xs font-bold bg-transparent border-none outline-none placeholder:text-slate-400 focus:ring-0 p-0 text-slate-700"
                     />
                     {langQuery && (
                       <button 

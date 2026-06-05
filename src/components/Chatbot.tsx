@@ -180,7 +180,7 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
   };
 
   return (
-    <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-[100] font-sans flex flex-col items-end">
+    <div className={`fixed z-[100] font-sans transition-all duration-300 ${isOpen ? 'inset-0 flex flex-col sm:inset-auto sm:bottom-8 sm:right-8 sm:flex-col sm:items-end' : 'bottom-20 right-4 sm:bottom-8 sm:right-8 flex flex-col items-end'}`}>
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -188,10 +188,10 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", stiffness: 350, damping: 28 }}
-            className="mb-4 w-[calc(100vw-2rem)] sm:w-[360px] h-[450px] md:h-[550px] max-h-[calc(100vh-160px)] bg-slate-950/95 border border-slate-800 text-white rounded-[2.5rem] shadow-[0_24px_50px_-12px_rgba(15,76,129,0.4)] backdrop-blur-xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300"
+            className="w-full h-full sm:w-[360px] sm:h-[550px] sm:max-h-[calc(100vh-160px)] bg-slate-950/95 border-none sm:border sm:border-slate-800 text-white rounded-none sm:rounded-[2.5rem] shadow-[0_24px_50px_-12px_rgba(15,76,129,0.4)] backdrop-blur-xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300 sm:mb-4"
           >
             {/* Header */}
-            <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-gradient-to-r from-slate-900 to-slate-950">
+            <div className="p-5 pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] sm:pt-5 border-b border-slate-800 flex justify-between items-center bg-gradient-to-r from-slate-900 to-slate-950 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-primary/20 rounded-xl flex items-center justify-center text-primary border border-primary/25">
                   <Sparkles size={18} className="animate-pulse" />
@@ -331,7 +331,7 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
             </div>
 
             {/* Bottom Form Section */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/40 space-y-3">
+            <div className="p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:pb-4 border-t border-slate-800 bg-slate-950/40 space-y-3 shrink-0">
               {/* Suggestion Chips */}
               <div className="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-none whitespace-nowrap">
                 {suggestionChips.map((chip, idx) => (
@@ -355,7 +355,7 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
                     placeholder="Ask CareBridge AI..."
-                    className="flex-1 bg-transparent text-xs outline-none placeholder:text-white/20 font-medium border-none focus:ring-0"
+                    className="flex-1 bg-transparent text-[16px] sm:text-xs outline-none placeholder:text-white/20 font-medium border-none focus:ring-0 p-0"
                   />
                   <button
                     type="button"
@@ -384,7 +384,7 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-gradient-to-tr from-[#0F4C81] to-primary text-white rounded-full flex items-center justify-center shadow-xl shadow-primary/25 cursor-pointer relative z-50 border-none outline-none"
+        className={`w-14 h-14 bg-gradient-to-tr from-[#0F4C81] to-primary text-white rounded-full flex items-center justify-center shadow-xl shadow-primary/25 cursor-pointer relative z-50 border-none outline-none ${isOpen ? 'hidden sm:flex' : 'flex'}`}
         title="Open CareBridge Companion"
       >
         <AnimatePresence mode="wait">
