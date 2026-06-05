@@ -42,17 +42,33 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
 
   const [formData, setFormData] = useState({
     pregnancyWeek: 8,
-    nausea: false, // Y/N
-    vomiting: 'none', // 'none' | 'medication-down' | 'food-down' | 'mild'
+    // Core Symptoms
+    nausea: false,
+    vomiting: 'none', // 'none' | 'occasional' | 'frequent'
+    reducedAppetite: false,
+
+    // Neurological & General
     headache: 'none', // 'none' | 'mild' | 'moderate' | 'severe'
-    dizziness: 'none', // 'none' | 'mild' | 'moderate' | 'severe'
-    spotting: false, // Y/N
+    dizziness: 'none', // 'none' | 'improves-with-rest' | 'moderate' | 'severe'
+    tiredness: false,
+    breastTenderness: false,
+    increasedUrination: false,
+
+    // Bleeding & Pain
+    spotting: false,
+    heavyBleeding: false,
+    passingClots: false,
     abdominalPain: 'none', // 'none' | 'mild' | 'moderate' | 'severe'
-    heavyBleeding: false, // Y/N
-    passingClot: false, // Y/N
-    pelvicPainOneSided: false, // Y/N
-    fever: false, // Y/N
-    prevMiscarriage: false, // Y/N
+    pelvicPainOneSided: false,
+
+    // Vitals & Infection
+    fever: false,
+    chills: false,
+    foulDischarge: false,
+    faintingOrLossOfConsciousness: false,
+
+    // History
+    prevMiscarriage: false,
   });
 
   const totalSteps = 4;
@@ -61,29 +77,48 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
   const calculateRisk = () => {
     // 1. Check for High Risk indicators
     const isHigh = 
-      formData.vomiting === 'medication-down' ||
-      formData.vomiting === 'food-down' ||
-      formData.headache === 'severe' ||
-      formData.dizziness === 'severe' ||
-      formData.abdominalPain === 'severe' ||
       formData.heavyBleeding ||
-      formData.passingClot ||
+      formData.passingClots ||
+      formData.abdominalPain === 'severe' ||
       formData.pelvicPainOneSided ||
-      formData.fever;
+      formData.faintingOrLossOfConsciousness ||
+      formData.fever ||
+      formData.chills ||
+      formData.foulDischarge ||
+      formData.dizziness === 'severe';
+
+    // Check if there are any active current symptoms
+    const hasAnyCurrentSymptoms =
+      formData.nausea ||
+      formData.vomiting !== 'none' ||
+      formData.headache !== 'none' ||
+      formData.dizziness !== 'none' ||
+      formData.tiredness ||
+      formData.breastTenderness ||
+      formData.increasedUrination ||
+      formData.reducedAppetite ||
+      formData.spotting ||
+      formData.passingClots ||
+      formData.abdominalPain !== 'none' ||
+      formData.pelvicPainOneSided ||
+      formData.fever ||
+      formData.chills ||
+      formData.foulDischarge ||
+      formData.faintingOrLossOfConsciousness;
 
     // 2. Check for Medium Risk indicators
     const isMedium = 
       !isHigh && (
-        formData.vomiting === 'mild' ||
-        formData.headache === 'moderate' ||
-        formData.dizziness === 'moderate' ||
-        formData.abdominalPain === 'moderate' ||
         formData.spotting ||
-        formData.prevMiscarriage
+        formData.abdominalPain === 'moderate' ||
+        formData.vomiting === 'frequent' ||
+        formData.dizziness === 'moderate' ||
+        formData.reducedAppetite ||
+        (formData.prevMiscarriage && hasAnyCurrentSymptoms)
       );
 
     let level = RiskLevel.LOW;
-    let score = 15;
+    let score = 20;
     
     if (isHigh) {
       level = RiskLevel.HIGH;
@@ -130,14 +165,21 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
       symptoms: {
         nausea: formData.nausea,
         vomiting: formData.vomiting,
+        reducedAppetite: formData.reducedAppetite,
         headache: formData.headache,
         dizziness: formData.dizziness,
+        tiredness: formData.tiredness,
+        breastTenderness: formData.breastTenderness,
+        increasedUrination: formData.increasedUrination,
         spotting: formData.spotting,
-        abdominalPain: formData.abdominalPain,
         heavyBleeding: formData.heavyBleeding,
-        passingClot: formData.passingClot,
+        passingClots: formData.passingClots,
+        abdominalPain: formData.abdominalPain,
         pelvicPainOneSided: formData.pelvicPainOneSided,
-        fever: formData.fever
+        fever: formData.fever,
+        chills: formData.chills,
+        foulDischarge: formData.foulDischarge,
+        faintingOrLossOfConsciousness: formData.faintingOrLossOfConsciousness
       },
       history: {
         priorMiscarriage: formData.prevMiscarriage,
@@ -157,15 +199,15 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
       console.warn("AI explainRisk failed:", err);
     }
     
-    // Always merge or replace with the specific required recommendations
+    // Always enforce the required clinical recommendations
     const staticRecs = getStaticRecommendations(level);
     aiOutput.recommendations = staticRecs;
     if (!aiOutput.explanation) {
       aiOutput.explanation = level === RiskLevel.HIGH
-        ? "Critical triage warning: Severe maternal risk factors identified. Immediate clinical evaluation is required."
+        ? "Critical triage warning: Urgent medical attention is required. Please seek immediate medical care."
         : level === RiskLevel.MODERATE
-        ? "Moderate maternal indicators flagged. A formal clinical examination and ultrasound are recommended within 24 to 48 hours."
-        : "Stable recovery parameters. No emergency warning signs identified at this moment.";
+        ? "Moderate clinical indicators flagged. You should visit a clinic within 24 to 48 hours for a medical review and consider an ultrasound assessment."
+        : "Stable early pregnancy signs. Continue monitoring, rest, and attend routine care.";
     }
 
     // Save to Firestore (Non-blocking)
@@ -193,8 +235,8 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
       setFormData(prev => ({ 
         ...prev, 
         nausea: true, 
-        vomiting: 'mild',
-        headache: 'moderate',
+        vomiting: 'occasional',
+        headache: 'mild',
         spotting: true
       }));
       setStep(3);
@@ -213,7 +255,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
     >
       <div className="flex items-center gap-3 font-sans">
         {Icon && <Icon size={20} className={isActive ? 'text-[#0F4C81]' : 'text-slate-400'} />}
-        <span className="font-bold text-left">{label}</span>
+        <span className="font-bold text-left text-sm">{label}</span>
       </div>
       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
         isActive ? 'border-[#0F4C81] bg-[#0F4C81]' : 'border-slate-200'
@@ -248,6 +290,24 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
     </div>
   );
 
+  const ToggleRow = ({ label, value, onChange }: any) => (
+    <div className="flex items-center justify-between py-2 border-b border-slate-100 pb-2">
+      <span className="text-xs font-bold text-slate-700">{label}</span>
+      <div className="flex gap-2">
+        {[true, false].map(val => (
+          <button
+            key={val ? 'yes' : 'no'}
+            type="button"
+            onClick={() => onChange(val)}
+            className={`py-1.5 px-4 text-xs font-black uppercase rounded-lg border transition-all ${value === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+          >
+            {val ? 'Yes' : 'No'}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="px-4 sm:px-8 flex flex-col h-full pb-40 pt-6">
       <div className="flex items-center justify-between mb-8">
@@ -277,7 +337,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900 mb-2">Pregnancy & Core Symptoms</h2>
-                <p className="text-slate-500">Please provide gestation age and gastrointestinal symptoms.</p>
+                <p className="text-slate-500">Provide gestation duration and core gastrointestinal signs.</p>
               </div>
               <Button
                 variant="outline"
@@ -317,33 +377,29 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
             </div>
 
             {/* Nausea */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Nausea Symptom</label>
-              <div className="grid grid-cols-2 gap-3">
-                <OptionCard 
-                  label="Nausea: Yes"
-                  isActive={formData.nausea === true}
-                  onClick={() => setFormData(prev => ({ ...prev, nausea: true }))}
-                />
-                <OptionCard 
-                  label="Nausea: No"
-                  isActive={formData.nausea === false}
-                  onClick={() => setFormData(prev => ({ ...prev, nausea: false }))}
-                />
-              </div>
-            </div>
+            <ToggleRow 
+              label="Experiencing Mild Nausea ('morning sickness')?"
+              value={formData.nausea}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, nausea: val }))}
+            />
 
             {/* Vomiting */}
             <SelectionRow 
-              label="Vomiting Severity"
+              label="Vomiting Frequency"
               options={[
                 { value: 'none', label: 'None' },
-                { value: 'mild', label: 'Mild' },
-                { value: 'food-down', label: "Can't Keep Food Down" },
-                { value: 'medication-down', label: "Can't Keep Meds Down" }
+                { value: 'occasional', label: 'Occasional' },
+                { value: 'frequent', label: 'Frequent' }
               ]}
               currentValue={formData.vomiting}
               onChange={(val: string) => setFormData(prev => ({ ...prev, vomiting: val }))}
+            />
+
+            {/* Reduced Appetite */}
+            <ToggleRow 
+              label="Reduced Appetite?"
+              value={formData.reducedAppetite}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, reducedAppetite: val }))}
             />
 
             <Button size="lg" className="mt-8 rounded-2xl h-12" onClick={() => setStep(2)}>
@@ -362,8 +418,8 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
             className="flex flex-col gap-6"
           >
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Neurological Indicators</h2>
-              <p className="text-slate-500">Provide details on headache or dizzy spells.</p>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Neurological & General Vitals</h2>
+              <p className="text-slate-500">Provide details on headache, dizziness, or bodily fatigue.</p>
             </div>
 
             {/* Headache */}
@@ -381,15 +437,36 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
 
             {/* Dizziness */}
             <SelectionRow 
-              label="Dizziness Severity"
+              label="Dizziness Intensity"
               options={[
                 { value: 'none', label: 'None' },
-                { value: 'mild', label: 'Mild' },
+                { value: 'improves-with-rest', label: 'Improves with Rest' },
                 { value: 'moderate', label: 'Moderate' },
                 { value: 'severe', label: 'Severe' }
               ]}
               currentValue={formData.dizziness}
               onChange={(val: string) => setFormData(prev => ({ ...prev, dizziness: val }))}
+            />
+
+            {/* Tiredness */}
+            <ToggleRow 
+              label="Experiencing Tiredness / Fatigue?"
+              value={formData.tiredness}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, tiredness: val }))}
+            />
+
+            {/* Breast Tenderness */}
+            <ToggleRow 
+              label="Breast Tenderness?"
+              value={formData.breastTenderness}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, breastTenderness: val }))}
+            />
+
+            {/* Increased Urination */}
+            <ToggleRow 
+              label="Increased Urination?"
+              value={formData.increasedUrination}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, increasedUrination: val }))}
             />
 
             <Button size="lg" className="mt-8 rounded-2xl h-12" onClick={() => setStep(3)}>
@@ -409,94 +486,53 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
           >
             <div>
               <h2 className="text-2xl font-bold text-slate-900 mb-2">Bleeding & Pain Indicators</h2>
-              <p className="text-slate-500">Select physical symptoms related to bleeding and cramps.</p>
+              <p className="text-slate-500">Provide signs related to hemorrhaging, cramps, or localized pain.</p>
             </div>
 
             <div className="space-y-4">
               {/* Spotting */}
-              <div className="flex items-center justify-between py-1 border-b border-slate-100 pb-2">
-                <span className="text-xs font-bold text-slate-700">Experiencing Spotting?</span>
-                <div className="flex gap-2">
-                  {[true, false].map(val => (
-                    <button
-                      key={val ? 'yes' : 'no'}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, spotting: val }))}
-                      className={`py-1.5 px-4 text-xs font-black uppercase rounded-lg border transition-all ${formData.spotting === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                    >
-                      {val ? 'Yes' : 'No'}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <ToggleRow 
+                label="Experiencing Light Spotting?"
+                value={formData.spotting}
+                onChange={(val: boolean) => setFormData(prev => ({ ...prev, spotting: val }))}
+              />
+
+              {/* Heavy Bleeding */}
+              <ToggleRow 
+                label="Heavy Bleeding?"
+                value={formData.heavyBleeding}
+                onChange={(val: boolean) => setFormData(prev => ({ ...prev, heavyBleeding: val }))}
+              />
+
+              {/* Passing Clots */}
+              <ToggleRow 
+                label="Passing Clots or Tissue?"
+                value={formData.passingClots}
+                onChange={(val: boolean) => setFormData(prev => ({ ...prev, passingClots: val }))}
+              />
 
               {/* Abdominal Pain */}
               <SelectionRow 
-                label="Abdominal Pain"
+                label="Abdominal Pain / Cramps"
                 options={[
                   { value: 'none', label: 'None' },
-                  { value: 'mild', label: 'Mild' },
-                  { value: 'moderate', label: 'Moderate' },
-                  { value: 'severe', label: 'Severe' }
+                  { value: 'mild', label: 'Mild Pain' },
+                  { value: 'moderate', label: 'Moderate / Persistent' },
+                  { value: 'severe', label: 'Severe Pain' }
                 ]}
                 currentValue={formData.abdominalPain}
                 onChange={(val: string) => setFormData(prev => ({ ...prev, abdominalPain: val }))}
               />
 
-              {/* Heavy Bleeding */}
-              <div className="flex items-center justify-between py-1 border-t border-slate-100 pt-3">
-                <span className="text-xs font-bold text-slate-700">Heavy Bleeding?</span>
-                <div className="flex gap-2">
-                  {[true, false].map(val => (
-                    <button
-                      key={val ? 'yes' : 'no'}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, heavyBleeding: val }))}
-                      className={`py-1.5 px-4 text-xs font-black uppercase rounded-lg border transition-all ${formData.heavyBleeding === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                    >
-                      {val ? 'Yes' : 'No'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Passing out Clots */}
-              <div className="flex items-center justify-between py-1 border-t border-slate-100 pt-3">
-                <span className="text-xs font-bold text-slate-700">Passing out Clots?</span>
-                <div className="flex gap-2">
-                  {[true, false].map(val => (
-                    <button
-                      key={val ? 'yes' : 'no'}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, passingClot: val }))}
-                      className={`py-1.5 px-4 text-xs font-black uppercase rounded-lg border transition-all ${formData.passingClot === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                    >
-                      {val ? 'Yes' : 'No'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pelvic Pain: One Sided */}
-              <div className="flex items-center justify-between py-1 border-t border-slate-100 pt-3">
-                <span className="text-xs font-bold text-slate-700">Pelvic Pain: One Sided?</span>
-                <div className="flex gap-2">
-                  {[true, false].map(val => (
-                    <button
-                      key={val ? 'yes' : 'no'}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, pelvicPainOneSided: val }))}
-                      className={`py-1.5 px-4 text-xs font-black uppercase rounded-lg border transition-all ${formData.pelvicPainOneSided === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                    >
-                      {val ? 'Yes' : 'No'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
+              {/* Pelvic Pain One-sided */}
+              <ToggleRow 
+                label="Pelvic Pain: One Sided?"
+                value={formData.pelvicPainOneSided}
+                onChange={(val: boolean) => setFormData(prev => ({ ...prev, pelvicPainOneSided: val }))}
+              />
             </div>
 
-            <Button size="lg" className="mt-4 rounded-2xl h-12 shadow-lg shadow-primary/20" onClick={() => setStep(4)}>
+            <Button size="lg" className="mt-6 rounded-2xl h-12 shadow-lg shadow-primary/20" onClick={() => setStep(4)}>
               Review Risk Factors
               <ChevronRight size={20} />
             </Button>
@@ -512,43 +548,44 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
             className="flex flex-col gap-6"
           >
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">History & Health Vitals</h2>
-              <p className="text-slate-500">Final checks for miscarriage history or systemic factors.</p>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Vitals & Clinical History</h2>
+              <p className="text-slate-500">Provide systemic signs or historic miscarriage factors.</p>
             </div>
 
             {/* Fever */}
-            <div className="flex items-center justify-between py-1 border-b border-slate-100 pb-3">
-              <span className="text-xs font-bold text-slate-700">Experiencing Fever / Pyrexia?</span>
-              <div className="flex gap-2">
-                {[true, false].map(val => (
-                  <button
-                    key={val ? 'yes' : 'no'}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, fever: val }))}
-                    className={`py-1.5 px-4 text-xs font-black uppercase rounded-lg border transition-all ${formData.fever === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                  >
-                    {val ? 'Yes' : 'No'}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ToggleRow 
+              label="Fever / High Fever?"
+              value={formData.fever}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, fever: val }))}
+            />
+
+            {/* Chills */}
+            <ToggleRow 
+              label="Rigor / Chills / Shivering?"
+              value={formData.chills}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, chills: val }))}
+            />
+
+            {/* Foul Discharge */}
+            <ToggleRow 
+              label="Foul-smelling Vaginal Discharge?"
+              value={formData.foulDischarge}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, foulDischarge: val }))}
+            />
+
+            {/* Fainting */}
+            <ToggleRow 
+              label="Fainting / Loss of Consciousness?"
+              value={formData.faintingOrLossOfConsciousness}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, faintingOrLossOfConsciousness: val }))}
+            />
 
             {/* Previous Miscarriage */}
-            <div className="flex items-center justify-between py-1 border-b border-slate-100 pb-3">
-              <span className="text-xs font-bold text-slate-700">Previous Miscarriage?</span>
-              <div className="flex gap-2">
-                {[true, false].map(val => (
-                  <button
-                    key={val ? 'yes' : 'no'}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, prevMiscarriage: val }))}
-                    className={`py-1.5 px-4 text-xs font-black uppercase rounded-lg border transition-all ${formData.prevMiscarriage === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                  >
-                    {val ? 'Yes' : 'No'}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ToggleRow 
+              label="Previous Miscarriage History?"
+              value={formData.prevMiscarriage}
+              onChange={(val: boolean) => setFormData(prev => ({ ...prev, prevMiscarriage: val }))}
+            />
 
             <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 mt-2">
               <h4 className="font-bold flex items-center gap-2 mb-2 text-slate-800">

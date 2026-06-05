@@ -25,6 +25,9 @@ import {
 } from 'lucide-react';
 import { Language, UserPreferences, UserSession, ALL_LANGUAGES } from '../types';
 import { translations } from '../translations';
+import { db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { generateSupportMessage } from '../lib/gemini';
 
 interface PatientDashboardProps {
   onStart: () => void;
@@ -51,6 +54,54 @@ export function PatientDashboard({
   const [mealEaten, setMealEaten] = useState(false);
   const [medTaken, setMedTaken] = useState(false);
   const [streak, setStreak] = useState(4);
+
+  const [mood, setMood] = useState<number | null>(null);
+  const [supportMessage, setSupportMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [moodLoggedToday, setMoodLoggedToday] = useState(() => {
+    const lastLoggedDate = localStorage.getItem('carebridge_mood_logged_date');
+    const todayStr = new Date().toISOString().split('T')[0];
+    return lastLoggedDate === todayStr;
+  });
+
+  React.useEffect(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const lastLoggedDate = localStorage.getItem('carebridge_mood_logged_date');
+    if (lastLoggedDate === todayStr) {
+      const storedMsg = localStorage.getItem('carebridge_mood_support_msg');
+      const storedMood = localStorage.getItem('carebridge_mood_value');
+      if (storedMsg) setSupportMessage(storedMsg);
+      if (storedMood) setMood(Number(storedMood));
+    }
+  }, []);
+
+  const handleMoodSubmit = async (selectedMood: number) => {
+    setLoading(true);
+    setMood(selectedMood);
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    const msg = await generateSupportMessage(selectedMood, "Logged from home dashboard quick check-in");
+    setSupportMessage(msg);
+    localStorage.setItem('carebridge_mood_support_msg', msg);
+    localStorage.setItem('carebridge_mood_value', String(selectedMood));
+    localStorage.setItem('carebridge_mood_logged_date', todayStr);
+    setMoodLoggedToday(true);
+
+    setStreak(prev => prev + 1);
+
+    try {
+      await addDoc(collection(db, 'symptom_logs'), {
+        patientName: session.username,
+        timestamp: new Date().toISOString(),
+        mood: selectedMood,
+        note: "Logged from home dashboard quick check-in",
+        tags: ["Emotional Checkout"]
+      });
+    } catch (err) {
+      console.warn("Offline or Firestore log failed:", err);
+    }
+    setLoading(false);
+  };
 
   const [activeLangs, setActiveLangs] = useState<string[]>(() => {
     const saved = localStorage.getItem('carebridge_active_langs');
@@ -263,7 +314,7 @@ export function PatientDashboard({
   return (
     <div className="flex flex-col gap-8 pb-40 px-4 sm:px-6 w-full max-w-7xl mx-auto">
       {/* Patient Greeting & Sign-Out (Full Width Header) */}
-      <section className="flex justify-between items-center bg-white/40 p-4 rounded-3xl border border-white/50 backdrop-blur-md w-full shadow-xs">
+      <section className="relative z-30 flex justify-between items-center bg-white/40 p-4 rounded-3xl border border-white/50 backdrop-blur-md w-full shadow-xs">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm overflow-hidden ring-4 ring-slate-50">
             <img 
@@ -274,7 +325,9 @@ export function PatientDashboard({
           </div>
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Patient Portal</p>
-            <h2 className="text-lg font-black text-slate-800">Hello, {session.username}</h2>
+            <h2 className="text-lg font-black text-slate-800">
+              {t.welcome ? `${t.welcome}, ${session.username}` : `Hello, ${session.username}`}
+            </h2>
           </div>
         </div>
 
