@@ -59,12 +59,20 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
     age: '25',
     location: 'Lagos Mainland',
     pregnancyWeek: '8',
-    bleedingSeverity: 'none',
-    painLevel: 'none',
+    nausea: false,
+    vomiting: 'none', // 'none' | 'mild' | 'frequent' | 'food-down' | 'medication-down'
+    headache: 'none', // 'none' | 'mild' | 'moderate' | 'severe'
+    dizziness: 'none', // 'none' | 'mild' | 'moderate' | 'severe'
+    spotting: false,
+    heavyBleeding: false,
+    passingClots: false,
+    abdominalPain: 'none', // 'none' | 'mild' | 'moderate' | 'severe'
+    pelvicPainOneSided: false,
     fever: false,
     chills: false,
-    fainting: false,
     foulDischarge: false,
+    fainting: false,
+    prevMiscarriage: false,
     notes: '',
     recommendations: '',
     phone: '',
@@ -105,27 +113,62 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       return;
     }
 
+    const isHigh = 
+      newVisit.heavyBleeding ||
+      newVisit.passingClots ||
+      newVisit.abdominalPain === 'severe' ||
+      newVisit.pelvicPainOneSided ||
+      newVisit.fainting ||
+      newVisit.fever ||
+      newVisit.chills ||
+      newVisit.foulDischarge ||
+      newVisit.dizziness === 'severe' ||
+      newVisit.vomiting === 'food-down' ||
+      newVisit.vomiting === 'medication-down';
+
+    const hasAnyCurrentSymptoms =
+      newVisit.nausea ||
+      newVisit.vomiting !== 'none' ||
+      newVisit.headache !== 'none' ||
+      newVisit.dizziness !== 'none' ||
+      newVisit.spotting ||
+      newVisit.passingClots ||
+      newVisit.abdominalPain !== 'none' ||
+      newVisit.pelvicPainOneSided ||
+      newVisit.fever ||
+      newVisit.chills ||
+      newVisit.foulDischarge ||
+      newVisit.fainting;
+
+    const isMedium = 
+      !isHigh && (
+        newVisit.spotting ||
+        newVisit.abdominalPain === 'moderate' ||
+        newVisit.vomiting === 'frequent' ||
+        newVisit.dizziness === 'moderate' ||
+        (newVisit.prevMiscarriage && hasAnyCurrentSymptoms)
+      );
+
     let riskLevel: 'Low' | 'Medium' | 'High' = 'Low';
-    if (
-      newVisit.bleedingSeverity === 'heavy' || 
-      newVisit.painLevel === 'severe' || 
-      newVisit.fever || 
-      newVisit.fainting
-    ) {
+    if (isHigh) {
       riskLevel = 'High';
-    } else if (
-      newVisit.bleedingSeverity === 'moderate' || 
-      newVisit.painLevel === 'moderate' || 
-      newVisit.chills || 
-      newVisit.foulDischarge
-    ) {
+    } else if (isMedium) {
       riskLevel = 'Medium';
     }
 
     const careGaps: string[] = [];
-    if (newVisit.bleedingSeverity !== 'none') careGaps.push("Requires active bleeding monitoring");
-    if (newVisit.painLevel !== 'none') careGaps.push("Requires pelvic pain management check");
-    if (newVisit.fever || newVisit.foulDischarge) careGaps.push("Flagged for potential systemic infection follow-up");
+    if (riskLevel === 'High') {
+      careGaps.push("Seek immediate medical care");
+    } else if (riskLevel === 'Medium') {
+      careGaps.push("Visit clinic within 24-48 hrs");
+      careGaps.push("Consider ultrasound assessment");
+      careGaps.push("Follow up with health care provider");
+    } else {
+      careGaps.push("Continue monitoring");
+      careGaps.push("Stay hydrated");
+      careGaps.push("Attend routine ANC Care");
+      careGaps.push("Repeat assessment if symptoms worsen");
+    }
 
     const chwNames: Record<string, string> = {
       'chw_tomi': 'Nurse Tomi',
@@ -140,8 +183,6 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       age: Number(newVisit.age) || 25,
       location: newVisit.location,
       pregnancyWeek: Number(newVisit.pregnancyWeek) || 8,
-      bleedingSeverity: newVisit.bleedingSeverity,
-      painLevel: newVisit.painLevel,
       riskLevel: riskLevel,
       prediction: riskLevel === 'High' ? 0 : 1, 
       probability: riskLevel === 'High' ? 0.85 : 0.45,
@@ -176,12 +217,20 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       age: '25',
       location: 'Lagos Mainland',
       pregnancyWeek: '8',
-      bleedingSeverity: 'none',
-      painLevel: 'none',
+      nausea: false,
+      vomiting: 'none',
+      headache: 'none',
+      dizziness: 'none',
+      spotting: false,
+      heavyBleeding: false,
+      passingClots: false,
+      abdominalPain: 'none',
+      pelvicPainOneSided: false,
       fever: false,
       chills: false,
-      fainting: false,
       foulDischarge: false,
+      fainting: false,
+      prevMiscarriage: false,
       notes: '',
       recommendations: '',
       phone: '',
@@ -197,8 +246,24 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
         age: localRecord.age,
         location: localRecord.location,
         pregnancyWeek: localRecord.pregnancyWeek,
-        bleedingSeverity: localRecord.bleedingSeverity,
-        painLevel: localRecord.painLevel,
+        symptoms: {
+          nausea: newVisit.nausea,
+          vomiting: newVisit.vomiting,
+          headache: newVisit.headache,
+          dizziness: newVisit.dizziness,
+          spotting: newVisit.spotting,
+          heavyBleeding: newVisit.heavyBleeding,
+          passingClots: newVisit.passingClots,
+          abdominalPain: newVisit.abdominalPain,
+          pelvicPainOneSided: newVisit.pelvicPainOneSided,
+          fever: newVisit.fever,
+          chills: newVisit.chills,
+          foulDischarge: newVisit.foulDischarge,
+          faintingOrLossOfConsciousness: newVisit.fainting
+        },
+        history: {
+          priorMiscarriage: newVisit.prevMiscarriage
+        },
         riskLevel: localRecord.riskLevel,
         prediction: localRecord.prediction, 
         probability: localRecord.probability,
@@ -1077,40 +1142,77 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Bleeding Severity</label>
+                      <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Vomiting Severity</label>
                       <select 
-                        value={newVisit.bleedingSeverity}
-                        onChange={e => setNewVisit(prev => ({ ...prev, bleedingSeverity: e.target.value }))}
+                        value={newVisit.vomiting}
+                        onChange={e => setNewVisit(prev => ({ ...prev, vomiting: e.target.value }))}
                         className="w-full bg-slate-50 border border-slate-100 text-xs font-bold text-slate-800 rounded-xl px-3 py-2 outline-none"
                       >
                         <option value="none">None</option>
-                        <option value="spotting">Spotting</option>
-                        <option value="moderate">Moderate Active</option>
-                        <option value="heavy">Heavy Saturation</option>
+                        <option value="mild">Mild</option>
+                        <option value="frequent">Frequent</option>
+                        <option value="food-down">Can't Keep Food Down</option>
+                        <option value="medication-down">Can't Keep Medication Down</option>
                       </select>
                     </div>
                     
                     <div className="space-y-1">
-                      <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Pain Level</label>
+                      <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Abdominal Pain / Cramps</label>
                       <select 
-                        value={newVisit.painLevel}
-                        onChange={e => setNewVisit(prev => ({ ...prev, painLevel: e.target.value }))}
+                        value={newVisit.abdominalPain}
+                        onChange={e => setNewVisit(prev => ({ ...prev, abdominalPain: e.target.value }))}
                         className="w-full bg-slate-50 border border-slate-100 text-xs font-bold text-slate-800 rounded-xl px-3 py-2 outline-none"
                       >
                         <option value="none">None</option>
                         <option value="mild">Mild Pain</option>
-                        <option value="moderate">Moderate Pain</option>
-                        <option value="severe">Severe / Acute Pain</option>
+                        <option value="moderate">Moderate / Persistent</option>
+                        <option value="severe">Severe Pain</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <div className="space-y-1">
+                      <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Headache Severity</label>
+                      <select 
+                        value={newVisit.headache}
+                        onChange={e => setNewVisit(prev => ({ ...prev, headache: e.target.value }))}
+                        className="w-full bg-slate-50 border border-slate-100 text-xs font-bold text-slate-800 rounded-xl px-3 py-2 outline-none"
+                      >
+                        <option value="none">None</option>
+                        <option value="mild">Mild</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="severe">Severe</option>
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">Dizziness Intensity</label>
+                      <select 
+                        value={newVisit.dizziness}
+                        onChange={e => setNewVisit(prev => ({ ...prev, dizziness: e.target.value }))}
+                        className="w-full bg-slate-50 border border-slate-100 text-xs font-bold text-slate-800 rounded-xl px-3 py-2 outline-none"
+                      >
+                        <option value="none">None</option>
+                        <option value="mild">Mild / Improves with rest</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="severe">Severe</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {[
-                      { k: 'fever', l: 'Pyrexia / Fever (≥38.0°C)' },
+                      { k: 'nausea', l: 'Nausea' },
+                      { k: 'spotting', l: 'Spotting / Light Spotting' },
+                      { k: 'heavyBleeding', l: 'Heavy Bleeding' },
+                      { k: 'passingClots', l: 'Passing out Clots' },
+                      { k: 'pelvicPainOneSided', l: 'One-Sided Pelvic Pain' },
+                      { k: 'fever', l: 'Fever / Pyrexia (≥38°C)' },
                       { k: 'chills', l: 'Rigor / Chills / Shivers' },
+                      { k: 'foulDischarge', l: 'Foul Vaginal Discharge' },
                       { k: 'fainting', l: 'Syncope / Fainting' },
-                      { k: 'foulDischarge', l: 'Purulent Vaginal Discharge' }
+                      { k: 'prevMiscarriage', l: 'History of Miscarriage' }
                     ].map(symp => (
                       <button
                         key={symp.k}

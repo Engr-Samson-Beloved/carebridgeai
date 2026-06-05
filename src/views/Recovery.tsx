@@ -277,7 +277,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = language === 'en' ? 'en-US' : (language === 'fr' ? 'fr-FR' : 'en-US');
+      utterance.lang = language === 'en' ? 'en-US' : (language === 'fr' ? 'fr-FR' : (language === 'sw' ? 'sw-KE' : (language === 'yo' ? 'yo-NG' : 'ha-NG')));
       window.speechSynthesis.speak(utterance);
       setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
@@ -292,58 +292,81 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
-      recognition.lang = language === 'en' ? 'en-US' : 'fr-FR';
+      recognition.lang = language === 'en' ? 'en-US' : (language === 'fr' ? 'fr-FR' : (language === 'sw' ? 'sw-KE' : (language === 'yo' ? 'yo-NG' : 'ha-NG')));
       
       recognition.onresult = (event: any) => {
         const resultText = event.results[0][0].transcript.toLowerCase();
+        const checkAny = (words: string[]) => words.some(w => resultText.includes(w));
         
         if (idx === 1) { // Gastrointestinal
-          if (resultText.includes('nausea') || resultText.includes('sick')) {
+          if (checkAny(['nausea', 'sick', 'queasy', 'nauseous', 'nausée', 'nausee', 'mal au cœur', 'mal au coeur', 'kichefuchefu', 'chefuka', 'inu riru', 'riru inu', 'tashin zuciya'])) {
             setHealthCheck(p => ({ ...p, nausea: true }));
           }
-          if (resultText.includes('vomit') || resultText.includes('throw up')) {
-            if (resultText.includes('mild')) {
-              setHealthCheck(p => ({ ...p, vomiting: 'mild' }));
-            } else if (resultText.includes('food')) {
-              setHealthCheck(p => ({ ...p, vomiting: 'food-down' }));
-            } else if (resultText.includes('med')) {
+          if (checkAny(['vomit', 'throw up', 'throwing up', 'puke', 'vomir', 'vomissement', 'kutapika', 'tapika', 'ebi', 'èébì', 'amai', 'amaye'])) {
+            if (checkAny(['medication', 'meds', 'medicine', 'oògùn', 'oogun', 'magani', 'médicament', 'medicament', 'dawa'])) {
               setHealthCheck(p => ({ ...p, vomiting: 'medication-down' }));
+            } else if (checkAny(['food', 'eat', 'nourriture', 'manger', 'chakula', 'oúnjẹ', 'ounje', 'abinci'])) {
+              setHealthCheck(p => ({ ...p, vomiting: 'food-down' }));
+            } else if (checkAny(['frequent', 'often', 'frequent', 'mara kwa mara', 'loorekoore', 'akai-akai'])) {
+              setHealthCheck(p => ({ ...p, vomiting: 'frequent' }));
+            } else if (checkAny(['mild', 'occasional', 'léger', 'leger', 'modéré', 'modere', 'kidogo', 'dile', 'diẹ', 'die', 'kadan'])) {
+              setHealthCheck(p => ({ ...p, vomiting: 'mild' }));
+            } else {
+              setHealthCheck(p => ({ ...p, vomiting: 'mild' }));
             }
           }
         } else if (idx === 2) { // Neurological
-          if (resultText.includes('headache') || resultText.includes('head')) {
-            if (resultText.includes('severe')) setHealthCheck(p => ({ ...p, headache: 'severe' }));
-            else if (resultText.includes('moderate')) setHealthCheck(p => ({ ...p, headache: 'moderate' }));
-            else if (resultText.includes('mild')) setHealthCheck(p => ({ ...p, headache: 'mild' }));
+          if (checkAny(['headache', 'head', 'migraine', 'mal de tête', 'mal de tete', 'tête', 'tete', 'kichwa', 'maumivu ya kichwa', 'fifo orí', 'fifo ori', 'ori fifo', 'ciwon kai', 'kai'])) {
+            if (checkAny(['severe', 'grave', 'fort', 'mbaya', 'patashika', 'gidi', 'kíkankíkan', 'kikankikan', 'soma', 'tsanani', 'mai tsanani'])) {
+              setHealthCheck(p => ({ ...p, headache: 'severe' }));
+            } else if (checkAny(['moderate', 'moyen', 'kati', 'dọ́ba', 'dọba', 'tsaka-tsaki', 'tsaka tsaki', 'matsakaici'])) {
+              setHealthCheck(p => ({ ...p, headache: 'moderate' }));
+            } else if (checkAny(['mild', 'léger', 'leger', 'mali', 'dile', 'diẹ', 'die', 'kadan'])) {
+              setHealthCheck(p => ({ ...p, headache: 'mild' }));
+            } else {
+              setHealthCheck(p => ({ ...p, headache: 'mild' }));
+            }
           }
-          if (resultText.includes('dizzy') || resultText.includes('dizziness')) {
-            if (resultText.includes('severe')) setHealthCheck(p => ({ ...p, dizziness: 'severe' }));
-            else if (resultText.includes('moderate')) setHealthCheck(p => ({ ...p, dizziness: 'moderate' }));
-            else if (resultText.includes('mild')) setHealthCheck(p => ({ ...p, dizziness: 'mild' }));
+          if (checkAny(['dizzy', 'dizziness', 'lightheaded', 'spinning', 'vertige', 'étourdissement', 'etourdissement', 'tournis', 'kizunguzungu', 'zunguzungu', 'òyì', 'oyi', 'jiri', 'juwa'])) {
+            if (checkAny(['severe', 'grave', 'fort', 'mbaya', 'patashika', 'gidi', 'kíkankíkan', 'kikankikan', 'soma', 'tsanani', 'mai tsanani'])) {
+              setHealthCheck(p => ({ ...p, dizziness: 'severe' }));
+            } else if (checkAny(['moderate', 'moyen', 'kati', 'dọ́ba', 'dọba', 'tsaka-tsaki', 'tsaka tsaki', 'matsakaici'])) {
+              setHealthCheck(p => ({ ...p, dizziness: 'moderate' }));
+            } else if (checkAny(['mild', 'improves', 'rest', 'léger', 'leger', 'repos', 'mali', 'dile', 'diẹ', 'die', 'kadan'])) {
+              setHealthCheck(p => ({ ...p, dizziness: 'mild' }));
+            } else {
+              setHealthCheck(p => ({ ...p, dizziness: 'mild' }));
+            }
           }
         } else if (idx === 3) { // Bleeding & Pain
-          if (resultText.includes('spotting') || resultText.includes('spot')) {
+          if (checkAny(['spotting', 'spot', 'light bleeding', 'taches', 'perte légère', 'perte legere', 'saignement léger', 'saignement leger', 'madoadoa', 'damu kidogo', 'alefọ̀', 'alefo', 'dige-dige', 'ɗugo-ɗugo', 'dugo-dugo'])) {
             setHealthCheck(p => ({ ...p, spotting: true }));
           }
-          if (resultText.includes('pain') || resultText.includes('cramp')) {
-            if (resultText.includes('severe')) setHealthCheck(p => ({ ...p, abdominalPain: 'severe' }));
-            else if (resultText.includes('moderate')) setHealthCheck(p => ({ ...p, abdominalPain: 'moderate' }));
-            else if (resultText.includes('mild')) setHealthCheck(p => ({ ...p, abdominalPain: 'mild' }));
-          }
-          if (resultText.includes('heavy') || resultText.includes('bleeding')) {
+          if (checkAny(['heavy', 'bleeding', 'blood', 'saignement abondant', 'saignement', 'abondant', 'hémorragie', 'hemorragie', 'beaucoup de sang', 'saigne fort', 'damu nyingi', 'eje pupo', 'eje pupọ', 'ẹ̀jẹ̀ púpọ̀', 'jini mai yawa', 'zub da jini'])) {
             setHealthCheck(p => ({ ...p, heavyBleeding: true }));
           }
-          if (resultText.includes('clot') || resultText.includes('clots')) {
+          if (checkAny(['clot', 'tissue', 'lump', 'caillot', 'bonge', 'mabonge', 'didi eje', 'dídì ẹ̀jẹ̀', 'koko eje', 'gudan jini'])) {
             setHealthCheck(p => ({ ...p, passingClots: true }));
           }
-          if (resultText.includes('one sided') || resultText.includes('one-sided')) {
+          if (checkAny(['pain', 'cramp', 'stomach', 'abdomen', 'belly', 'douleur', 'crampe', 'ventre', 'estomac', 'tumbo', 'maumivu ya tumbo', 'roro inu', 'irora inu', 'inu ríro', 'ciwon ciki', 'ciki', 'murdawa'])) {
+            if (checkAny(['severe', 'grave', 'fort', 'mbaya', 'patashika', 'gidi', 'kíkankíkan', 'kikankikan', 'soma', 'tsanani', 'mai tsanani'])) {
+              setHealthCheck(p => ({ ...p, abdominalPain: 'severe' }));
+            } else if (checkAny(['moderate', 'moyen', 'kati', 'dọ́ba', 'dọba', 'tsaka-tsaki', 'tsaka tsaki', 'matsakaici'])) {
+              setHealthCheck(p => ({ ...p, abdominalPain: 'moderate' }));
+            } else if (checkAny(['mild', 'léger', 'leger', 'mali', 'dile', 'diẹ', 'die', 'kadan'])) {
+              setHealthCheck(p => ({ ...p, abdominalPain: 'mild' }));
+            } else {
+              setHealthCheck(p => ({ ...p, abdominalPain: 'mild' }));
+            }
+          }
+          if (checkAny(['one sided', 'one-sided', 'side', 'pelvic', 'hip', 'côté', 'cote', 'un côté', 'un cote', 'upande', 'apá kan', 'apa kan', 'egbe kan', 'gefe guda', 'gefe daya'])) {
             setHealthCheck(p => ({ ...p, pelvicPainOneSided: true }));
           }
         } else if (idx === 4) { // History & Vitals
-          if (resultText.includes('fever') || resultText.includes('hot')) {
+          if (checkAny(['fever', 'hot', 'temperature', 'fièvre', 'fievre', 'chaud', 'homa', 'moto', 'joto', 'ibà', 'iba', 'gbigbona ara', 'gbona', 'zazzabi', 'zafi'])) {
             setHealthCheck(p => ({ ...p, fever: true }));
           }
-          if (resultText.includes('miscarriage')) {
+          if (checkAny(['miscarriage', 'lost pregnancy', 'lost baby', 'abortion', 'fausse couche', 'avortement', 'haribika', 'mimba kuharibika', 'kuharibika kwa mimba', 'isenu', 'ìṣẹ́nú', 'bari', 'zubar da ciki'])) {
             setHealthCheck(p => ({ ...p, prevMiscarriage: true }));
           }
         }
@@ -362,14 +385,45 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
   };
 
   const playVoiceGuideForSection = (idx: number) => {
-    const guides = [
-      "Section 1: Gestational age. Please specify your gestational age in pregnancy weeks.",
-      "Section 2: Gastrointestinal symptoms. Please indicate if you have nausea or vomiting, and specify the vomiting severity.",
-      "Section 3: Neurological symptoms. Please specify if you have a headache or dizziness, and select the severity.",
-      "Section 4: Bleeding and pain. Indicate if you have spotting, abdominal pain, heavy bleeding, passing clots, or one-sided pelvic pain.",
-      "Section 5: History and vitals. Please state if you have a fever or a history of miscarriage."
-    ];
-    if (guides[idx]) speakText(guides[idx]);
+    const guides: Record<Language, string[]> = {
+      en: [
+        "Section 1: Gestational age. Please specify your gestational age in pregnancy weeks.",
+        "Section 2: Gastrointestinal symptoms. Please indicate if you have nausea or vomiting, and specify the vomiting severity.",
+        "Section 3: Neurological symptoms. Please specify if you have a headache or dizziness, and select the severity.",
+        "Section 4: Bleeding and pain. Indicate if you have spotting, abdominal pain, heavy bleeding, passing clots, or one-sided pelvic pain.",
+        "Section 5: History and vitals. Please state if you have a fever or a history of miscarriage."
+      ],
+      fr: [
+        "Section 1 : Âge gestationnel. Veuillez préciser votre âge gestationnel en semaines de grossesse.",
+        "Section 2 : Symptômes gastro-intestinaux. Veuillez indiquer si vous avez des nausées ou des vomissements, et préciser la gravité des vomissements.",
+        "Section 3 : Symptômes neurologiques. Veuillez préciser si vous avez des maux de tête ou des vertiges, et sélectionner l'intensité.",
+        "Section 4 : Saignements et douleurs. Indiquez si vous avez des saignements légers, des douleurs abdominales, des saignements abondants, des caillots ou une douleur pelvienne unilatérale.",
+        "Section 5 : Antécédents et signes vitaux. Veuillez indiquer si vous avez de la fièvre ou des antécédents de fausse couche."
+      ],
+      sw: [
+        "Sehemu ya 1: Umri wa ujauzito. Tafadhali bainisha umri wako wa ujauzito katika wiki.",
+        "Sehemu ya 2: Dalili za tumbo na mmeng'enyo. Tafadhali onyesha ikiwa una kichefuchefu au kutapika, na ubainishe kiwango cha kutapika.",
+        "Sehemu ya 3: Dalili za mfumo wa neva. Tafadhali bainisha ikiwa una maumivu ya kichwa au kizunguzungu, na uchague kiwango.",
+        "Sehemu ya 4: Kutoka damu na maumivu. Onyesha ikiwa una madoadoa ya damu, maumivu ya tumbo, kutoka damu nyingi, mabonge ya damu, au maumivu ya nyonga ya upande mmoja.",
+        "Sehemu ya 5: Historia na viashiria vya afya. Tafadhali taja ikiwa una homa au historia ya kuharibika kwa mimba."
+      ],
+      yo: [
+        "Abala 1: Ọjọ-ori oyun. Jọwọ sọ pato ọjọ-ori oyun rẹ ni awọn ọsẹ oyun.",
+        "Abala 2: Àwọn àmì gastrointestinal. Jọwọ tọka si ti o ba ni ríru tabi eebi, ki o si sọ pato bi eebi rẹ ti ri.",
+        "Abala 3: Àwọn àmì neurological. Jọwọ sọ pato ti o ba ni fífọ́ orí tabi oyi oju, ki o si yan bi o ti ri.",
+        "Abala 4: Ẹ̀jẹ̀ ati irora. Tọka si ti o ba ni àléfọ̀, irora inu, ẹ̀jẹ̀ pupọ, ẹ̀jẹ̀ ti o dì, tabi irora ìgbálẹ̀-abẹ́ apá kan.",
+        "Abala 5: Ìtàn & awọn ami. Jọwọ sọ ti o ba ni ibà tabi ìtàn ìṣẹ́nú tẹ́lẹ̀."
+      ],
+      ha: [
+        "Sashi na 1: Makonnin juna biyu. Da fatan za a bayyana makon cikin ku.",
+        "Sashi na 2: Alamun ciki. Da fatan za a nuna idan kuna jin tashin zuciya ko amai, sannan ku bayyana tsananin aman.",
+        "Sashi na 3: Alamun kwakwalwa da jiki. Da fatan za a bayyana idan kuna da ciwon kai ko juwa, sannan ku zaɓi tsananin.",
+        "Sashi na 4: Zubar jini da ciwo. Nuna idan kuna da zubar jini kaɗan, ciwon ciki, zubar jini mai yawa, fitar da gudan jini, ko ciwon ƙugu na gefe ɗaya.",
+        "Sashi na 5: Tarihi da alamomin jiki. Da fatan za a faɗi idan kuna da zazzabi ko tarihin zubar da ciki a baya."
+      ]
+    };
+    const activeGuide = guides[language] || guides['en'];
+    if (activeGuide[idx]) speakText(activeGuide[idx]);
   };
 
   // Run AI Risk Logic
@@ -392,25 +446,37 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       activeCheck.pelvicPainOneSided ||
       activeCheck.fever;
 
+    // Check if there are any active current symptoms
+    const hasAnyCurrentSymptoms =
+      activeCheck.nausea ||
+      activeCheck.vomiting !== 'none' ||
+      activeCheck.headache !== 'none' ||
+      activeCheck.dizziness !== 'none' ||
+      activeCheck.spotting ||
+      activeCheck.passingClots ||
+      activeCheck.abdominalPain !== 'none' ||
+      activeCheck.pelvicPainOneSided ||
+      activeCheck.fever;
+
     const isMedium = 
       !isHigh && (
-        activeCheck.vomiting === 'mild' ||
+        activeCheck.vomiting === 'frequent' ||
         activeCheck.headache === 'moderate' ||
         activeCheck.dizziness === 'moderate' ||
         activeCheck.abdominalPain === 'moderate' ||
         activeCheck.spotting ||
-        activeCheck.prevMiscarriage
+        (activeCheck.prevMiscarriage && hasAnyCurrentSymptoms)
       );
 
     if (isHigh) {
       riskLevel = 'high';
-      reasonText = "High risk triage classification. Seek immediate medical care.";
+      reasonText = t.highRiskExplanation || "High risk triage classification. Seek immediate medical care.";
     } else if (isMedium) {
       riskLevel = 'moderate';
-      reasonText = "Medium risk triage classification. Visit clinic within 24-48 hrs, consider ultrasound assessment, and follow up with a healthcare provider.";
+      reasonText = t.mediumRiskExplanation || "Medium risk triage classification. Visit clinic within 24-48 hrs, consider ultrasound assessment, and follow up with a healthcare provider.";
     } else {
       riskLevel = 'low';
-      reasonText = "Low risk triage classification. Continue monitoring, stay hydrated, attend routine ANC care, and repeat assessment if symptoms worsen.";
+      reasonText = t.lowRiskExplanation || "Low risk triage classification. Continue monitoring, stay hydrated, attend routine ANC care, and repeat assessment if symptoms worsen.";
     }
 
     // 2. Call the EPL Care AI predict endpoint
@@ -494,12 +560,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         apiSuccess = true;
         
         apiData = {
-          action: riskLevel === 'high' ? 'Seek immediate medical care' : (riskLevel === 'moderate' ? 'Visit clinic within 24-48 hrs' : 'Continue monitoring'),
+          action: riskLevel === 'high' ? (t.recImmediateCare || 'Seek immediate medical care') : (riskLevel === 'moderate' ? (t.recVisitClinic2448 || 'Visit clinic within 24-48 hrs') : (t.recContinueMonitoring || 'Continue monitoring')),
           careGaps: riskLevel === 'high' 
-            ? ['Seek immediate medical care'] 
+            ? [t.recImmediateCare || 'Seek immediate medical care'] 
             : (riskLevel === 'moderate' 
-                ? ['Visit clinic within 24-48 hrs', 'Consider ultrasound assessment', 'Follow up with health care provider'] 
-                : ['Continue monitoring', 'Stay hydrated', 'Attend routine ANC Care', 'Repeat assessment if symptoms worsen']),
+                ? [t.recVisitClinic2448 || 'Visit clinic within 24-48 hrs', t.recConsiderUltrasound || 'Consider ultrasound assessment', t.recFollowUpProvider || 'Follow up with health care provider'] 
+                : [t.recContinueMonitoring || 'Continue monitoring', t.recStayHydrated || 'Stay hydrated', t.recAttendAnc || 'Attend routine ANC Care', t.recRepeatAssessment || 'Repeat assessment if symptoms worsen']),
           equityFlags: result.equity_flags || [],
           mentalHealthFlag: result.mental_health_flag || false,
           mentalHealthNote: result.mental_health_note || "No immediate mental health concerns.",
@@ -518,12 +584,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       const isModRisk = riskLevel === 'moderate';
       
       apiData = {
-        action: isHighRisk ? "Seek immediate medical care" : (isModRisk ? "Visit clinic within 24-48 hrs" : "Continue monitoring"),
+        action: isHighRisk ? (t.recImmediateCare || "Seek immediate medical care") : (isModRisk ? (t.recVisitClinic2448 || "Visit clinic within 24-48 hrs") : (t.recContinueMonitoring || "Continue monitoring")),
         careGaps: isHighRisk 
-          ? ["Seek immediate medical care"] 
+          ? [t.recImmediateCare || "Seek immediate medical care"] 
           : (isModRisk 
-              ? ["Visit clinic within 24-48 hrs", "Consider ultrasound assessment", "Follow up with health care provider"] 
-              : ["Continue monitoring", "Stay hydrated", "Attend routine ANC Care", "Repeat assessment if symptoms worsen"]),
+              ? [t.recVisitClinic2448 || "Visit clinic within 24-48 hrs", t.recConsiderUltrasound || "Consider ultrasound assessment", t.recFollowUpProvider || "Follow up with health care provider"] 
+              : [t.recContinueMonitoring || "Continue monitoring", t.recStayHydrated || "Stay hydrated", t.recAttendAnc || "Attend routine ANC Care", t.recRepeatAssessment || "Repeat assessment if symptoms worsen"]),
         equityFlags: [],
         mentalHealthFlag: (mood !== null && mood <= 2),
         mentalHealthNote: (mood !== null && mood <= 2) ? "Patient flags emotional distress. Support group referral recommended." : "No immediate mental health risks flagged.",
@@ -660,12 +726,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
   const sections = [
     {
-      title: "Gestational Age Status",
+      title: t.gestationalAgeStatus || "Gestational Age Status",
       icon: Calendar,
       content: (
         <div className="space-y-4">
           <div className="flex flex-col gap-2">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Pregnancy Duration (Weeks)</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t.pregnancyDuration || "Pregnancy Duration (Weeks)"}</span>
             <div className="flex items-center gap-4 bg-slate-100/50 p-2.5 rounded-2xl border border-slate-200/50">
               <button
                 type="button"
@@ -676,7 +742,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
               </button>
               <div className="flex-1 text-center">
                 <span className="text-xl font-black text-[#0F4C81]">{healthCheck.pregnancyWeek}</span>
-                <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wide block">Weeks Gestation</span>
+                <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wide block">{t.pregnancyWeeks || "Weeks Gestation"}</span>
               </div>
               <button
                 type="button"
@@ -688,7 +754,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
             </div>
             
             <div className="flex flex-col gap-1 mt-2.5">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Select LGA/District</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t.selectLgaDistrict || "Select LGA/District"}</span>
               <select
                 value={healthCheck.location || 'Lagos Mainland'}
                 onChange={(e) => setHealthCheck(prev => ({ ...prev, location: e.target.value }))}
@@ -710,12 +776,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Gastrointestinal Symptoms",
+      title: t.step1Title || "Gastrointestinal Symptoms",
       icon: Droplets,
       content: (
         <div className="space-y-4">
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700">Experiencing Nausea?</span>
+            <span className="text-xs font-bold text-slate-700">{t.nauseaLabel || "Experiencing Nausea?"}</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -724,26 +790,27 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                   onClick={() => setHealthCheck(prev => ({ ...prev, nausea: val }))}
                   className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.nausea === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
-                  {val ? 'Yes' : 'No'}
+                  {val ? (t.yes || 'Yes') : (t.no || 'No')}
                 </button>
               ))}
             </div>
           </div>
           
           <div className="space-y-1.5 border-t border-slate-100/50 pt-3">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Vomiting Severity</span>
-            <div className="grid grid-cols-4 gap-1.5">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t.vomitingLabel || "Vomiting Severity"}</span>
+            <div className="flex flex-wrap gap-1.5">
               {[
-                { k: 'none', l: 'None' },
-                { k: 'mild', l: 'Mild' },
-                { k: 'food-down', l: "Can't Keep Food Down" },
-                { k: 'medication-down', l: "Can't Keep Meds" }
+                { k: 'none', l: t.vomitNone || 'None' },
+                { k: 'mild', l: t.vomitMild || 'Mild' },
+                { k: 'frequent', l: t.vomitFrequent || 'Frequent' },
+                { k: 'food-down', l: t.vomitFoodDown || "Can't Keep Food Down" },
+                { k: 'medication-down', l: t.vomitMedsDown || "Can't Keep Meds" }
               ].map(opt => (
                 <button
                   key={opt.k}
                   type="button"
                   onClick={() => setHealthCheck(prev => ({ ...prev, vomiting: opt.k }))}
-                  className={`py-2 px-1 text-[9px] font-black uppercase rounded-xl border transition-all ${healthCheck.vomiting === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-2 px-2.5 text-[9px] font-black uppercase rounded-xl border transition-all ${healthCheck.vomiting === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {opt.l}
                 </button>
@@ -754,18 +821,18 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Neurological Symptoms",
+      title: t.step2Title || "Neurological Symptoms",
       icon: HeartPulse,
       content: (
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Headache Severity</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t.headacheLabel || "Headache Severity"}</span>
             <div className="grid grid-cols-4 gap-1.5">
               {[
-                { k: 'none', l: 'None' },
-                { k: 'mild', l: 'Mild' },
-                { k: 'moderate', l: 'Moderate' },
-                { k: 'severe', l: 'Severe' }
+                { k: 'none', l: t.none || 'None' },
+                { k: 'mild', l: t.mild || 'Mild' },
+                { k: 'moderate', l: t.moderate || 'Moderate' },
+                { k: 'severe', l: t.severe || 'Severe' }
               ].map(opt => (
                 <button
                   key={opt.k}
@@ -780,13 +847,13 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
           </div>
 
           <div className="space-y-1.5 border-t border-slate-100/50 pt-3">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Dizziness Severity</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t.dizzinessLabel || "Dizziness Severity"}</span>
             <div className="grid grid-cols-4 gap-1.5">
               {[
-                { k: 'none', l: 'None' },
-                { k: 'mild', l: 'Mild' },
-                { k: 'moderate', l: 'Moderate' },
-                { k: 'severe', l: 'Severe' }
+                { k: 'none', l: t.none || 'None' },
+                { k: 'mild', l: t.mild || 'Mild' },
+                { k: 'moderate', l: t.moderate || 'Moderate' },
+                { k: 'severe', l: t.severe || 'Severe' }
               ].map(opt => (
                 <button
                   key={opt.k}
@@ -803,13 +870,13 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Bleeding & Pain Symptoms",
+      title: t.step3Title || "Bleeding & Pain Symptoms",
       icon: Activity,
       content: (
         <div className="space-y-3">
           {/* Spotting */}
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700">Spotting?</span>
+            <span className="text-xs font-bold text-slate-700">{t.spottingLabel || "Spotting?"}</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -818,7 +885,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                   onClick={() => setHealthCheck(prev => ({ ...prev, spotting: val }))}
                   className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.spotting === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
-                  {val ? 'Yes' : 'No'}
+                  {val ? (t.yes || 'Yes') : (t.no || 'No')}
                 </button>
               ))}
             </div>
@@ -826,13 +893,13 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
           {/* Abdominal Pain */}
           <div className="space-y-1.5 border-t border-slate-100/50 pt-3">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Abdominal Pain</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t.abdominalPainLabel || "Abdominal Pain"}</span>
             <div className="grid grid-cols-4 gap-1.5">
               {[
-                { k: 'none', l: 'None' },
-                { k: 'mild', l: 'Mild' },
-                { k: 'moderate', l: 'Moderate' },
-                { k: 'severe', l: 'Severe' }
+                { k: 'none', l: t.none || 'None' },
+                { k: 'mild', l: t.mild || 'Mild' },
+                { k: 'moderate', l: t.moderate || 'Moderate' },
+                { k: 'severe', l: t.severe || 'Severe' }
               ].map(opt => (
                 <button
                   key={opt.k}
@@ -848,7 +915,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
           {/* Heavy Bleeding */}
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-3">
-            <span className="text-xs font-bold text-slate-700">Heavy Bleeding?</span>
+            <span className="text-xs font-bold text-slate-700">{t.heavyBleedingLabel || "Heavy Bleeding?"}</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -857,7 +924,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                   onClick={() => setHealthCheck(prev => ({ ...prev, heavyBleeding: val }))}
                   className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.heavyBleeding === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
-                  {val ? 'Yes' : 'No'}
+                  {val ? (t.yes || 'Yes') : (t.no || 'No')}
                 </button>
               ))}
             </div>
@@ -865,7 +932,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
           {/* Passing Clots */}
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-3">
-            <span className="text-xs font-bold text-slate-700">Passing out Clots?</span>
+            <span className="text-xs font-bold text-slate-700">{t.passingClotsLabel || "Passing out Clots?"}</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -874,7 +941,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                   onClick={() => setHealthCheck(prev => ({ ...prev, passingClots: val }))}
                   className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.passingClots === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
-                  {val ? 'Yes' : 'No'}
+                  {val ? (t.yes || 'Yes') : (t.no || 'No')}
                 </button>
               ))}
             </div>
@@ -882,7 +949,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
           {/* Pelvic Pain: One Sided */}
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-3">
-            <span className="text-xs font-bold text-slate-700">Pelvic Pain: One Sided?</span>
+            <span className="text-xs font-bold text-slate-700">{t.pelvicPainOneSidedLabel || "Pelvic Pain: One Sided?"}</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -891,7 +958,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                   onClick={() => setHealthCheck(prev => ({ ...prev, pelvicPainOneSided: val }))}
                   className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.pelvicPainOneSided === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
-                  {val ? 'Yes' : 'No'}
+                  {val ? (t.yes || 'Yes') : (t.no || 'No')}
                 </button>
               ))}
             </div>
@@ -900,13 +967,13 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "History & Vitals",
+      title: t.step4Title || "History & Vitals",
       icon: Thermometer,
       content: (
         <div className="space-y-3">
           {/* Fever */}
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700">Fever / Pyrexia?</span>
+            <span className="text-xs font-bold text-slate-700">{t.feverLabel || "Fever / Pyrexia?"}</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -915,7 +982,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                   onClick={() => setHealthCheck(prev => ({ ...prev, fever: val }))}
                   className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.fever === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
-                  {val ? 'Yes' : 'No'}
+                  {val ? (t.yes || 'Yes') : (t.no || 'No')}
                 </button>
               ))}
             </div>
@@ -923,7 +990,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
           {/* Previous Miscarriage */}
           <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-3">
-            <span className="text-xs font-bold text-slate-700">Previous Miscarriage?</span>
+            <span className="text-xs font-bold text-slate-700">{t.prevMiscarriageLabel || "Previous Miscarriage?"}</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
@@ -932,7 +999,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                   onClick={() => setHealthCheck(prev => ({ ...prev, prevMiscarriage: val }))}
                   className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.prevMiscarriage === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
-                  {val ? 'Yes' : 'No'}
+                  {val ? (t.yes || 'Yes') : (t.no || 'No')}
                 </button>
               ))}
             </div>
@@ -1033,7 +1100,9 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                               ? 'bg-amber-500 text-white' 
                               : 'bg-emerald-600 text-white')
                       }`}>
-                        {assessmentResult.risk} RISK
+                        {assessmentResult.risk === 'high' ? (t.highRisk || 'HIGH RISK') :
+                         assessmentResult.risk === 'moderate' ? (t.mediumRisk || 'MEDIUM RISK') :
+                         (t.lowRisk || 'LOW RISK')}
                       </Badge>
                     </div>
 
@@ -1426,7 +1495,9 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                               ? 'bg-amber-500 text-white' 
                               : 'bg-emerald-600 text-white')
                       }`}>
-                        {assessmentResult.risk} RISK STATUS
+                        {assessmentResult.risk === 'high' ? (t.highRisk || 'HIGH RISK') :
+                         assessmentResult.risk === 'moderate' ? (t.mediumRisk || 'MEDIUM RISK') :
+                         (t.lowRisk || 'LOW RISK')}
                       </Badge>
                     </div>
 
@@ -2025,7 +2096,9 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                                   ? 'bg-amber-500' 
                                   : 'bg-emerald-600')
                           }`}>
-                            {item.riskLevel} RISK
+                            {item.riskLevel === 'High' ? (t.highRisk || 'HIGH RISK') :
+                             item.riskLevel === 'Medium' ? (t.mediumRisk || 'MEDIUM RISK') :
+                             (t.lowRisk || 'LOW RISK')}
                           </Badge>
                         </div>
                         

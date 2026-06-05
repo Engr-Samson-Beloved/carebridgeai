@@ -85,7 +85,9 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
       formData.fever ||
       formData.chills ||
       formData.foulDischarge ||
-      formData.dizziness === 'severe';
+      formData.dizziness === 'severe' ||
+      formData.vomiting === 'food-down' ||
+      formData.vomiting === 'medication-down';
 
     // Check if there are any active current symptoms
     const hasAnyCurrentSymptoms =
@@ -137,20 +139,20 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
   const getStaticRecommendations = (level: RiskLevel) => {
     if (level === RiskLevel.HIGH) {
       return [
-        "Seek immediate medical care"
+        t.recImmediateCare || "Seek immediate medical care"
       ];
     } else if (level === RiskLevel.MODERATE) {
       return [
-        "Visit clinic within 24-48 hrs",
-        "Consider ultrasound assessment",
-        "Follow up with health care provider"
+        t.recVisitClinic2448 || "Visit clinic within 24-48 hrs",
+        t.recConsiderUltrasound || "Consider ultrasound assessment",
+        t.recFollowUpProvider || "Follow up with health care provider"
       ];
     } else {
       return [
-        "Continue monitoring",
-        "Stay hydrated",
-        "Attend routine ANC Care",
-        "Repeat assessment if symptoms worsen"
+        t.recContinueMonitoring || "Continue monitoring",
+        t.recStayHydrated || "Stay hydrated",
+        t.recAttendAnc || "Attend routine ANC Care",
+        t.recRepeatAssessment || "Repeat assessment if symptoms worsen"
       ];
     }
   };
@@ -204,10 +206,10 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
     aiOutput.recommendations = staticRecs;
     if (!aiOutput.explanation) {
       aiOutput.explanation = level === RiskLevel.HIGH
-        ? "Critical triage warning: Urgent medical attention is required. Please seek immediate medical care."
+        ? (t.highRiskExplanation || "Critical triage warning: Urgent medical attention is required. Please seek immediate medical care.")
         : level === RiskLevel.MODERATE
-        ? "Moderate clinical indicators flagged. You should visit a clinic within 24 to 48 hours for a medical review and consider an ultrasound assessment."
-        : "Stable early pregnancy signs. Continue monitoring, rest, and attend routine care.";
+        ? (t.mediumRiskExplanation || "Moderate clinical indicators flagged. You should visit a clinic within 24 to 48 hours for a medical review and consider an ultrasound assessment.")
+        : (t.lowRiskExplanation || "Stable early pregnancy signs. Continue monitoring, rest, and attend routine care.");
     }
 
     // Save to Firestore (Non-blocking)
@@ -301,7 +303,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
             onClick={() => onChange(val)}
             className={`py-1.5 px-4 text-xs font-black uppercase rounded-lg border transition-all ${value === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
           >
-            {val ? 'Yes' : 'No'}
+            {val ? (t.yes || 'Yes') : (t.no || 'No')}
           </button>
         ))}
       </div>
@@ -336,8 +338,8 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
           >
             <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Pregnancy & Core Symptoms</h2>
-                <p className="text-slate-500">Provide gestation duration and core gastrointestinal signs.</p>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t.step1Title || "Pregnancy & Core Symptoms"}</h2>
+                <p className="text-slate-500">{t.step1Desc || "Provide gestation duration and core gastrointestinal signs."}</p>
               </div>
               <Button
                 variant="outline"
@@ -367,7 +369,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
                ) : (
                  <>
                    <div className="text-5xl font-black text-primary tracking-tighter">{formData.pregnancyWeek}</div>
-                   <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pregnancy Weeks</div>
+                   <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t.pregnancyWeeks || "Pregnancy Weeks"}</div>
                    <div className="flex gap-4 mt-2">
                       <Button variant="outline" className="rounded-2xl w-12 h-10" onClick={() => setFormData(prev => ({...prev, pregnancyWeek: Math.max(1, prev.pregnancyWeek - 1)}))}>-</Button>
                       <Button variant="outline" className="rounded-2xl w-12 h-10" onClick={() => setFormData(prev => ({...prev, pregnancyWeek: prev.pregnancyWeek + 1}))}>+</Button>
@@ -378,18 +380,20 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
 
             {/* Nausea */}
             <ToggleRow 
-              label="Experiencing Mild Nausea ('morning sickness')?"
+              label={t.nauseaLabel || "Experiencing Mild Nausea ('morning sickness')?"}
               value={formData.nausea}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, nausea: val }))}
             />
 
             {/* Vomiting */}
             <SelectionRow 
-              label="Vomiting Frequency"
+              label={t.vomitingLabel || "Vomiting Severity"}
               options={[
-                { value: 'none', label: 'None' },
-                { value: 'occasional', label: 'Occasional' },
-                { value: 'frequent', label: 'Frequent' }
+                { value: 'none', label: t.vomitNone || 'None' },
+                { value: 'occasional', label: t.vomitMild || 'Occasional' },
+                { value: 'frequent', label: t.vomitFrequent || 'Frequent' },
+                { value: 'food-down', label: t.vomitFoodDown || "Can't Keep Food Down" },
+                { value: 'medication-down', label: t.vomitMedsDown || "Can't Keep Meds Down" }
               ]}
               currentValue={formData.vomiting}
               onChange={(val: string) => setFormData(prev => ({ ...prev, vomiting: val }))}
@@ -397,13 +401,13 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
 
             {/* Reduced Appetite */}
             <ToggleRow 
-              label="Reduced Appetite?"
+              label={t.appetiteLabel || "Reduced Appetite?"}
               value={formData.reducedAppetite}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, reducedAppetite: val }))}
             />
 
             <Button size="lg" className="mt-8 rounded-2xl h-12" onClick={() => setStep(2)}>
-              Next Step
+              {t.nextStep || "Next Step"}
               <ChevronRight size={20} />
             </Button>
           </motion.div>
@@ -418,18 +422,18 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
             className="flex flex-col gap-6"
           >
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Neurological & General Vitals</h2>
-              <p className="text-slate-500">Provide details on headache, dizziness, or bodily fatigue.</p>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">{t.step2Title || "Neurological & General Vitals"}</h2>
+              <p className="text-slate-500">{t.step2Desc || "Provide details on headache, dizziness, or bodily fatigue."}</p>
             </div>
 
             {/* Headache */}
             <SelectionRow 
-              label="Headache Severity"
+              label={t.headacheLabel || "Headache Severity"}
               options={[
-                { value: 'none', label: 'None' },
-                { value: 'mild', label: 'Mild' },
-                { value: 'moderate', label: 'Moderate' },
-                { value: 'severe', label: 'Severe' }
+                { value: 'none', label: t.none || 'None' },
+                { value: 'mild', label: t.mild || 'Mild' },
+                { value: 'moderate', label: t.moderate || 'Moderate' },
+                { value: 'severe', label: t.severe || 'Severe' }
               ]}
               currentValue={formData.headache}
               onChange={(val: string) => setFormData(prev => ({ ...prev, headache: val }))}
@@ -437,12 +441,12 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
 
             {/* Dizziness */}
             <SelectionRow 
-              label="Dizziness Intensity"
+              label={t.dizzinessLabel || "Dizziness Intensity"}
               options={[
-                { value: 'none', label: 'None' },
-                { value: 'improves-with-rest', label: 'Improves with Rest' },
-                { value: 'moderate', label: 'Moderate' },
-                { value: 'severe', label: 'Severe' }
+                { value: 'none', label: t.none || 'None' },
+                { value: 'improves-with-rest', label: t.improvesWithRest || 'Improves with Rest' },
+                { value: 'moderate', label: t.moderate || 'Moderate' },
+                { value: 'severe', label: t.severe || 'Severe' }
               ]}
               currentValue={formData.dizziness}
               onChange={(val: string) => setFormData(prev => ({ ...prev, dizziness: val }))}
@@ -450,27 +454,27 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
 
             {/* Tiredness */}
             <ToggleRow 
-              label="Experiencing Tiredness / Fatigue?"
+              label={t.tirednessLabel || "Experiencing Tiredness / Fatigue?"}
               value={formData.tiredness}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, tiredness: val }))}
             />
 
             {/* Breast Tenderness */}
             <ToggleRow 
-              label="Breast Tenderness?"
+              label={t.breastTendernessLabel || "Breast Tenderness?"}
               value={formData.breastTenderness}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, breastTenderness: val }))}
             />
 
             {/* Increased Urination */}
             <ToggleRow 
-              label="Increased Urination?"
+              label={t.urinationLabel || "Increased Urination?"}
               value={formData.increasedUrination}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, increasedUrination: val }))}
             />
 
             <Button size="lg" className="mt-8 rounded-2xl h-12" onClick={() => setStep(3)}>
-              Continue
+              {t.continue || "Continue"}
               <ChevronRight size={20} />
             </Button>
           </motion.div>
@@ -485,40 +489,40 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
             className="flex flex-col gap-6"
           >
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Bleeding & Pain Indicators</h2>
-              <p className="text-slate-500">Provide signs related to hemorrhaging, cramps, or localized pain.</p>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">{t.step3Title || "Bleeding & Pain Indicators"}</h2>
+              <p className="text-slate-500">{t.step3Desc || "Provide signs related to hemorrhaging, cramps, or localized pain."}</p>
             </div>
 
             <div className="space-y-4">
               {/* Spotting */}
               <ToggleRow 
-                label="Experiencing Light Spotting?"
+                label={t.spottingLabel || "Experiencing Light Spotting?"}
                 value={formData.spotting}
                 onChange={(val: boolean) => setFormData(prev => ({ ...prev, spotting: val }))}
               />
 
               {/* Heavy Bleeding */}
               <ToggleRow 
-                label="Heavy Bleeding?"
+                label={t.heavyBleedingLabel || "Heavy Bleeding?"}
                 value={formData.heavyBleeding}
                 onChange={(val: boolean) => setFormData(prev => ({ ...prev, heavyBleeding: val }))}
               />
 
               {/* Passing Clots */}
               <ToggleRow 
-                label="Passing Clots or Tissue?"
+                label={t.passingClotsLabel || "Passing Clots or Tissue?"}
                 value={formData.passingClots}
                 onChange={(val: boolean) => setFormData(prev => ({ ...prev, passingClots: val }))}
               />
 
               {/* Abdominal Pain */}
               <SelectionRow 
-                label="Abdominal Pain / Cramps"
+                label={t.abdominalPainLabel || "Abdominal Pain / Cramps"}
                 options={[
-                  { value: 'none', label: 'None' },
-                  { value: 'mild', label: 'Mild Pain' },
-                  { value: 'moderate', label: 'Moderate / Persistent' },
-                  { value: 'severe', label: 'Severe Pain' }
+                  { value: 'none', label: t.none || 'None' },
+                  { value: 'mild', label: t.mildPain || 'Mild Pain' },
+                  { value: 'moderate', label: t.moderatePain || 'Moderate / Persistent' },
+                  { value: 'severe', label: t.severePain || 'Severe Pain' }
                 ]}
                 currentValue={formData.abdominalPain}
                 onChange={(val: string) => setFormData(prev => ({ ...prev, abdominalPain: val }))}
@@ -526,14 +530,14 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
 
               {/* Pelvic Pain One-sided */}
               <ToggleRow 
-                label="Pelvic Pain: One Sided?"
+                label={t.pelvicPainOneSidedLabel || "Pelvic Pain: One Sided?"}
                 value={formData.pelvicPainOneSided}
                 onChange={(val: boolean) => setFormData(prev => ({ ...prev, pelvicPainOneSided: val }))}
               />
             </div>
 
             <Button size="lg" className="mt-6 rounded-2xl h-12 shadow-lg shadow-primary/20" onClick={() => setStep(4)}>
-              Review Risk Factors
+              {t.reviewRiskFactors || "Review Risk Factors"}
               <ChevronRight size={20} />
             </Button>
           </motion.div>
@@ -548,41 +552,41 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
             className="flex flex-col gap-6"
           >
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Vitals & Clinical History</h2>
-              <p className="text-slate-500">Provide systemic signs or historic miscarriage factors.</p>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">{t.step4Title || "Vitals & Clinical History"}</h2>
+              <p className="text-slate-500">{t.step4Desc || "Provide systemic signs or historic miscarriage factors."}</p>
             </div>
 
             {/* Fever */}
             <ToggleRow 
-              label="Fever / High Fever?"
+              label={t.feverLabel || "Fever / High Fever?"}
               value={formData.fever}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, fever: val }))}
             />
 
             {/* Chills */}
             <ToggleRow 
-              label="Rigor / Chills / Shivering?"
+              label={t.chillsLabel || "Rigor / Chills / Shivering?"}
               value={formData.chills}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, chills: val }))}
             />
 
             {/* Foul Discharge */}
             <ToggleRow 
-              label="Foul-smelling Vaginal Discharge?"
+              label={t.foulDischargeLabel || "Foul-smelling Vaginal Discharge?"}
               value={formData.foulDischarge}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, foulDischarge: val }))}
             />
 
             {/* Fainting */}
             <ToggleRow 
-              label="Fainting / Loss of Consciousness?"
+              label={t.faintingLabel || "Fainting / Loss of Consciousness?"}
               value={formData.faintingOrLossOfConsciousness}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, faintingOrLossOfConsciousness: val }))}
             />
 
             {/* Previous Miscarriage */}
             <ToggleRow 
-              label="Previous Miscarriage History?"
+              label={t.prevMiscarriageLabel || "Previous Miscarriage History?"}
               value={formData.prevMiscarriage}
               onChange={(val: boolean) => setFormData(prev => ({ ...prev, prevMiscarriage: val }))}
             />
@@ -610,7 +614,7 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
                 </>
               ) : (
                 <>
-                  Generate AI Assessment
+                  {t.finishAssessment || "Generate AI Assessment"}
                   <ChevronRight size={20} />
                 </>
               )}
@@ -643,7 +647,11 @@ export function Assessment({ onBack, onComplete, language, prefs }: AssessmentPr
               <h2 className={`text-4xl font-black tracking-tight mb-2 ${
                 result.riskLevel === RiskLevel.HIGH ? 'text-[#FF6B6B]' :
                 result.riskLevel === RiskLevel.MODERATE ? 'text-orange-500' : 'text-emerald-600'
-              }`}>{result.riskLevel} Risk</h2>
+              }`}>
+                {result.riskLevel === RiskLevel.HIGH ? (t.highRisk || 'HIGH RISK') :
+                 result.riskLevel === RiskLevel.MODERATE ? (t.mediumRisk || 'MEDIUM RISK') :
+                 (t.lowRisk || 'LOW RISK')}
+              </h2>
               <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">Maternal Care Triage Result</p>
             </div>
 
