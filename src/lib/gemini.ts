@@ -48,12 +48,17 @@ export async function explainRisk(assessment: any) {
   const prompt = `
     Conduct a medical risk assessment explanation for a pregnant user with the following data:
     - Pregnancy Week: ${assessment.pregnancyWeek}
-    - Bleeding Level (0-3): ${assessment.symptoms.bleeding}
-    - Abdominal Pain (0-3): ${assessment.symptoms.abdominalPain}
+    - Nausea: ${assessment.symptoms.nausea ? 'Yes' : 'No'}
+    - Vomiting: ${assessment.symptoms.vomiting}
+    - Headache: ${assessment.symptoms.headache}
     - Dizziness: ${assessment.symptoms.dizziness}
-    - Fever: ${assessment.symptoms.fever}
-    - Hypertension: ${assessment.symptoms.hypertension}
-    - Prior Miscarriage: ${assessment.history.priorMiscarriage}
+    - Spotting: ${assessment.symptoms.spotting ? 'Yes' : 'No'}
+    - Abdominal Pain: ${assessment.symptoms.abdominalPain}
+    - Heavy Bleeding: ${assessment.symptoms.heavyBleeding ? 'Yes' : 'No'}
+    - Passing Clots: ${assessment.symptoms.passingClot || assessment.symptoms.passingClots ? 'Yes' : 'No'}
+    - Pelvic Pain (One-sided): ${assessment.symptoms.pelvicPainOneSided ? 'Yes' : 'No'}
+    - Fever: ${assessment.symptoms.fever ? 'Yes' : 'No'}
+    - Prior Miscarriage History: ${assessment.history.priorMiscarriage ? 'Yes' : 'No'}
     
     The calculated Risk Level is: ${assessment.riskLevel}.
     
@@ -85,7 +90,11 @@ export async function explainRisk(assessment: any) {
     console.error("Gemini Error:", error);
     return {
       explanation: "Unable to generate detailed AI reasoning at this moment. Please consult a healthcare provider immediately.",
-      recommendations: ["Seek immediate medical attention if symptoms persist.", "Monitor vitals."]
+      recommendations: assessment.riskLevel === 'High' 
+        ? ["Seek immediate medical care"] 
+        : assessment.riskLevel === 'Medium' || assessment.riskLevel === 'Moderate'
+        ? ["Visit clinic within 24-48 hrs", "Consider ultrasound assessment", "Follow up with health care provider"]
+        : ["Continue monitoring", "Stay hydrated", "Attend routine ANC Care", "Repeat assessment if symptoms worsen"]
     };
   }
 }

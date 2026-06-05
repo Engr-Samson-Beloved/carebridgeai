@@ -112,26 +112,17 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
   const [healthCheck, setHealthCheck] = useState({
     pregnancyWeek: 8,
     location: 'Lagos Mainland',
-    bleedingSeverity: 'none',
-    soakingPads: false,
-    bloodClots: false,
-    cramping: false,
-    oneSidedPain: false,
-    painLevel: 'none',
-    fainting: false,
-    dizzy: false,
-    weakness: false,
-    prevMiscarriage: false,
-    prevEctopic: false,
+    nausea: false,
+    vomiting: 'none', // 'none' | 'medication-down' | 'food-down' | 'mild'
+    headache: 'none', // 'none' | 'mild' | 'moderate' | 'severe'
+    dizziness: 'none', // 'none' | 'mild' | 'moderate' | 'severe'
+    spotting: false,
+    abdominalPain: 'none', // 'none' | 'mild' | 'moderate' | 'severe'
+    heavyBleeding: false,
+    passingClots: false,
+    pelvicPainOneSided: false,
     fever: false,
-    chills: false,
-    foulDischarge: false,
-    abortionProcedure: false,
-    recentMedication: false,
-    hypertension: false,
-    diabetes: false,
-    anemia: false,
-    otherConditions: false,
+    prevMiscarriage: false,
   });
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -168,21 +159,25 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     if (mood === null) return;
     setLoading(true);
 
-    // Save to Firestore symptom_logs collection
+    // Save to Firestore symptom_logs collection (Non-blocking)
     try {
-      await addDoc(collection(db, 'symptom_logs'), {
+      addDoc(collection(db, 'symptom_logs'), {
         patientName: session?.username || "Tomi",
         timestamp: new Date().toISOString(),
         mood: mood,
         note: note,
         tags: selectedTags
-      });
+      }).catch(err => console.warn("Firestore save error:", err));
     } catch (err) {
       console.warn("Failed to save daily symptom log to Firestore:", err);
     }
 
-    const msg = await generateSupportMessage(mood, note);
-    setSupportMessage(msg);
+    try {
+      const msg = await generateSupportMessage(mood, note);
+      setSupportMessage(msg);
+    } catch (err) {
+      console.warn("generateSupportMessage failed:", err);
+    }
     setLoading(false);
   };
 
@@ -192,20 +187,25 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     setSelectedTags(logTags);
     setLoading(true);
 
+    // Save to Firestore (Non-blocking)
     try {
-      await addDoc(collection(db, 'symptom_logs'), {
+      addDoc(collection(db, 'symptom_logs'), {
         patientName: session?.username || "Tomi",
         timestamp: new Date().toISOString(),
         mood: logMood,
         note: logNote,
         tags: logTags
-      });
+      }).catch(err => console.warn("Firestore save error:", err));
     } catch (err) {
       console.warn("Failed to save daily symptom log to Firestore:", err);
     }
 
-    const msg = await generateSupportMessage(logMood, logNote);
-    setSupportMessage(msg);
+    try {
+      const msg = await generateSupportMessage(logMood, logNote);
+      setSupportMessage(msg);
+    } catch (err) {
+      console.warn("generateSupportMessage failed:", err);
+    }
     setLoading(false);
   };
 
@@ -220,26 +220,18 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       } else if (type === 'RUN_ASSESSMENT') {
         const updatedCheck = {
           pregnancyWeek: data?.pregnancyWeek !== undefined ? Number(data.pregnancyWeek) : 8,
-          bleedingSeverity: data?.bleedingSeverity || 'none',
-          soakingPads: !!data?.soakingPads,
-          bloodClots: !!data?.bloodClots,
-          cramping: !!data?.cramping,
-          oneSidedPain: !!data?.oneSidedPain,
-          painLevel: data?.painLevel || 'none',
-          fainting: !!data?.fainting,
-          dizzy: !!data?.dizzy,
-          weakness: !!data?.weakness,
-          prevMiscarriage: !!data?.prevMiscarriage,
-          prevEctopic: !!data?.prevEctopic,
+          location: data?.location || 'Lagos Mainland',
+          nausea: !!data?.nausea,
+          vomiting: data?.vomiting || (data?.vomit ? 'mild' : 'none'),
+          headache: data?.headache || 'none',
+          dizziness: data?.dizziness || (data?.dizzy ? 'mild' : 'none'),
+          spotting: !!data?.spotting || data?.bleedingSeverity === 'spotting',
+          abdominalPain: data?.abdominalPain || data?.painLevel || 'none',
+          heavyBleeding: !!data?.heavyBleeding || !!data?.soakingPads || data?.bleedingSeverity === 'heavy',
+          passingClots: !!data?.passingClots || !!data?.bloodClots,
+          pelvicPainOneSided: !!data?.pelvicPainOneSided || !!data?.oneSidedPain,
           fever: !!data?.fever,
-          chills: !!data?.chills,
-          foulDischarge: !!data?.foulDischarge,
-          abortionProcedure: !!data?.abortionProcedure,
-          recentMedication: !!data?.recentMedication,
-          hypertension: !!data?.hypertension,
-          diabetes: !!data?.diabetes,
-          anemia: !!data?.anemia,
-          otherConditions: !!data?.otherConditions
+          prevMiscarriage: !!data?.prevMiscarriage
         };
         setHealthCheck(updatedCheck);
         runRiskAssessment(false, updatedCheck);
@@ -274,7 +266,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
   }, [assessmentResult]);
 
   const simulatePostToWhatsapp = () => {
-    alert("Simulation: Your recovery message has been synced to your private WhatsApp follow-up line.");
+    alert("Simulation: Your recovery summary has been synced to your private WhatsApp line.");
   };
 
   const simulateVoiceSpeak = () => {
@@ -305,34 +297,54 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       recognition.onresult = (event: any) => {
         const resultText = event.results[0][0].transcript.toLowerCase();
         
-        if (idx === 1) { // Vaginal Hemorrhage (was 0)
-          if (resultText.includes('heavy') || resultText.includes('severe') || resultText.includes('forte')) {
-            setHealthCheck(p => ({ ...p, bleedingSeverity: 'heavy', soakingPads: true }));
-          } else if (resultText.includes('moderate') || resultText.includes('moyenne')) {
-            setHealthCheck(p => ({ ...p, bleedingSeverity: 'moderate' }));
-          } else if (resultText.includes('spotting') || resultText.includes('gouttes')) {
-            setHealthCheck(p => ({ ...p, bleedingSeverity: 'spotting' }));
-          } else if (resultText.includes('none') || resultText.includes('rien')) {
-            setHealthCheck(p => ({ ...p, bleedingSeverity: 'none', soakingPads: false }));
+        if (idx === 1) { // Gastrointestinal
+          if (resultText.includes('nausea') || resultText.includes('sick')) {
+            setHealthCheck(p => ({ ...p, nausea: true }));
           }
-          if (resultText.includes('yes') || resultText.includes('oui')) {
-            setHealthCheck(p => ({ ...p, soakingPads: true }));
+          if (resultText.includes('vomit') || resultText.includes('throw up')) {
+            if (resultText.includes('mild')) {
+              setHealthCheck(p => ({ ...p, vomiting: 'mild' }));
+            } else if (resultText.includes('food')) {
+              setHealthCheck(p => ({ ...p, vomiting: 'food-down' }));
+            } else if (resultText.includes('med')) {
+              setHealthCheck(p => ({ ...p, vomiting: 'medication-down' }));
+            }
           }
-        } else if (idx === 2) { // Pain (was 1)
-          if (resultText.includes('severe') || resultText.includes('grave')) {
-            setHealthCheck(p => ({ ...p, painLevel: 'severe' }));
-          } else if (resultText.includes('moderate') || resultText.includes('moyen')) {
-            setHealthCheck(p => ({ ...p, painLevel: 'moderate' }));
-          } else if (resultText.includes('mild') || resultText.includes('faible')) {
-            setHealthCheck(p => ({ ...p, painLevel: 'mild' }));
+        } else if (idx === 2) { // Neurological
+          if (resultText.includes('headache') || resultText.includes('head')) {
+            if (resultText.includes('severe')) setHealthCheck(p => ({ ...p, headache: 'severe' }));
+            else if (resultText.includes('moderate')) setHealthCheck(p => ({ ...p, headache: 'moderate' }));
+            else if (resultText.includes('mild')) setHealthCheck(p => ({ ...p, headache: 'mild' }));
           }
-        } else if (idx === 3) { // Dizziness (was 2)
-          if (resultText.includes('yes') || resultText.includes('oui')) {
-            setHealthCheck(p => ({ ...p, fainting: true, dizzy: true }));
+          if (resultText.includes('dizzy') || resultText.includes('dizziness')) {
+            if (resultText.includes('severe')) setHealthCheck(p => ({ ...p, dizziness: 'severe' }));
+            else if (resultText.includes('moderate')) setHealthCheck(p => ({ ...p, dizziness: 'moderate' }));
+            else if (resultText.includes('mild')) setHealthCheck(p => ({ ...p, dizziness: 'mild' }));
           }
-        } else if (idx === 5) { // Fever (was 4)
-          if (resultText.includes('yes') || resultText.includes('oui') || resultText.includes('fever') || resultText.includes('fièvre')) {
+        } else if (idx === 3) { // Bleeding & Pain
+          if (resultText.includes('spotting') || resultText.includes('spot')) {
+            setHealthCheck(p => ({ ...p, spotting: true }));
+          }
+          if (resultText.includes('pain') || resultText.includes('cramp')) {
+            if (resultText.includes('severe')) setHealthCheck(p => ({ ...p, abdominalPain: 'severe' }));
+            else if (resultText.includes('moderate')) setHealthCheck(p => ({ ...p, abdominalPain: 'moderate' }));
+            else if (resultText.includes('mild')) setHealthCheck(p => ({ ...p, abdominalPain: 'mild' }));
+          }
+          if (resultText.includes('heavy') || resultText.includes('bleeding')) {
+            setHealthCheck(p => ({ ...p, heavyBleeding: true }));
+          }
+          if (resultText.includes('clot') || resultText.includes('clots')) {
+            setHealthCheck(p => ({ ...p, passingClots: true }));
+          }
+          if (resultText.includes('one sided') || resultText.includes('one-sided')) {
+            setHealthCheck(p => ({ ...p, pelvicPainOneSided: true }));
+          }
+        } else if (idx === 4) { // History & Vitals
+          if (resultText.includes('fever') || resultText.includes('hot')) {
             setHealthCheck(p => ({ ...p, fever: true }));
+          }
+          if (resultText.includes('miscarriage')) {
+            setHealthCheck(p => ({ ...p, prevMiscarriage: true }));
           }
         }
         setIsListening(false);
@@ -352,15 +364,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
   const playVoiceGuideForSection = (idx: number) => {
     const guides = [
       "Section 1: Gestational age. Please specify your gestational age in pregnancy weeks.",
-      "Section 2: Bleeding history. Please select bleeding severity, whether you are soaking pads, and if you are passing blood clots.",
-      "Section 3: Pain history. Select your pain level, and if you have cramping or one-sided localized pain.",
-      "Section 4: Dizziness and fainting. Note if you have fainted, feel dizzy, or have severe body weakness.",
-      "Section 5: Pregnancy history. Flag if you have a history of miscarriages or ectopic pregnancies.",
-      "Section 6: Fever and infection. Flag if you have fever, chills, or abnormal discharge.",
-      "Section 7: Procedure or medication. Have you had a surgical termination or taken medical abortion pills recently?",
-      "Section 8: Existing medical conditions. Select any chronic conditions like high blood pressure, diabetes, or anemia."
+      "Section 2: Gastrointestinal symptoms. Please indicate if you have nausea or vomiting, and specify the vomiting severity.",
+      "Section 3: Neurological symptoms. Please specify if you have a headache or dizziness, and select the severity.",
+      "Section 4: Bleeding and pain. Indicate if you have spotting, abdominal pain, heavy bleeding, passing clots, or one-sided pelvic pain.",
+      "Section 5: History and vitals. Please state if you have a fever or a history of miscarriage."
     ];
-    speakText(guides[idx]);
+    if (guides[idx]) speakText(guides[idx]);
   };
 
   // Run AI Risk Logic
@@ -371,45 +380,37 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     let reasonText = '';
     let apiSuccess = false;
 
-    // 1. Prepare Local Risk Logic to determine backup
-    let localRisk: 'low' | 'moderate' | 'high' = 'low';
-    let localReasonText = '';
-    if (
-      activeCheck.bleedingSeverity === 'heavy' ||
-      activeCheck.soakingPads ||
-      activeCheck.fainting ||
-      activeCheck.painLevel === 'severe' ||
-      activeCheck.fever
-    ) {
-      localRisk = 'high';
-      const concerns = [];
-      if (activeCheck.bleedingSeverity === 'heavy' || activeCheck.soakingPads) concerns.push("hemorrhaging indicators (heavy bleeding or soaking pads)");
-      if (activeCheck.fainting) concerns.push("fainting episodes");
-      if (activeCheck.painLevel === 'severe') concerns.push("severe abdominal pain");
-      if (activeCheck.fever) concerns.push("fever (potential systemic infection)");
-      
-      localReasonText = `Critical recovery indicators detected: ${concerns.join(', ')}. There is an elevated risk of severe post-pregnancy loss complications (e.g. retained products of conception, infection, or internal bleeding). Immediate medical attention is recommended.`;
-    } else if (
-      activeCheck.bleedingSeverity === 'moderate' ||
-      activeCheck.painLevel === 'moderate' ||
-      activeCheck.dizzy ||
-      activeCheck.weakness ||
-      activeCheck.chills ||
-      activeCheck.foulDischarge ||
-      activeCheck.prevEctopic
-    ) {
-      localRisk = 'moderate';
-      const concerns = [];
-      if (activeCheck.bleedingSeverity === 'moderate') concerns.push("moderate bleeding");
-      if (activeCheck.painLevel === 'moderate') concerns.push("moderate pain/cramping");
-      if (activeCheck.dizzy || activeCheck.weakness) concerns.push("dizziness or physical weakness");
-      if (activeCheck.foulDischarge) concerns.push("abnormal discharge");
-      if (activeCheck.prevEctopic) concerns.push("previous ectopic pregnancy");
+    // 1. Prepare Local Risk Logic
+    const isHigh = 
+      activeCheck.vomiting === 'medication-down' ||
+      activeCheck.vomiting === 'food-down' ||
+      activeCheck.headache === 'severe' ||
+      activeCheck.dizziness === 'severe' ||
+      activeCheck.abdominalPain === 'severe' ||
+      activeCheck.heavyBleeding ||
+      activeCheck.passingClots ||
+      activeCheck.pelvicPainOneSided ||
+      activeCheck.fever;
 
-      localReasonText = `Some recovery concerns flagged: ${concerns.join(', ')}. While not in acute distress, we advise booking a follow-up assessment with Lagos Maternal Center within 24 to 48 hours to ensure complete recovery.`;
+    const isMedium = 
+      !isHigh && (
+        activeCheck.vomiting === 'mild' ||
+        activeCheck.headache === 'moderate' ||
+        activeCheck.dizziness === 'moderate' ||
+        activeCheck.abdominalPain === 'moderate' ||
+        activeCheck.spotting ||
+        activeCheck.prevMiscarriage
+      );
+
+    if (isHigh) {
+      riskLevel = 'high';
+      reasonText = "High risk triage classification. Seek immediate medical care.";
+    } else if (isMedium) {
+      riskLevel = 'moderate';
+      reasonText = "Medium risk triage classification. Visit clinic within 24-48 hrs, consider ultrasound assessment, and follow up with a healthcare provider.";
     } else {
-      localRisk = 'low';
-      localReasonText = "Your recovery parameters appear stable. No primary red flags (such as hemorrhaging, high fever, or loss of consciousness) are present. Continue monitoring daily, rest, and keep hydrated.";
+      riskLevel = 'low';
+      reasonText = "Low risk triage classification. Continue monitoring, stay hydrated, attend routine ANC care, and repeat assessment if symptoms worsen.";
     }
 
     // 2. Call the EPL Care AI predict endpoint
@@ -429,11 +430,11 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         pds208: "Yes, wanted then",
         pds301: "Postabortion Care",
         pds302: Number(activeCheck.pregnancyWeek) || 8.0,
-        pds303: (activeCheck.abortionProcedure || activeCheck.prevMiscarriage) ? "Yes" : "No",
+        pds303: activeCheck.prevMiscarriage ? "Yes" : "No",
         pds310: activeCheck.fever ? "Yes" : "No",
         pds324: Number(activeCheck.pregnancyWeek) <= 12 ? "<=12 weeks" : ">12 weeks",
         pds401: "Incomplete Abortion",
-        pds402: (activeCheck.fainting || activeCheck.foulDischarge || activeCheck.soakingPads || activeCheck.painLevel === 'severe') ? "Yes" : "No",
+        pds402: (activeCheck.dizziness === 'severe' || activeCheck.heavyBleeding || activeCheck.abdominalPain === 'severe') ? "Yes" : "No",
         pds501: "Yes",
         pds502: "MVA",
         pds503: "Clinical Officer",
@@ -443,7 +444,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         pds510: "No",
         pds701: "Yes",
         pds702: "Yes",
-        pds801: (activeCheck.fainting || activeCheck.soakingPads || activeCheck.painLevel === 'severe') ? "Referred / Admitted" : "Discharged well",
+        pds801: (activeCheck.dizziness === 'severe' || activeCheck.heavyBleeding || activeCheck.abdominalPain === 'severe') ? "Referred / Admitted" : "Discharged well",
         pds802: "Less than 12 Hrs",
         ses_score: 3.0,
         mental_health_risk: (mood !== null && mood <= 2) ? 1 : 0,
@@ -472,7 +473,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       };
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
       const response = await fetch("https://gharnie.pythonanywhere.com/predict", {
         method: "POST",
@@ -490,55 +491,45 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         const predVal = Array.isArray(result.prediction) ? result.prediction[0] : result.prediction;
         const probVal = Array.isArray(result.probability) ? result.probability[0] : result.probability;
         
-        const rawRisk = result.risk_level || result.risk || "";
-        const rawRiskStr = String(rawRisk).toLowerCase();
-        
-        if (rawRiskStr.includes("high") || rawRiskStr.includes("3") || rawRiskStr === "2") {
-          riskLevel = "high";
-        } else if (rawRiskStr.includes("moderate") || rawRiskStr.includes("medium") || rawRiskStr.includes("1") || rawRiskStr.includes("some")) {
-          riskLevel = "moderate";
-        } else {
-          riskLevel = "low";
-        }
-        
         apiSuccess = true;
         
         apiData = {
-          action: result.action || "Confirm follow-up clinical checks.",
-          careGaps: result.care_gaps || [],
+          action: riskLevel === 'high' ? 'Seek immediate medical care' : (riskLevel === 'moderate' ? 'Visit clinic within 24-48 hrs' : 'Continue monitoring'),
+          careGaps: riskLevel === 'high' 
+            ? ['Seek immediate medical care'] 
+            : (riskLevel === 'moderate' 
+                ? ['Visit clinic within 24-48 hrs', 'Consider ultrasound assessment', 'Follow up with health care provider'] 
+                : ['Continue monitoring', 'Stay hydrated', 'Attend routine ANC Care', 'Repeat assessment if symptoms worsen']),
           equityFlags: result.equity_flags || [],
           mentalHealthFlag: result.mental_health_flag || false,
           mentalHealthNote: result.mental_health_note || "No immediate mental health concerns.",
-          followUpRecommendation: result.follow_up_recommendation || "Schedule follow-up within 1-2 weeks.",
+          followUpRecommendation: riskLevel === 'high' ? 'Immediate clinical care required.' : (riskLevel === 'moderate' ? 'Clinic visit within 24-48 hours.' : 'Routine monitoring.'),
           prediction: predVal,
           probability: probVal
         };
-        
-        reasonText = apiData.followUpRecommendation || result.action || "";
-      } else {
-        console.warn(`EPL Care AI returned non-OK status: ${response.status}. Falling back to rule engine.`);
       }
     } catch (e) {
-      console.warn("EPL Care AI predict API error, falling back to local rule-based assessment:", e);
+      console.warn("EPL Care AI predict API failed, using rules logic:", e);
     }
 
-    // 3. Apply backup if API call failed
+    // 3. Apply rules logic if API call failed
     if (!apiSuccess) {
-      riskLevel = localRisk;
-      reasonText = localReasonText;
-      
-      const isHigh = riskLevel === 'high';
-      const isMod = riskLevel === 'moderate';
+      const isHighRisk = riskLevel === 'high';
+      const isModRisk = riskLevel === 'moderate';
       
       apiData = {
-        action: isHigh ? "Escalate immediately to clinical coordinator. Arrange transport." : (isMod ? "Schedule follow-up appointment within 48 hours." : "Provide standard recovery counselling."),
-        careGaps: isHigh ? ["Critical symptom presentation requires urgent referral note", "Emergency contact verification needed"] : [],
+        action: isHighRisk ? "Seek immediate medical care" : (isModRisk ? "Visit clinic within 24-48 hrs" : "Continue monitoring"),
+        careGaps: isHighRisk 
+          ? ["Seek immediate medical care"] 
+          : (isModRisk 
+              ? ["Visit clinic within 24-48 hrs", "Consider ultrasound assessment", "Follow up with health care provider"] 
+              : ["Continue monitoring", "Stay hydrated", "Attend routine ANC Care", "Repeat assessment if symptoms worsen"]),
         equityFlags: [],
         mentalHealthFlag: (mood !== null && mood <= 2),
         mentalHealthNote: (mood !== null && mood <= 2) ? "Patient flags emotional distress. Support group referral recommended." : "No immediate mental health risks flagged.",
-        followUpRecommendation: isHigh ? "Immediate transfer or emergency check-in." : (isMod ? "Follow-up check within 2 days." : "Routine follow-up in 1 week."),
-        prediction: isHigh ? 1 : 0,
-        probability: isHigh ? 0.95 : 0.45
+        followUpRecommendation: isHighRisk ? "Immediate clinical care required." : (isModRisk ? "Clinic visit within 24-48 hours." : "Routine monitoring."),
+        prediction: isHighRisk ? 1 : 0,
+        probability: isHighRisk ? 0.95 : 0.45
       };
     }
 
@@ -556,7 +547,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
 
     setAssessmentResult(updatedResult);
 
-    // Save locally for password-protected history log
+    // Save locally
     const histRecord = {
       id: `Local-${Date.now()}`,
       timestamp: new Date().toISOString(),
@@ -577,12 +568,12 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       console.warn("Failed to save local history log copy:", err);
     }
 
-    // Save to Firestore assessments collection
+    // Save to Firestore (Non-blocking)
     try {
       setAssignedCHW(null);
-      const docRef = await addDoc(collection(db, 'assessments'), {
+      const docData = {
         patientName: session?.username || "Tomi",
-        location: "Lagos Mainland",
+        location: activeCheck.location || "Lagos Mainland",
         timestamp: new Date().toISOString(),
         riskLevel: riskLevel === 'high' ? 'High' : (riskLevel === 'moderate' ? 'Medium' : 'Low'),
         prediction: apiData.prediction,
@@ -595,8 +586,15 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
         followUpRecommendation: apiData.followUpRecommendation,
         status: 'Pending',
         assignedCHWId: null
-      });
-      setLastAssessmentId(docRef.id);
+      };
+
+      addDoc(collection(db, 'assessments'), docData)
+        .then(docRef => {
+          setLastAssessmentId(docRef.id);
+        })
+        .catch(err => {
+          console.warn("Failed to save assessment to Firestore:", err);
+        });
     } catch (err) {
       console.warn("Failed to save assessment to Firestore:", err);
     }
@@ -609,7 +607,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
           id,
           name: `Patient ${id}`,
           age: 25,
-          location: "Lagos",
+          location: activeCheck.location || "Lagos",
           date: new Date().toLocaleDateString(),
           riskLevel: riskLevel === 'high' ? 'High' : (riskLevel === 'moderate' ? 'Medium' : 'Low'),
           prediction: apiData.prediction,
@@ -703,62 +701,51 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                 <option value="Ikorodu">Ikorodu</option>
               </select>
             </div>
-
+            
             <p className="text-[10px] text-slate-400 font-bold leading-normal mt-2.5">
-              * Note: First-trimester pregnancy loss is typically defined as occurring before 12 completed weeks, and second-trimester loss between 12 and 24 weeks. This parameter directly affects EPL Care clinical risk predictions.
+              * Note: Gestational week directly affects clinical risk predictions.
             </p>
           </div>
         </div>
       )
     },
     {
-      title: "Vaginal Hemorrhage Severity",
+      title: "Gastrointestinal Symptoms",
       icon: Droplets,
       content: (
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Active Bleeding Severity</span>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-1">
+            <span className="text-xs font-bold text-slate-700">Experiencing Nausea?</span>
+            <div className="flex gap-2">
+              {[true, false].map(val => (
+                <button
+                  key={val ? 'yes' : 'no'}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, nausea: val }))}
+                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.nausea === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {val ? 'Yes' : 'No'}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="space-y-1.5 border-t border-slate-100/50 pt-3">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Vomiting Severity</span>
             <div className="grid grid-cols-4 gap-1.5">
               {[
                 { k: 'none', l: 'None' },
-                { k: 'spotting', l: 'Spotting' },
-                { k: 'moderate', l: 'Moderate Active' },
-                { k: 'heavy', l: 'Heavy Saturation' }
+                { k: 'mild', l: 'Mild' },
+                { k: 'food-down', l: "Can't Keep Food Down" },
+                { k: 'medication-down', l: "Can't Keep Meds" }
               ].map(opt => (
                 <button
                   key={opt.k}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, bleedingSeverity: opt.k }))}
-                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.bleedingSeverity === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, vomiting: opt.k }))}
+                  className={`py-2 px-1 text-[9px] font-black uppercase rounded-xl border transition-all ${healthCheck.vomiting === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {opt.l}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Are you soaking pads (≥ 1 pad/hr)?</span>
-            <div className="flex gap-2">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, soakingPads: val }))}
-                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.soakingPads === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Passing blood clots (large size)?</span>
-            <div className="flex gap-2">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, bloodClots: val }))}
-                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.bloodClots === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {val ? 'Yes' : 'No'}
                 </button>
               ))}
             </div>
@@ -767,101 +754,142 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Acute Abdominal & Pelvic Pain",
+      title: "Neurological Symptoms",
+      icon: HeartPulse,
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Headache Severity</span>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { k: 'none', l: 'None' },
+                { k: 'mild', l: 'Mild' },
+                { k: 'moderate', l: 'Moderate' },
+                { k: 'severe', l: 'Severe' }
+              ].map(opt => (
+                <button
+                  key={opt.k}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, headache: opt.k }))}
+                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.headache === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {opt.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5 border-t border-slate-100/50 pt-3">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Dizziness Severity</span>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { k: 'none', l: 'None' },
+                { k: 'mild', l: 'Mild' },
+                { k: 'moderate', l: 'Moderate' },
+                { k: 'severe', l: 'Severe' }
+              ].map(opt => (
+                <button
+                  key={opt.k}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, dizziness: opt.k }))}
+                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.dizziness === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {opt.l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Bleeding & Pain Symptoms",
       icon: Activity,
       content: (
         <div className="space-y-3">
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Pain Intensity</span>
+          {/* Spotting */}
+          <div className="flex items-center justify-between py-1">
+            <span className="text-xs font-bold text-slate-700">Spotting?</span>
+            <div className="flex gap-2">
+              {[true, false].map(val => (
+                <button
+                  key={val ? 'yes' : 'no'}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, spotting: val }))}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.spotting === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {val ? 'Yes' : 'No'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Abdominal Pain */}
+          <div className="space-y-1.5 border-t border-slate-100/50 pt-3">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Abdominal Pain</span>
             <div className="grid grid-cols-4 gap-1.5">
               {[
                 { k: 'none', l: 'None' },
-                { k: 'mild', l: 'Mild Pain' },
-                { k: 'moderate', l: 'Moderate Pain' },
-                { k: 'severe', l: 'Acute Severe' }
+                { k: 'mild', l: 'Mild' },
+                { k: 'moderate', l: 'Moderate' },
+                { k: 'severe', l: 'Severe' }
               ].map(opt => (
                 <button
                   key={opt.k}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, painLevel: opt.k }))}
-                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.painLevel === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, abdominalPain: opt.k }))}
+                  className={`py-2 px-1 text-[10px] font-black uppercase rounded-xl border transition-all ${healthCheck.abdominalPain === opt.k ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {opt.l}
                 </button>
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Experiencing uterine cramping?</span>
+
+          {/* Heavy Bleeding */}
+          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-3">
+            <span className="text-xs font-bold text-slate-700">Heavy Bleeding?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
                   key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, cramping: val }))}
-                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.cramping === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, heavyBleeding: val }))}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.heavyBleeding === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">One-sided localized adnexal pain?</span>
+
+          {/* Passing Clots */}
+          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-3">
+            <span className="text-xs font-bold text-slate-700">Passing out Clots?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
                   key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, oneSidedPain: val }))}
-                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.oneSidedPain === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, passingClots: val }))}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.passingClots === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
               ))}
             </div>
           </div>
-        </div>
-      )
-    },
-    {
-      title: "Syncope & Orthostatic Dizziness",
-      icon: HeartPulse,
-      content: (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700">Syncope / Loss of consciousness?</span>
+
+          {/* Pelvic Pain: One Sided */}
+          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-3">
+            <span className="text-xs font-bold text-slate-700">Pelvic Pain: One Sided?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
                   key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, fainting: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.fainting === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Orthostatic dizziness or lightheadedness?</span>
-            <div className="flex gap-2">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, dizzy: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.dizzy === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Asthenia / Severe body weakness?</span>
-            <div className="flex gap-2">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, weakness: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.weakness === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, pelvicPainOneSided: val }))}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.pelvicPainOneSided === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
@@ -872,148 +900,42 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       )
     },
     {
-      title: "Obstetric Risk Factors",
-      icon: ClipboardList,
-      content: (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Previous spontaneous miscarriage history?</span>
-            <div className="flex gap-2">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, prevMiscarriage: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.prevMiscarriage === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Previous ectopic pregnancy history?</span>
-            <div className="flex gap-2">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, prevEctopic: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.prevEctopic === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Pyrexia & Infection Symptoms",
+      title: "History & Vitals",
       icon: Thermometer,
       content: (
         <div className="space-y-3">
+          {/* Fever */}
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700">Pyrexia / Febrile illness (Fever ≥ 38.0°C)?</span>
+            <span className="text-xs font-bold text-slate-700">Fever / Pyrexia?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
                   key={val ? 'yes' : 'no'}
+                  type="button"
                   onClick={() => setHealthCheck(prev => ({ ...prev, fever: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.fever === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.fever === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700">Rigor / Chills / Shivering?</span>
+
+          {/* Previous Miscarriage */}
+          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-3">
+            <span className="text-xs font-bold text-slate-700">Previous Miscarriage?</span>
             <div className="flex gap-2">
               {[true, false].map(val => (
                 <button
                   key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, chills: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.chills === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  type="button"
+                  onClick={() => setHealthCheck(prev => ({ ...prev, prevMiscarriage: val }))}
+                  className={`py-1 px-3 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.prevMiscarriage === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {val ? 'Yes' : 'No'}
                 </button>
               ))}
             </div>
-          </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Purulent / Foul-smelling vaginal discharge?</span>
-            <div className="flex gap-2">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, foulDischarge: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.foulDischarge === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Post-abortion Intervention History",
-      icon: Pill,
-      content: (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Prior surgical uterine evacuation (MVA/D&C)?</span>
-            <div className="flex gap-2">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, abortionProcedure: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.abortionProcedure === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between py-1 border-t border-slate-100/50 pt-2">
-            <span className="text-xs font-bold text-slate-700 flex-1 pr-2">Recent medical abortion pharmacotherapy?</span>
-            <div className="flex gap-2">
-              {[true, false].map(val => (
-                <button
-                  key={val ? 'yes' : 'no'}
-                  onClick={() => setHealthCheck(prev => ({ ...prev, recentMedication: val }))}
-                  className={`py-1 px-3.5 text-xs font-black uppercase rounded-lg border transition-all ${healthCheck.recentMedication === val ? 'bg-[#0F4C81] text-white border-[#0F4C81]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {val ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Co-morbidities & Chronic Risk Factors",
-      icon: ShieldAlert,
-      content: (
-        <div className="space-y-3">
-          <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Select all conditions that apply</span>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { k: 'hypertension', l: 'Gestational / Chronic Hypertension' },
-              { k: 'diabetes', l: 'Gestational Diabetes Mellitus' },
-              { k: 'anemia', l: 'Anemia (Hb < 11g/dL)' },
-              { k: 'otherConditions', l: 'Other Clinical Co-morbidities' },
-            ].map(cond => (
-              <button
-                key={cond.k}
-                onClick={() => setHealthCheck(prev => ({ ...prev, [cond.k]: !prev[cond.k as keyof typeof prev] }))}
-                className={`py-2 px-3 text-xs font-black rounded-xl border transition-all ${healthCheck[cond.k as keyof typeof healthCheck] ? 'bg-[#0F4C81] text-white border-[#0F4C81] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                {cond.l}
-              </button>
-            ))}
           </div>
         </div>
       )
