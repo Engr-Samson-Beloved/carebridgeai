@@ -489,21 +489,21 @@ export function PatientDashboard({
                     className="flex items-center gap-2.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 border border-white/15 transition-all duration-300 cursor-pointer text-white shadow-inner active:scale-95 hover:scale-105"
                   >
                     <Mic size={12} className={prefs.voiceGuided ? 'animate-pulse text-emerald-300' : 'text-white/60'} />
-                    <span>Voice Guide</span>
+                    <span>{t.voiceAssistant || "Voice Guide"}</span>
                     <div className={`w-6 h-3.5 rounded-full relative transition-colors duration-300 ${prefs.voiceGuided ? 'bg-emerald-500' : 'bg-white/20'}`}>
                       <div className={`absolute top-0.5 w-2.5 h-2.5 bg-white rounded-full transition-all duration-300 ${prefs.voiceGuided ? 'right-0.5' : 'left-0.5'}`} />
                     </div>
                   </button>
                 </div>
-                <h3 className="text-2xl font-black mb-2 tracking-tight">Post-Loss Recovery Triage</h3>
+                <h3 className="text-2xl font-black mb-2 tracking-tight">{t.aiTriage || "Post-Loss Recovery Triage"}</h3>
                 <p className="text-blue-100/70 text-xs mb-6 leading-relaxed font-medium">
-                  Start our clinically audited AI assessment to analyze recovery risk levels, identify immediate care gaps, and secure clinical guidance.
+                  {t.triageDesc || "Start our confidential clinical assessment to understand your risk and get immediate care routing."}
                 </p>
                 <Button 
                   onClick={onStart}
                   className="w-full h-12 rounded-2xl bg-white text-[#0F4C81] hover:bg-blue-50 font-black uppercase tracking-wider text-xs shadow-xl shadow-blue-900/20 gap-2 cursor-pointer border-none"
                 >
-                  Start Recovery Test
+                  {t.startAssessment || "Start Recovery Test"}
                   <ChevronRight size={16} />
                 </Button>
               </div>
@@ -511,7 +511,9 @@ export function PatientDashboard({
               {/* Combined Right Column: Recovery Checklist (Vitals Tracker) */}
               <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] flex flex-col gap-5 backdrop-blur-md">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Recovery Checklist</h4>
+                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-blue-100">
+                    {t.recoveryChecklist || "Recovery Checklist"}
+                  </h4>
                   <Badge className="bg-emerald-400/20 text-emerald-300 text-[9px] font-black px-2.5 py-0.5 rounded-full border border-emerald-400/30 uppercase">
                     Streak: {streak} Days
                   </Badge>
@@ -536,7 +538,9 @@ export function PatientDashboard({
                       )}
                     </div>
                     <Droplets className={waterGlasses >= 8 ? 'text-blue-400 animate-bounce' : 'text-blue-300'} size={18} />
-                    <span className="text-[8px] font-black text-blue-200/60 uppercase tracking-wider">Hydrate</span>
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase tracking-wider">
+                      {t.hydrate || "Hydrate"}
+                    </span>
                     <span className="text-[10px] font-black text-white">{waterGlasses}/8 Gl.</span>
                   </button>
 
@@ -557,7 +561,9 @@ export function PatientDashboard({
                       )}
                     </div>
                     <ClipboardList className={mealEaten ? 'text-emerald-300' : 'text-blue-100/50'} size={18} />
-                    <span className="text-[8px] font-black text-blue-200/60 uppercase tracking-wider">Nutrition</span>
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase tracking-wider">
+                      {t.nutrition || "Nutrition"}
+                    </span>
                     <span className="text-[10px] font-black text-white">{mealEaten ? 'Done' : 'Log'}</span>
                   </button>
 
@@ -578,9 +584,67 @@ export function PatientDashboard({
                       )}
                     </div>
                     <Heart className={medTaken ? 'text-rose-300' : 'text-blue-100/50'} size={18} />
-                    <span className="text-[8px] font-black text-blue-200/60 uppercase tracking-wider">Medicine</span>
+                    <span className="text-[8px] font-black text-blue-200/60 uppercase tracking-wider">
+                      {t.medicine || "Medicine"}
+                    </span>
                     <span className="text-[10px] font-black text-white">{medTaken ? 'Taken' : 'Log'}</span>
                   </button>
+                </div>
+
+                {/* Daily Mood Check-In Section */}
+                <div className="border-t border-white/10 pt-4.5 mt-2 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">
+                      {t.howAreYouFeeling || "How are you feeling today?"}
+                    </span>
+                    {moodLoggedToday && (
+                      <span className="text-[8.5px] font-black text-emerald-300 uppercase tracking-wider flex items-center gap-1 select-none">
+                        ✓ Checked In
+                      </span>
+                    )}
+                  </div>
+
+                  {!moodLoggedToday ? (
+                    <div className="flex justify-between items-center gap-1.5 py-1">
+                      {[
+                        { v: 1, e: '😢', l: 'Grieving' },
+                        { v: 2, e: '😐', l: 'Stressed' },
+                        { v: 3, e: '🙂', l: 'Recovering' },
+                        { v: 4, e: '❤️', l: 'Supported' },
+                        { v: 5, e: '✨', l: 'Hopeful' }
+                      ].map(m => (
+                        <button
+                          key={m.v}
+                          type="button"
+                          disabled={loading}
+                          onClick={() => handleMoodSubmit(m.v)}
+                          className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 border border-white/5 flex items-center justify-center text-lg transition-all duration-200 cursor-pointer active:scale-90 select-none"
+                          title={m.l}
+                        >
+                          {m.e}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <div className="p-3 bg-white/10 border border-white/10 rounded-xl text-[11px] leading-relaxed font-semibold italic text-blue-50 relative animate-fadeIn">
+                        <span className="absolute top-1.5 left-2 text-blue-200/20 text-2xl select-none">“</span>
+                        <p className="pl-4.5 pr-2">
+                          {loading ? 'Thinking...' : (supportMessage || "We are here for you. Take it one day at a time.")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMoodLoggedToday(false);
+                          localStorage.removeItem('carebridge_mood_logged_date');
+                        }}
+                        className="text-[8.5px] font-black uppercase tracking-wider text-blue-200 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                      >
+                        Update Mood
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -597,7 +661,9 @@ export function PatientDashboard({
           {/* Appointments & Reminders Card */}
           <Card className="p-5 border-slate-100 rounded-[2rem] bg-white border flex flex-col gap-4 shadow-sm">
             <div className="flex justify-between items-center border-b border-slate-50 pb-2">
-              <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Appointments & Reminders</h4>
+              <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                {t.appointments || "Appointments & Reminders"}
+              </h4>
               <button 
                 onClick={() => setShowAddAppt(!showAddAppt)}
                 className="text-[9px] font-black uppercase bg-primary/5 hover:bg-primary/10 text-primary px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
@@ -807,7 +873,9 @@ export function PatientDashboard({
         <div className="flex flex-col gap-6 w-full">
           {/* Nearby Support & Counseling Resources */}
           <Card className="p-5 border-slate-100 rounded-[2rem] bg-white border shadow-sm flex flex-col gap-4">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Support & Clinical Guidance</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">
+              {t.supportClinical || "Support & Clinical Guidance"}
+            </h4>
             
             {/* Primary Referral Clinic */}
             <div className="p-4 border-slate-100 rounded-[1.75rem] flex items-center justify-between shadow-xs hover:shadow-md transition-all border border-slate-100 cursor-pointer bg-white" onClick={onClinicSearch}>
@@ -818,7 +886,9 @@ export function PatientDashboard({
                   <div>
                      <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
                         <h5 className="font-extrabold text-sm text-slate-800">Lagos Maternal Center</h5>
-                        <Badge variant="outline" className="text-[8px] h-3.5 bg-teal-50 border-teal-100 text-[#2EC4B6]">ACTIVE</Badge>
+                        <Badge variant="outline" className="text-[8px] h-3.5 bg-teal-50 border-teal-100 text-[#2EC4B6]">
+                          {t.active || "ACTIVE"}
+                        </Badge>
                      </div>
                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">1.2 km • Open 24/7</p>
                   </div>
@@ -869,7 +939,7 @@ export function PatientDashboard({
           >
             <div className="flex items-center gap-3">
               <AlertTriangle size={20} className="group-hover:scale-125 transition-transform" />
-              Emergency SOS Dispatch
+              {t.emergency ? `${t.emergency} SOS Dispatch` : "Emergency SOS Dispatch"}
             </div>
             <ChevronRight size={20} />
           </Button>
