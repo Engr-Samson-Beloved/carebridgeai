@@ -432,7 +432,94 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       let localList: any[] = [];
       try {
         const savedLocal = localStorage.getItem('carebridge_local_assessments');
-        localList = savedLocal ? JSON.parse(savedLocal) : [];
+        if (savedLocal) {
+          localList = JSON.parse(savedLocal);
+        } else {
+          localList = [
+            {
+              id: "local-assessment-1",
+              name: "Fatima Bello",
+              age: 26,
+              location: "Lagos Mainland (Rural Outreach)",
+              pregnancyWeek: 10,
+              riskLevel: "High",
+              prediction: 0,
+              probability: 0.88,
+              action: "Do not discharge this patient without a confirmed follow-up appointment. Intervene immediately. Assign a community health worker for post-discharge support. Conduct mental health screening before discharge.",
+              careGaps: [
+                "Patient was not referred for further care — referral is the strongest predictor of follow-up completion",
+                "Patient arrived without a referral note — breakdown in referral pathway",
+                "Patient spent less than 12 hours in the facility — rushed discharge increases risk"
+              ],
+              equityFlags: [
+                "Rural location — patient faces geographic and transport barriers to follow-up care",
+                "Below average socioeconomic status — cost of follow-up care may be a barrier"
+              ],
+              mentalHealthFlag: true,
+              mentalHealthNote: "Patient has mental health risk factors. Psychological support and grief counselling recommended.",
+              loggedByCHW: "Tomi",
+              timestamp: new Date().toISOString(),
+              phone: "+234 803 111 2222",
+              partnerName: "Adebayo Bello",
+              partnerPhone: "+234 802 333 4444",
+              assignedCHWId: "chw_tomi",
+              assignedCHWName: "Nurse Tomi",
+              status: "Pending"
+            },
+            {
+              id: "local-assessment-2",
+              name: "Chioma Nwachukwu",
+              age: 29,
+              location: "Ikeja",
+              pregnancyWeek: 8,
+              riskLevel: "Medium",
+              prediction: 1,
+              probability: 0.55,
+              action: "Confirm follow-up appointment is scheduled before discharge. Call or text patient within 48 hours to confirm attendance. Flag for community health worker check-in.",
+              careGaps: [
+                "Male partner was not included in post-loss counselling — reduces likelihood of follow-up attendance",
+                "Patient spent less than 12 hours in the facility — rushed discharge increases risk"
+              ],
+              equityFlags: [
+                "Below average socioeconomic status — cost of follow-up care may be a barrier"
+              ],
+              mentalHealthFlag: false,
+              mentalHealthNote: "No immediate mental health risk factors identified. Standard post-loss support applies.",
+              loggedByCHW: "Tomi",
+              timestamp: new Date(Date.now() - 3600000).toISOString(),
+              phone: "+234 809 444 5555",
+              partnerName: "Obinna Nwachukwu",
+              partnerPhone: "+234 806 777 8888",
+              assignedCHWId: "chw_tomi",
+              assignedCHWName: "Nurse Tomi",
+              status: "Pending"
+            },
+            {
+              id: "local-assessment-3",
+              name: "Zainab Musa",
+              age: 24,
+              location: "Surulere",
+              pregnancyWeek: 6,
+              riskLevel: "Low",
+              prediction: 1,
+              probability: 0.94,
+              action: "Proceed with standard discharge. Ensure follow-up appointment is scheduled and documented in patient records.",
+              careGaps: [],
+              equityFlags: [],
+              mentalHealthFlag: false,
+              mentalHealthNote: "No immediate mental health risk factors identified. Standard post-loss support applies.",
+              loggedByCHW: "Tomi",
+              timestamp: new Date(Date.now() - 7200000).toISOString(),
+              phone: "+234 812 999 0000",
+              partnerName: "Ibrahim Musa",
+              partnerPhone: "+234 815 111 2222",
+              assignedCHWId: "chw_tomi",
+              assignedCHWName: "Nurse Tomi",
+              status: "Pending"
+            }
+          ];
+          localStorage.setItem('carebridge_local_assessments', JSON.stringify(localList));
+        }
       } catch (e) {
         console.warn("Failed to parse local assessments:", e);
       }
@@ -452,7 +539,94 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       let localList: any[] = [];
       try {
         const savedLocal = localStorage.getItem('carebridge_local_assessments');
-        localList = savedLocal ? JSON.parse(savedLocal) : [];
+        if (savedLocal) {
+          localList = JSON.parse(savedLocal);
+        } else {
+          localList = [
+            {
+              id: "local-assessment-1",
+              name: "Fatima Bello",
+              age: 26,
+              location: "Lagos Mainland (Rural Outreach)",
+              pregnancyWeek: 10,
+              riskLevel: "High",
+              prediction: 0,
+              probability: 0.88,
+              action: "Do not discharge this patient without a confirmed follow-up appointment. Intervene immediately. Assign a community health worker for post-discharge support. Conduct mental health screening before discharge.",
+              careGaps: [
+                "Patient was not referred for further care — referral is the strongest predictor of follow-up completion",
+                "Patient arrived without a referral note — breakdown in referral pathway",
+                "Patient spent less than 12 hours in the facility — rushed discharge increases risk"
+              ],
+              equityFlags: [
+                "Rural location — patient faces geographic and transport barriers to follow-up care",
+                "Below average socioeconomic status — cost of follow-up care may be a barrier"
+              ],
+              mentalHealthFlag: true,
+              mentalHealthNote: "Patient has mental health risk factors. Psychological support and grief counselling recommended.",
+              loggedByCHW: "Tomi",
+              timestamp: new Date().toISOString(),
+              phone: "+234 803 111 2222",
+              partnerName: "Adebayo Bello",
+              partnerPhone: "+234 802 333 4444",
+              assignedCHWId: "chw_tomi",
+              assignedCHWName: "Nurse Tomi",
+              status: "Pending"
+            },
+            {
+              id: "local-assessment-2",
+              name: "Chioma Nwachukwu",
+              age: 29,
+              location: "Ikeja",
+              pregnancyWeek: 8,
+              riskLevel: "Medium",
+              prediction: 1,
+              probability: 0.55,
+              action: "Confirm follow-up appointment is scheduled before discharge. Call or text patient within 48 hours to confirm attendance. Flag for community health worker check-in.",
+              careGaps: [
+                "Male partner was not included in post-loss counselling — reduces likelihood of follow-up attendance",
+                "Patient spent less than 12 hours in the facility — rushed discharge increases risk"
+              ],
+              equityFlags: [
+                "Below average socioeconomic status — cost of follow-up care may be a barrier"
+              ],
+              mentalHealthFlag: false,
+              mentalHealthNote: "No immediate mental health risk factors identified. Standard post-loss support applies.",
+              loggedByCHW: "Tomi",
+              timestamp: new Date(Date.now() - 3600000).toISOString(),
+              phone: "+234 809 444 5555",
+              partnerName: "Obinna Nwachukwu",
+              partnerPhone: "+234 806 777 8888",
+              assignedCHWId: "chw_tomi",
+              assignedCHWName: "Nurse Tomi",
+              status: "Pending"
+            },
+            {
+              id: "local-assessment-3",
+              name: "Zainab Musa",
+              age: 24,
+              location: "Surulere",
+              pregnancyWeek: 6,
+              riskLevel: "Low",
+              prediction: 1,
+              probability: 0.94,
+              action: "Proceed with standard discharge. Ensure follow-up appointment is scheduled and documented in patient records.",
+              careGaps: [],
+              equityFlags: [],
+              mentalHealthFlag: false,
+              mentalHealthNote: "No immediate mental health risk factors identified. Standard post-loss support applies.",
+              loggedByCHW: "Tomi",
+              timestamp: new Date(Date.now() - 7200000).toISOString(),
+              phone: "+234 812 999 0000",
+              partnerName: "Ibrahim Musa",
+              partnerPhone: "+234 815 111 2222",
+              assignedCHWId: "chw_tomi",
+              assignedCHWName: "Nurse Tomi",
+              status: "Pending"
+            }
+          ];
+          localStorage.setItem('carebridge_local_assessments', JSON.stringify(localList));
+        }
       } catch (e) {
         console.warn("Failed to parse local assessments:", e);
       }
