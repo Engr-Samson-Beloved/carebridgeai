@@ -41,6 +41,12 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(1);
+
+  const handleNavigate = (target: AppView) => {
+    onNavigate(target);
+    setIsOpen(false);
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -138,6 +144,9 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
 
     setMessages(prev => [...prev, modelMsg]);
     setLoading(false);
+    if (!isOpen) {
+      setUnreadCount(prev => prev + 1);
+    }
 
     // Speak bot response out loud if enabled
     speakText(result.replyText);
@@ -145,7 +154,7 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
     // Handle intent-based navigation command
     if (result.navigationTarget) {
       setTimeout(() => {
-        onNavigate(result.navigationTarget as AppView);
+        handleNavigate(result.navigationTarget as AppView);
         // Small local notification inside chat bubble
         setMessages(prev => [...prev, {
           id: `msg-${Date.now() + 2}`,
@@ -250,7 +259,7 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
                             </div>
                           </div>
                           <Button 
-                            onClick={() => onNavigate('referral')}
+                            onClick={() => handleNavigate('referral')}
                             className="w-full h-7 text-[9px] font-black uppercase tracking-wider bg-primary hover:bg-primary/90 text-white rounded-lg border-none"
                           >
                             Open Maps Directory
@@ -264,7 +273,7 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
                           <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest block">Symptoms Check-up</span>
                           <p className="text-[10px] text-slate-400 font-medium">Verify bleeding severities, cramping intensity, and vitals thresholds.</p>
                           <Button 
-                            onClick={() => onNavigate('recovery')}
+                            onClick={() => handleNavigate('recovery')}
                             className="w-full h-7 text-[9px] font-black uppercase tracking-wider bg-rose-600 hover:bg-rose-700 text-white rounded-lg border-none"
                           >
                             Launch Health Test
@@ -383,7 +392,12 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          if (!isOpen) {
+            setUnreadCount(0);
+          }
+        }}
         className={`w-14 h-14 bg-gradient-to-tr from-[#0F4C81] to-primary text-white rounded-full flex items-center justify-center shadow-xl shadow-primary/25 cursor-pointer relative z-50 border-none outline-none ${isOpen ? 'hidden sm:flex' : 'flex'}`}
         title="Open CareBridge Companion"
       >
@@ -403,10 +417,16 @@ export function Chatbot({ language, onNavigate, username }: ChatbotProps) {
               initial={{ rotate: 90, opacity: 0 }}
               animate={{ rotate: 0, opacity: 1 }}
               exit={{ rotate: -90, opacity: 0 }}
-              className="relative"
+              className="relative flex items-center justify-center"
             >
               <Bot size={24} />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0F4C81] animate-ping" />
+              {unreadCount > 0 ? (
+                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 bg-rose-600 border border-white rounded-full flex items-center justify-center text-[9px] font-black text-white shadow-sm animate-pulse">
+                  {unreadCount}
+                </span>
+              ) : (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0F4C81] animate-ping" />
+              )}
             </motion.div>
           )}
         </AnimatePresence>
