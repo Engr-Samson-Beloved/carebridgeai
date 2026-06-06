@@ -127,41 +127,101 @@ CareBridge enforces strict authorization bounds defined in [firestore.rules](fil
 
 ## ⚙️ Configuration & Installation
 
-### 1. Prerequisites
-Ensure you have [Node.js](https://nodejs.org/) (v18+ recommended) and npm/pnpm installed.
+This repository contains both the frontend React/Vite application and the backend Python Machine Learning workspace. Follow the instructions below to install dependencies, configure environment variables, and run both components locally.
 
-### 2. Environment Variables Setup
-Create a `.env` file in the root directory and define the following variables (see [.env.example](file:///c:/web%20project/medicare/.env.example)):
+---
 
-```env
-# Google Gemini API Key (Get one from Google AI Studio)
-VITE_GEMINI_API_KEY="your-gemini-api-key"
+### 💻 1. Frontend Web Portal Setup (React / TypeScript)
 
-# Application hosting URL (optional)
-APP_URL="http://localhost:3000"
-```
+#### Prerequisites
+- **Node.js** (v18.0.0 or higher recommended)
+- **npm** (v9.0.0+) or **pnpm** (v8.0.0+)
 
-### 3. Install Dependencies
-Run the installation command in your terminal:
+#### Environment Variables Configuration
+1. Create a `.env` file in the root workspace directory (copying from [.env.example](file:///c:/web%20project/medicare/.env.example)):
+   ```env
+   VITE_GEMINI_API_KEY="your-gemini-api-key-here"
+   APP_URL="http://localhost:3000"
+   ```
+2. Place your Firebase web app configuration inside [firebase-applet-config.json](file:///c:/web%20project/medicare/firebase-applet-config.json) in the project root:
+   ```json
+   {
+     "apiKey": "your-api-key",
+     "authDomain": "your-auth-domain",
+     "projectId": "your-project-id",
+     "storageBucket": "your-storage-bucket",
+     "messagingSenderId": "your-sender-id",
+     "appId": "your-app-id"
+   }
+   ```
+
+#### Dependency Installation
+Run the following command to download Node packages:
 ```bash
 npm install
-# or if using pnpm
-pnpm install
 ```
 
-### 4. Running the Development Server
-Launch the local development environment:
+#### Running Locally
+Launch the Vite development server:
 ```bash
 npm run dev
 ```
-The server will boot up and be accessible locally at `http://localhost:3000`.
+The application will boot up at `http://localhost:3000`.
 
-### 5. Compiling for Production
-To package the app for production deployment:
+#### Compiling Production Build
+Package the React code into an optimized static bundle:
 ```bash
 npm run build
 ```
-The optimized bundle will be created inside the `dist/` directory.
+The compiled bundle will generate inside the `dist/` directory.
+
+---
+
+### 🐍 2. Backend Predictive AI Model Server (Python / Flask)
+
+#### Prerequisites
+- **Python** (v3.10 or higher recommended)
+- **pip** (Python package installer)
+
+#### Dependency Installation
+Install backend libraries specified in the root [requirements.txt](file:///c:/web%20project/medicare/requirements.txt):
+```bash
+pip install -r requirements.txt
+```
+
+#### Running the Prediction API Locally
+Start the Flask model endpoint service:
+```bash
+python temp-epl-care-ai/flask_app.py
+```
+This runs a local microservice on `http://127.0.0.1:5000` exposing the `/predict` route. The frontend automatically queries this service to make real-time predictions.
+
+---
+
+## 🔬 3. Documentation for Reproducing ML Results
+
+To retrain the clinical model and reproduce the evaluation metrics (84.70% Accuracy, 93.31% Cross Validation AUC):
+
+### Dataset Sources
+The model uses real-world maternal surveys loaded from the `/temp-epl-care-ai/` directory:
+- `pds_3.csv`: Post-discharge survey response dataset containing patient demographics, clinical diagnostics, and follow-up metrics.
+- `hps_1.csv` & `hfs_2.csv`: Healthcare facility parameters, geographical features, and local facility capacity metrics.
+
+### Retraining & Evaluation Workflow
+1. Navigate to the `/temp-epl-care-ai/` workspace directory.
+2. Launch a Jupyter Notebook server:
+   ```bash
+   jupyter notebook
+   ```
+3. Open and run the Jupyter notebook [epl_analysis.ipynb](file:///c:/web%20project/medicare/temp-epl-care-ai/epl_analysis.ipynb):
+   - **Section 1: Data Cleansing & Ingestion**: Merges geography-based facility metrics and resolves outliers.
+   - **Section 2: Categorical Feature Encoding**: Standardizes high-cardinality features like region, marital status, and religion.
+   - **Section 3: Standard Scaling**: Computes and exports model feature scaling parameters.
+   - **Section 4: Classifier Fitting**: Fits a Random Forest Classifier and evaluates performance using cross-validation.
+4. Running the final blocks in the notebook will overwrite:
+   - `epl_model.pkl` (The trained Random Forest model)
+   - `epl_scaler.pkl` (The feature scaler)
+   - `feature_columns.pkl` (The expected training feature indices)
 
 ---
 
