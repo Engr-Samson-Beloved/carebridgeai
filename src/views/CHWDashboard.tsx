@@ -54,6 +54,7 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
   const [patientLogs, setPatientLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [showVisitModal, setShowVisitModal] = useState(false);
+  const [savingVisit, setSavingVisit] = useState(false);
   const [newVisit, setNewVisit] = useState({
     patientName: '',
     age: '25',
@@ -112,6 +113,7 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       alert("Please enter patient name.");
       return;
     }
+    setSavingVisit(true);
 
     const isHigh = 
       newVisit.heavyBleeding ||
@@ -156,7 +158,7 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       riskLevel = 'Medium';
     }
 
-    const careGaps: string[] = [];
+    let careGaps: string[] = [];
     if (riskLevel === 'High') {
       careGaps.push("Seek immediate medical care");
     } else if (riskLevel === 'Medium') {
@@ -168,6 +170,111 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       careGaps.push("Stay hydrated");
       careGaps.push("Attend routine ANC Care");
       careGaps.push("Repeat assessment if symptoms worsen");
+    }
+
+    let prediction = riskLevel === 'High' ? 0 : 1;
+    let probability = riskLevel === 'High' ? 0.85 : 0.45;
+    let action = newVisit.recommendations || (riskLevel === 'High' ? "Refer immediately to secondary hospital." : "Routine Health Worker home follow-up check.");
+    let equityFlags = ["Rural Outreach Access"];
+    let mentalHealthFlag = false;
+    let mentalHealthNote = newVisit.notes || "Logged during rural Health Worker outreach field visit.";
+    let finalRiskLevel = riskLevel;
+
+    // Call the PythonAnywhere predict API
+    try {
+      const patientData = {
+        province: "Lagos",
+        county: "Unknown",
+        district: "Unknown",
+        type: "Health Centre",
+        pds101: Number(newVisit.age) || 25.0,
+        pds102: newVisit.location.toLowerCase().includes("rural") ? "Rural" : "Urban",
+        pds103: newVisit.partnerName ? "Married" : "Single",
+        pds104: "Complete Secondary",
+        pds105: "Other Christian",
+        pds106: "Farming",
+        pds208: "Yes, wanted then",
+        pds301: "Postabortion Care",
+        pds302: Number(newVisit.pregnancyWeek) || 8.0,
+        pds303: newVisit.prevMiscarriage ? "Yes" : "No",
+        pds310: newVisit.fever ? "Yes" : "No",
+        pds324: Number(newVisit.pregnancyWeek) <= 12 ? "<=12 weeks" : ">12 weeks",
+        pds401: "Incomplete Abortion",
+        pds402: (newVisit.dizziness === 'severe' || newVisit.heavyBleeding || newVisit.abdominalPain === 'severe') ? "Yes" : "No",
+        pds501: "Yes",
+        pds502: "MVA",
+        pds503: "Clinical Officer",
+        pds505: "Yes",
+        pds507: "Yes",
+        pds509: "No",
+        pds510: newVisit.partnerName ? "Yes" : "No",
+        pds701: "Yes",
+        pds702: "Yes",
+        pds801: (newVisit.dizziness === 'severe' || newVisit.heavyBleeding || newVisit.abdominalPain === 'severe') ? "Referred / Admitted" : "Discharged well",
+        pds802: "Less than 12 Hrs",
+        ses_score: 3.0,
+        mental_health_risk: 0,
+        care_delay: Number(newVisit.pregnancyWeek) > 12 ? 1 : 0,
+        hf215: "Unknown",
+        hf303: "Unknown",
+        hf305a: "Unknown",
+        hf308: "Unknown",
+        hf310a: "Unknown",
+        hf401: "Unknown",
+        hf402a: "Unknown",
+        hf405: "Unknown",
+        hf407: "Unknown",
+        pac_jan: 0.0,
+        pac_feb: 0.0,
+        pac_mar: 0.0,
+        pac_apr: 0.0,
+        pac_may: 0.0,
+        pac_jun: 0.0,
+        pac_jul: 0.0,
+        pac_aug: 0.0,
+        pac_sep: 0.0,
+        pac_oct: 0.0,
+        pac_nov: 0.0,
+        pac_dec: 0.0
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+      const response = await fetch("https://gharnie.pythonanywhere.com/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(patientData),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const result = await response.json();
+        prediction = Array.isArray(result.prediction) ? result.prediction[0] : result.prediction;
+        probability = Array.isArray(result.probability) ? result.probability[0] : result.probability;
+        if (result.risk_level) {
+          finalRiskLevel = result.risk_level.replace(" Risk", "") as any;
+        }
+        if (result.action) {
+          action = result.action;
+        }
+        if (result.care_gaps && result.care_gaps.length > 0) {
+          careGaps = result.care_gaps;
+        }
+        if (result.equity_flags) {
+          equityFlags = result.equity_flags;
+        }
+        mentalHealthFlag = !!result.mental_health_flag;
+        if (result.mental_health_note) {
+          mentalHealthNote = result.mental_health_note;
+        }
+      }
+    } catch (e) {
+      console.warn("EPL Care AI predict API failed, using rules logic:", e);
     }
 
     const chwNames: Record<string, string> = {
@@ -183,14 +290,14 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
       age: Number(newVisit.age) || 25,
       location: newVisit.location,
       pregnancyWeek: Number(newVisit.pregnancyWeek) || 8,
-      riskLevel: riskLevel,
-      prediction: riskLevel === 'High' ? 0 : 1, 
-      probability: riskLevel === 'High' ? 0.85 : 0.45,
-      action: newVisit.recommendations || (riskLevel === 'High' ? "Refer immediately to secondary hospital." : "Routine Health Worker home follow-up check."),
+      riskLevel: finalRiskLevel,
+      prediction: prediction, 
+      probability: probability,
+      action: action,
       careGaps: careGaps,
-      equityFlags: ["Rural Outreach Access"],
-      mentalHealthFlag: false,
-      mentalHealthNote: newVisit.notes || "Logged during rural Health Worker outreach field visit.",
+      equityFlags: equityFlags,
+      mentalHealthFlag: mentalHealthFlag,
+      mentalHealthNote: mentalHealthNote,
       loggedByCHW: session.username || "Tomi",
       timestamp: new Date().toISOString(),
       phone: newVisit.phone,
@@ -284,6 +391,8 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
     } catch (err) {
       console.warn("Failed to save field visit to Firestore, fell back to local storage:", err);
       alert(`Field visit record saved locally for patient ${patientName} (offline simulation).`);
+    } finally {
+      setSavingVisit(false);
     }
   };
 
@@ -1258,9 +1367,10 @@ export function CHWDashboard({ session, onSignOut }: CHWDashboardProps) {
                 <div className="flex gap-2 pt-3 border-t border-slate-100">
                   <Button 
                     type="submit"
-                    className="flex-1 h-11 rounded-xl bg-[#0F4C81] hover:bg-[#0F4C81]/90 text-white font-black uppercase tracking-wider text-xs shadow-md shadow-[#0F4C81]/10"
+                    disabled={savingVisit}
+                    className="flex-1 h-11 rounded-xl bg-[#0F4C81] hover:bg-[#0F4C81]/90 text-white font-black uppercase tracking-wider text-xs shadow-md shadow-[#0F4C81]/10 disabled:opacity-50"
                   >
-                    Save Field Record
+                    {savingVisit ? "Saving & Analyzing..." : "Save Field Record"}
                   </Button>
                   <Button 
                     type="button"

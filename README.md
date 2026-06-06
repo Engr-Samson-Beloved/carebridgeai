@@ -54,7 +54,7 @@ CareBridge AI uses a modern, high-performance web development stack:
 
 ## 🧠 Trained AI Model Integration (PythonAnywhere API)
 
-CareBridge AI integrates a predictive machine learning classifier trained by the Data Science team to determine follow-up compliance risk for patients receiving post-pregnancy loss care.
+CareBridge AI integrates a predictive machine learning classifier trained by the Data Science team. Both the **Patient Recovery Portal** (during triage assessment in [Recovery.tsx](file:///c:/web project/medicare/src/views/Recovery.tsx)) and the **Community Health Worker (CHW) Console** (when logging field visits in [CHWDashboard.tsx](file:///c:/web project/medicare/src/views/CHWDashboard.tsx)) connect to this API to determine follow-up compliance risk.
 
 ### 🔗 API Endpoint
 * **URL**: `https://gharnie.pythonanywhere.com/predict`
