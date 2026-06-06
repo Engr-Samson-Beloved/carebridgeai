@@ -52,6 +52,34 @@ CareBridge AI uses a modern, high-performance web development stack:
 
 ---
 
+## 🧠 Trained AI Model Integration (PythonAnywhere API)
+
+CareBridge AI integrates a predictive machine learning classifier trained by the Data Science team to determine follow-up compliance risk for patients receiving post-pregnancy loss care.
+
+### 🔗 API Endpoint
+* **URL**: `https://gharnie.pythonanywhere.com/predict`
+* **Method**: `POST`
+* **Headers**: `Content-Type: application/json`
+
+### 📤 Request Payload Configuration
+The app constructs a clinical/demographic payload (`patientData`) mapping user inputs to the model's standardized feature names:
+* **Demographics**: `province`, `county`, `district`, marital status (`pds103`), education level (`pds104`), occupation (`pds106`), and religion (`pds105`).
+* **Gestational metrics**: Gestational age (`pds302`) and gestational category (`pds324`).
+* **Clinical signs & history**: History of prior miscarriage (`pds303`), presence of fever (`pds310`), presence of complications (`pds402`), and discharge outcome (`pds801`).
+* **Mental health indicator**: Derived from self-reported mood scores (`mental_health_risk`).
+
+### 📥 Response Payload Handling
+The backend parses the input and returns:
+* `prediction`: `1` (likely to complete follow-up) or `0` (unlikely to complete follow-up/default risk).
+* `probability`: Float representing prediction confidence.
+* `equity_flags`: Highlighted socioeconomic barriers.
+* `mental_health_flag` & `mental_health_note`: Flagged emotional distress guidelines.
+
+### 🛡️ Local Rule-Based Fallback
+To ensure high availability in areas with spotty network access, a 5-second connection timeout is enforced. If the PythonAnywhere endpoint times out or returns an error, the app transparently falls back to a local rule-based engine to classify risk levels (High, Moderate, Low) and generate mock prediction metadata.
+
+---
+
 ## 📂 Project Structure
 
 ```bash
