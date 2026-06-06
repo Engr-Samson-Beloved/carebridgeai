@@ -1,0 +1,9 @@
+# Ignore Python files and requirements.txt to prevent Vercel from attempting Python builds
+requirements.txt
+temp-epl-care-ai/
+epl-care-ai-main/
+*.py
+*.ipynb
+*.pkl
+*.csv
+*.png
