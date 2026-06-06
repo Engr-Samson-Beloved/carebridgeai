@@ -606,18 +606,18 @@ export function PatientDashboard({
                   {!moodLoggedToday ? (
                     <div className="flex flex-wrap gap-2 py-1 justify-center sm:justify-start">
                       {[
-                        { v: 1, l: 'Grieving' },
-                        { v: 2, l: 'Stressed' },
-                        { v: 3, l: 'Recovering' },
-                        { v: 4, l: 'Supported' },
-                        { v: 5, l: 'Hopeful' }
+                        { v: 1, l: 'Grieving', c: 'bg-rose-500/25 hover:bg-rose-500/35 border-rose-500/40 text-rose-200' },
+                        { v: 2, l: 'Stressed', c: 'bg-amber-500/25 hover:bg-amber-500/35 border-amber-500/40 text-amber-200' },
+                        { v: 3, l: 'Recovering', c: 'bg-blue-500/25 hover:bg-blue-500/35 border-blue-500/40 text-blue-200' },
+                        { v: 4, l: 'Supported', c: 'bg-indigo-500/25 hover:bg-indigo-500/35 border-indigo-500/40 text-indigo-200' },
+                        { v: 5, l: 'Hopeful', c: 'bg-emerald-500/25 hover:bg-emerald-500/35 border-emerald-500/40 text-emerald-200' }
                       ].map(m => (
                         <button
                           key={m.v}
                           type="button"
                           disabled={loading}
                           onClick={() => handleMoodSubmit(m.v)}
-                          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 text-white disabled:opacity-50 select-none"
+                          className={`px-3 py-1.5 rounded-xl border flex items-center justify-center text-[10px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 disabled:opacity-50 select-none ${m.c}`}
                         >
                           {m.l}
                         </button>

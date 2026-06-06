@@ -105,7 +105,7 @@ export async function generateSupportMessage(mood: number, note: string) {
   const prompt = `
     A user is recovering from a pregnancy loss and just logged their mood as ${mood}/5 with the following note: "${note}".
     Generate a very gentle, compassionate, and supportive message to encourage them in their recovery journey.
-    The message must be culturally sensitive to Sub-Saharan African communities and feel human-centered.
+    The message must be culturally sensitive to Sub-Saharan African communities, feel human-centered, and be extremely short and concise (strictly a single sentence, maximum 15 words).
   `;
 
   try {
