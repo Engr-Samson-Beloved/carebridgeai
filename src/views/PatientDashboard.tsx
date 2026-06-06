@@ -21,7 +21,9 @@ import {
   Globe,
   ClipboardList,
   Calendar,
-  Clock
+  Clock,
+  Sparkles,
+  X
 } from 'lucide-react';
 import { Language, UserPreferences, UserSession, ALL_LANGUAGES } from '../types';
 import { translations } from '../translations';
@@ -50,6 +52,7 @@ export function PatientDashboard({
 }: PatientDashboardProps) {
   const t = translations[language] || translations['en'];
   const [showEmergency, setShowEmergency] = useState(false);
+  const [showMoodModal, setShowMoodModal] = useState(false);
   const [waterGlasses, setWaterGlasses] = useState(3);
   const [mealEaten, setMealEaten] = useState(false);
   const [medTaken, setMedTaken] = useState(false);
@@ -86,6 +89,7 @@ export function PatientDashboard({
     localStorage.setItem('carebridge_mood_value', String(selectedMood));
     localStorage.setItem('carebridge_mood_logged_date', todayStr);
     setMoodLoggedToday(true);
+    setShowMoodModal(true);
 
     setStreak(prev => prev + 1);
 
@@ -597,52 +601,53 @@ export function PatientDashboard({
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">
                       {t.howAreYouFeeling || "How are you feeling today?"}
                     </span>
-                    {moodLoggedToday && (
-                      <span className="text-[8.5px] font-black text-emerald-300 uppercase tracking-wider flex items-center gap-1 select-none">
-                        ✓ Checked In
-                      </span>
-                    )}
                   </div>
 
                   {!moodLoggedToday ? (
-                    <div className="flex justify-between items-center gap-1.5 py-1">
+                    <div className="flex flex-wrap gap-2 py-1 justify-center sm:justify-start">
                       {[
-                        { v: 1, e: '😢', l: 'Grieving' },
-                        { v: 2, e: '😐', l: 'Stressed' },
-                        { v: 3, e: '🙂', l: 'Recovering' },
-                        { v: 4, e: '❤️', l: 'Supported' },
-                        { v: 5, e: '✨', l: 'Hopeful' }
+                        { v: 1, l: 'Grieving' },
+                        { v: 2, l: 'Stressed' },
+                        { v: 3, l: 'Recovering' },
+                        { v: 4, l: 'Supported' },
+                        { v: 5, l: 'Hopeful' }
                       ].map(m => (
                         <button
                           key={m.v}
                           type="button"
                           disabled={loading}
                           onClick={() => handleMoodSubmit(m.v)}
-                          className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 border border-white/5 flex items-center justify-center text-lg transition-all duration-200 cursor-pointer active:scale-90 select-none"
-                          title={m.l}
+                          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/5 flex items-center justify-center text-[10px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 text-white disabled:opacity-50 select-none"
                         >
-                          {m.e}
+                          {m.l}
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-2.5">
-                      <div className="p-3 bg-white/10 border border-white/10 rounded-xl text-[11px] leading-relaxed font-semibold italic text-blue-50 relative animate-fadeIn">
-                        <span className="absolute top-1.5 left-2 text-blue-200/20 text-2xl select-none">“</span>
-                        <p className="pl-4.5 pr-2">
-                          {loading ? 'Thinking...' : (supportMessage || "We are here for you. Take it one day at a time.")}
-                        </p>
+                    <div className="flex items-center justify-between py-1 bg-white/5 border border-white/10 px-3.5 py-2.5 rounded-xl">
+                      <span className="text-[11px] font-extrabold text-blue-100 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+                        Check-in complete
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowMoodModal(true)}
+                          className="text-[9px] font-black uppercase tracking-wider text-slate-800 bg-white hover:bg-slate-50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer border-none"
+                        >
+                          View Message
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMoodLoggedToday(false);
+                            localStorage.removeItem('carebridge_mood_logged_date');
+                          }}
+                          className="text-[9px] font-black uppercase tracking-wider text-blue-200 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                        >
+                          Update
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMoodLoggedToday(false);
-                          localStorage.removeItem('carebridge_mood_logged_date');
-                        }}
-                        className="text-[8.5px] font-black uppercase tracking-wider text-blue-200 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
-                      >
-                        Update Mood
-                      </button>
                     </div>
                   )}
                 </div>
@@ -990,6 +995,69 @@ export function PatientDashboard({
                   Cancel
                 </Button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Daily Wellness Check-In Result Modal */}
+      <AnimatePresence>
+        {showMoodModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMoodModal(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[2.25rem] p-6 shadow-3xl text-center z-10 overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200"
+            >
+              {/* Background gradient decorative element */}
+              <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
+              <div className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full bg-[#0F4C81]/5 blur-2xl pointer-events-none" />
+              
+              <button
+                onClick={() => setShowMoodModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer border-none bg-transparent"
+              >
+                <X size={16} />
+              </button>
+
+              <div className="w-14 h-14 bg-gradient-to-tr from-primary to-[#0F4C81] rounded-2xl flex items-center justify-center text-white mx-auto mb-4.5 shadow-lg shadow-primary/10">
+                <Sparkles size={24} className="animate-pulse" />
+              </div>
+              
+              <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1.5">
+                Daily Wellness Support
+              </p>
+              
+              <h3 className="text-lg font-black text-slate-900 mb-4 tracking-tight">
+                {mood === 1 && "Grieving - We Stand With You"}
+                {mood === 2 && "Stressed - Take A Deep Breath"}
+                {mood === 3 && "Recovering - One Day At A Time"}
+                {mood === 4 && "Supported - You Are Not Alone"}
+                {mood === 5 && "Hopeful - Looking Forward"}
+                {!mood && "Your Wellness Check-In"}
+              </h3>
+
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-[12px] leading-relaxed font-semibold italic text-slate-700 relative text-left mb-6">
+                <span className="absolute top-1.5 left-2.5 text-slate-300 text-3xl select-none">“</span>
+                <p className="pl-5 pr-2">
+                  {loading ? 'Generating supportive words...' : (supportMessage || "We are here for you. Take it one day at a time.")}
+                </p>
+              </div>
+              
+              <Button 
+                className="w-full h-12 rounded-xl bg-[#0F4C81] hover:bg-[#0F4C81]/90 text-white font-bold text-sm cursor-pointer shadow-md shadow-[#0F4C81]/15 border-none"
+                onClick={() => setShowMoodModal(false)}
+              >
+                Close Check-in
+              </Button>
             </motion.div>
           </div>
         )}

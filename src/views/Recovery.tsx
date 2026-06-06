@@ -269,7 +269,22 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
           ],
           mentalHealthFlag: true,
           mentalHealthNote: "Patient has mental health risk factors. Psychological support and grief counselling recommended.",
-          followUpRecommendation: "Arrange immediate home nurse check-in."
+          followUpRecommendation: "Arrange immediate home nurse check-in.",
+          symptoms: {
+            pregnancyWeek: 10,
+            location: "Lagos Mainland",
+            nausea: true,
+            vomiting: "food-down",
+            headache: "severe",
+            dizziness: "severe",
+            spotting: true,
+            heavyBleeding: true,
+            passingClots: true,
+            abdominalPain: "severe",
+            pelvicPainOneSided: true,
+            fever: true,
+            prevMiscarriage: true
+          }
         },
         {
           id: "Local-mock-2",
@@ -286,7 +301,22 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
           ],
           mentalHealthFlag: false,
           mentalHealthNote: "No immediate mental health risk factors identified. Standard post-loss support applies.",
-          followUpRecommendation: "Schedule follow-up appointment within 1 week."
+          followUpRecommendation: "Schedule follow-up appointment within 1 week.",
+          symptoms: {
+            pregnancyWeek: 8,
+            location: "Ikeja",
+            nausea: true,
+            vomiting: "frequent",
+            headache: "moderate",
+            dizziness: "moderate",
+            spotting: true,
+            heavyBleeding: false,
+            passingClots: false,
+            abdominalPain: "moderate",
+            pelvicPainOneSided: false,
+            fever: false,
+            prevMiscarriage: false
+          }
         },
         {
           id: "Local-mock-3",
@@ -298,7 +328,22 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
           equityFlags: [],
           mentalHealthFlag: false,
           mentalHealthNote: "No immediate mental health risk factors identified. Standard post-loss support applies.",
-          followUpRecommendation: "Schedule standard follow-up appointment within 2 weeks."
+          followUpRecommendation: "Schedule standard follow-up appointment within 2 weeks.",
+          symptoms: {
+            pregnancyWeek: 6,
+            location: "Surulere",
+            nausea: false,
+            vomiting: "none",
+            headache: "none",
+            dizziness: "none",
+            spotting: false,
+            heavyBleeding: false,
+            passingClots: false,
+            abdominalPain: "none",
+            pelvicPainOneSided: false,
+            fever: false,
+            prevMiscarriage: false
+          }
         }
       ];
       localStorage.setItem('carebridge_assessments_history', JSON.stringify(mockHistory));
@@ -681,7 +726,22 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
       equityFlags: apiData.equityFlags,
       mentalHealthFlag: apiData.mentalHealthFlag,
       mentalHealthNote: apiData.mentalHealthNote,
-      followUpRecommendation: apiData.followUpRecommendation
+      followUpRecommendation: apiData.followUpRecommendation,
+      symptoms: {
+        pregnancyWeek: activeCheck.pregnancyWeek,
+        location: activeCheck.location,
+        nausea: activeCheck.nausea,
+        vomiting: activeCheck.vomiting,
+        headache: activeCheck.headache,
+        dizziness: activeCheck.dizziness,
+        spotting: activeCheck.spotting,
+        abdominalPain: activeCheck.abdominalPain,
+        heavyBleeding: activeCheck.heavyBleeding,
+        passingClots: activeCheck.passingClots,
+        pelvicPainOneSided: activeCheck.pelvicPainOneSided,
+        fever: activeCheck.fever,
+        prevMiscarriage: activeCheck.prevMiscarriage
+      }
     };
     try {
       const localHist = JSON.parse(localStorage.getItem('carebridge_assessments_history') || '[]');
@@ -1330,8 +1390,8 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                             )}
 
                             {/* Hospital Suggestions */}
-                            <div className="border-t border-rose-500/40 pt-3 space-y-2">
-                              <span className="text-[9px] font-black uppercase text-rose-100 tracking-wider block">
+                            <div className="border-t border-slate-200/80 pt-3.5 space-y-2">
+                              <span className="text-[9.5px] font-black uppercase text-slate-500 tracking-wider block">
                                 Suggested Facilities (Urgency Level 2-3)
                               </span>
                               
@@ -1352,26 +1412,28 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                                     specialty: "OBGYN, Post-loss Care"
                                   }
                                 ].map(hosp => (
-                                  <div key={hosp.name} className="p-2.5 bg-white/10 rounded-xl border border-white/5 flex flex-col gap-1 text-white">
+                                  <div key={hosp.name} className="p-2.5 bg-rose-50/50 hover:bg-rose-50 rounded-xl border border-rose-100/80 flex flex-col gap-1 text-slate-800 shadow-xs transition-colors">
                                     <div className="flex justify-between items-center">
-                                      <h5 className="font-extrabold text-[10.5px] truncate">{hosp.name}</h5>
-                                      <span className="text-[7.5px] font-black px-1 py-0.25 bg-rose-700 border border-rose-600 rounded uppercase">
+                                      <h5 className="font-black text-[10.5px] text-slate-800 truncate">{hosp.name}</h5>
+                                      <span className={`text-[7.5px] font-black px-1.5 py-0.5 rounded uppercase border-none text-white ${
+                                        hosp.urgency === 'Level 3' ? 'bg-rose-600' : 'bg-amber-500'
+                                      }`}>
                                         {hosp.urgency}
                                       </span>
                                     </div>
-                                    <p className="text-[8.5px] text-rose-100 font-bold uppercase tracking-wider">{hosp.distance} • {hosp.specialty}</p>
-                                    <div className="flex gap-1.5 mt-1">
+                                    <p className="text-[8.5px] text-slate-500 font-extrabold uppercase tracking-wider">{hosp.distance} • {hosp.specialty}</p>
+                                    <div className="flex gap-1.5 mt-1.5">
                                       <button
                                         type="button"
                                         onClick={() => alert(`Calling ${hosp.name}...`)}
-                                        className="flex-1 py-1 text-[8px] font-black bg-white text-rose-600 rounded-lg hover:bg-rose-50 transition-colors uppercase tracking-wider cursor-pointer border-none"
+                                        className="flex-1 py-1 text-[8px] font-black bg-[#0F4C81] text-white rounded-lg hover:opacity-90 transition-opacity uppercase tracking-wider cursor-pointer border-none"
                                       >
                                         Call
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => alert(`Mapping route to ${hosp.name} (${hosp.address})...`)}
-                                        className="flex-1 py-1 text-[8px] font-black bg-white/25 hover:bg-white/35 text-white rounded-lg transition-colors border border-white/15 uppercase tracking-wider cursor-pointer border-none"
+                                        className="flex-1 py-1 text-[8px] font-black bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200 uppercase tracking-wider cursor-pointer"
                                       >
                                         Route
                                       </button>
@@ -2163,6 +2225,76 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                           <p className="font-bold text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-100 leading-relaxed text-[11px]">
                             {item.text}
                           </p>
+
+                          {item.symptoms && (
+                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Logged Symptoms & Parameters</span>
+                              <div className="flex flex-wrap gap-1.5">
+                                <Badge variant="outline" className="text-[8.5px] font-bold border-slate-200 text-slate-700 bg-white rounded-md">
+                                  Week {item.symptoms.pregnancyWeek} Gestation
+                                </Badge>
+                                {item.symptoms.nausea && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-slate-200 text-slate-700 bg-white rounded-md">
+                                    Nausea
+                                  </Badge>
+                                )}
+                                {item.symptoms.vomiting && item.symptoms.vomiting !== 'none' && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-slate-200 text-slate-700 bg-white rounded-md">
+                                    Vomiting: {item.symptoms.vomiting}
+                                  </Badge>
+                                )}
+                                {item.symptoms.headache && item.symptoms.headache !== 'none' && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-slate-200 text-slate-700 bg-white rounded-md">
+                                    Headache: {item.symptoms.headache}
+                                  </Badge>
+                                )}
+                                {item.symptoms.dizziness && item.symptoms.dizziness !== 'none' && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-slate-200 text-slate-700 bg-white rounded-md">
+                                    Dizziness: {item.symptoms.dizziness}
+                                  </Badge>
+                                )}
+                                {item.symptoms.spotting && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-rose-200 text-rose-700 bg-rose-50/20 rounded-md">
+                                    Spotting
+                                  </Badge>
+                                )}
+                                {item.symptoms.heavyBleeding && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-rose-300 text-rose-800 bg-rose-50/50 rounded-md animate-pulse">
+                                    🚨 Heavy Bleeding
+                                  </Badge>
+                                )}
+                                {item.symptoms.passingClots && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-rose-300 text-rose-800 bg-rose-50/50 rounded-md">
+                                    🚨 Passing Clots
+                                  </Badge>
+                                )}
+                                {item.symptoms.abdominalPain && item.symptoms.abdominalPain !== 'none' && (
+                                  <Badge variant="outline" className={`text-[8.5px] font-bold rounded-md ${
+                                    item.symptoms.abdominalPain === 'severe' 
+                                      ? 'border-rose-300 text-rose-800 bg-rose-50/50' 
+                                      : 'border-slate-200 text-slate-700 bg-white'
+                                  }`}>
+                                    Pain: {item.symptoms.abdominalPain}
+                                  </Badge>
+                                )}
+                                {item.symptoms.pelvicPainOneSided && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-rose-300 text-rose-800 bg-rose-50/50 rounded-md">
+                                    🚨 One-Sided Pelvic Pain
+                                  </Badge>
+                                )}
+                                {item.symptoms.fever && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-rose-300 text-rose-800 bg-rose-50/50 rounded-md">
+                                    🚨 Fever
+                                  </Badge>
+                                )}
+                                {item.symptoms.prevMiscarriage && (
+                                  <Badge variant="outline" className="text-[8.5px] font-bold border-slate-200 text-slate-700 bg-white rounded-md">
+                                    History of Miscarriage
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
                           {item.action && (
                             <div className="p-3 bg-slate-900 text-white rounded-xl text-[10px] font-medium leading-relaxed">
