@@ -248,6 +248,63 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
     };
   }, [lastAssessmentId, assessmentResult]);
 
+  React.useEffect(() => {
+    const historyRaw = localStorage.getItem('carebridge_assessments_history');
+    if (!historyRaw) {
+      const mockHistory = [
+        {
+          id: "Local-mock-1",
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          riskLevel: "High",
+          text: "High risk triage classification. Seek immediate medical care.",
+          action: "Do not discharge this patient without a confirmed follow-up appointment. Intervene immediately. Assign a community health worker for post-discharge support.",
+          careGaps: [
+            "Patient was not referred for further care — referral is the strongest predictor of follow-up completion",
+            "Patient arrived without a referral note — breakdown in referral pathway",
+            "Patient spent less than 12 hours in the facility — rushed discharge increases risk"
+          ],
+          equityFlags: [
+            "Rural location — patient faces geographic and transport barriers to follow-up care",
+            "Below average socioeconomic status — cost of follow-up care may be a barrier"
+          ],
+          mentalHealthFlag: true,
+          mentalHealthNote: "Patient has mental health risk factors. Psychological support and grief counselling recommended.",
+          followUpRecommendation: "Arrange immediate home nurse check-in."
+        },
+        {
+          id: "Local-mock-2",
+          timestamp: new Date(Date.now() - 3 * 86400000).toISOString(),
+          riskLevel: "Medium",
+          text: "Medium risk triage classification. Visit clinic within 24-48 hrs, consider ultrasound assessment, and follow up with a healthcare provider.",
+          action: "Confirm follow-up appointment is scheduled before discharge. Call or text patient within 48 hours to confirm attendance. Flag for community health worker check-in.",
+          careGaps: [
+            "Male partner was not included in post-loss counselling — reduces likelihood of follow-up attendance",
+            "Patient spent less than 12 hours in the facility — rushed discharge increases risk"
+          ],
+          equityFlags: [
+            "Below average socioeconomic status — cost of follow-up care may be a barrier"
+          ],
+          mentalHealthFlag: false,
+          mentalHealthNote: "No immediate mental health risk factors identified. Standard post-loss support applies.",
+          followUpRecommendation: "Schedule follow-up appointment within 1 week."
+        },
+        {
+          id: "Local-mock-3",
+          timestamp: new Date(Date.now() - 5 * 86400000).toISOString(),
+          riskLevel: "Low",
+          text: "Low risk triage classification. Continue monitoring, stay hydrated, attend routine ANC care, and repeat assessment if symptoms worsen.",
+          action: "Proceed with standard discharge. Ensure follow-up appointment is scheduled and documented in patient records.",
+          careGaps: [],
+          equityFlags: [],
+          mentalHealthFlag: false,
+          mentalHealthNote: "No immediate mental health risk factors identified. Standard post-loss support applies.",
+          followUpRecommendation: "Schedule standard follow-up appointment within 2 weeks."
+        }
+      ];
+      localStorage.setItem('carebridge_assessments_history', JSON.stringify(mockHistory));
+    }
+  }, []);
+
   const [transitStep, setTransitStep] = useState(0);
   const [isTransitExpanded, setIsTransitExpanded] = useState(true);
 
