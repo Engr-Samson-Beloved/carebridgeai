@@ -2009,7 +2009,7 @@ export function Recovery({ language, prefs, onPrefsChange, session, onBack }: Re
                   <Card className="p-5 sm:p-10 border-none bg-emerald-50 rounded-[2.25rem] sm:rounded-[3rem] relative shadow-lg overflow-hidden">
                      <div className="relative z-10">
                         <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center text-emerald-500 mb-8 shadow-xl shadow-emerald-900/10">
-                           <Sparkles size={32} />
+                           <HeartPulse size={32} />
                         </div>
                         <h3 className="text-2xl font-black text-emerald-900 mb-6 tracking-tight">CareBridge Support</h3>
                         <p className="text-emerald-800/80 leading-relaxed italic text-xl mb-12 font-medium">

@@ -80,27 +80,39 @@ export function PatientDashboard({
 
   const handleMoodSubmit = async (selectedMood: number) => {
     setLoading(true);
+    // Open the modal immediately with a loading state so the user gets instant visual feedback
+    setShowMoodModal(true);
     setMood(selectedMood);
     const todayStr = new Date().toISOString().split('T')[0];
     
-    const msg = await generateSupportMessage(selectedMood, "Logged from home dashboard quick check-in");
-    setSupportMessage(msg);
-    localStorage.setItem('carebridge_mood_support_msg', msg);
-    localStorage.setItem('carebridge_mood_value', String(selectedMood));
-    localStorage.setItem('carebridge_mood_logged_date', todayStr);
-    setMoodLoggedToday(true);
-    setShowMoodModal(true);
-
-    setStreak(prev => prev + 1);
-
     try {
-      await addDoc(collection(db, 'symptom_logs'), {
+      const msg = await generateSupportMessage(selectedMood, "Logged from home dashboard quick check-in");
+      setSupportMessage(msg);
+      localStorage.setItem('carebridge_mood_support_msg', msg);
+      localStorage.setItem('carebridge_mood_value', String(selectedMood));
+      localStorage.setItem('carebridge_mood_logged_date', todayStr);
+      setMoodLoggedToday(true);
+      setStreak(prev => prev + 1);
+    } catch (err) {
+      console.warn("Support message generation failed:", err);
+      const fallback = "We are here for you. Take it one day at a time.";
+      setSupportMessage(fallback);
+      localStorage.setItem('carebridge_mood_support_msg', fallback);
+      localStorage.setItem('carebridge_mood_value', String(selectedMood));
+      localStorage.setItem('carebridge_mood_logged_date', todayStr);
+      setMoodLoggedToday(true);
+      setStreak(prev => prev + 1);
+    }
+
+    // Save to Firestore (Non-blocking)
+    try {
+      addDoc(collection(db, 'symptom_logs'), {
         patientName: session.username,
         timestamp: new Date().toISOString(),
         mood: selectedMood,
         note: "Logged from home dashboard quick check-in",
         tags: ["Emotional Checkout"]
-      });
+      }).catch(err => console.warn("Offline or Firestore log failed:", err));
     } catch (err) {
       console.warn("Offline or Firestore log failed:", err);
     }
@@ -1029,7 +1041,7 @@ export function PatientDashboard({
               </button>
 
               <div className="w-14 h-14 bg-gradient-to-tr from-primary to-[#0F4C81] rounded-2xl flex items-center justify-center text-white mx-auto mb-4.5 shadow-lg shadow-primary/10">
-                <Sparkles size={24} className="animate-pulse" />
+                <HeartPulse size={24} className="animate-pulse" />
               </div>
               
               <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1.5">
